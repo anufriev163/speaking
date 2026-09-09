@@ -35,6 +35,7 @@ jobs:
 
   release-win:
     needs: release-mac
+    if: always()
     runs-on: windows-latest
     steps:
       - name: Check out Git repository

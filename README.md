@@ -4,8 +4,8 @@
 > В разы быстрее и функциональнее существующих аналогов (diktuy.ru, Wispr Flow).
 
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
-[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/govori-setup-1.0.1.exe)
-[![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/latest)
+[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/download/v1.0.3/govori-setup-1.0.3.exe)
+[![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/download/v1.0.3/govori-1.0.3.dmg)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-orange)](#)
 
 ---
@@ -14,8 +14,8 @@
 
 | Платформа | Файл загрузки | Инструкция |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | [**Скачать Говори (govori-setup-1.0.1.exe)**](https://github.com/anufriev163/speaking/releases/latest/download/govori-setup-1.0.1.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
-| **macOS (M1/M2/M3/M4 & Intel)** | [**Все релизы на GitHub**](https://github.com/anufriev163/speaking/releases/latest) | Скачайте сборку для вашей системы. |
+| **Windows 10 / 11** | [**Скачать Говори (govori-setup-1.0.3.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.3/govori-setup-1.0.3.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
+| **macOS (Apple Silicon & Intel)** | [**Скачать DMG (govori-1.0.3.dmg)**](https://github.com/anufriev163/speaking/releases/download/v1.0.3/govori-1.0.3.dmg) | Откройте DMG и перетащите «говори» в папку Applications. |
 
 > [!TIP]
 > **При первом запуске на Windows (SmartScreen):**
