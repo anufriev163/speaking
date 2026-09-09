@@ -8,7 +8,9 @@
     "dev:electron": "node wait-dev.js",
     "build:electron": "esbuild electron/main.ts electron/preload.ts --bundle --platform=node --format=cjs --outdir=dist-electron --external:electron --external:koffi",
     "build": "tsc && vite build && npm run build:electron",
-    "dist": "npm run build && electron-builder --win",
+    "dist": "npm run dist:win",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
     "dist:dir": "npm run build && electron-builder --dir",
     "start": "electron .",
     "preview": "vite preview"
