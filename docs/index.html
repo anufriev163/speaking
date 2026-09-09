@@ -228,7 +228,7 @@
       flex-direction: column;
       align-items: center;
       gap: 14px;
-      margin-bottom: 45px;
+      margin-bottom: 0;
     }
 
     .buttons-row {
@@ -283,131 +283,6 @@
     .subnote {
       font-size: 12px;
       color: var(--text-light);
-    }
-
-    /* Realistic Minimalist HUD Simulator Widget */
-    .hud-preview-wrapper {
-      max-width: 600px;
-      margin: 0 auto;
-      text-align: center;
-    }
-
-    .hud-capsule {
-      background: #09090b;
-      color: #ffffff;
-      border-radius: 100px;
-      padding: 10px 18px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.08);
-      border: 1px solid #27272a;
-      width: 100%;
-      max-width: 460px;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .hud-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
-    .hud-status-dot {
-      width: 9px;
-      height: 9px;
-      background: #71717a;
-      border-radius: 50%;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .hud-status-dot.active {
-      background: #ef4444;
-      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25);
-      animation: pulse-dot 1.2s infinite;
-    }
-
-    @keyframes pulse-dot {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
-
-    .hud-text {
-      font-size: 13px;
-      color: #d4d4d8;
-      font-weight: 500;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-
-    .hud-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .hud-hotkey {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #a1a1aa;
-      background: #18181b;
-      border: 1px solid #27272a;
-      padding: 2px 7px;
-      border-radius: 6px;
-    }
-
-    .hud-demo-btn {
-      background: #2563eb;
-      color: #ffffff;
-      border: none;
-      border-radius: 20px;
-      padding: 5px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: background 0.15s, transform 0.15s;
-    }
-
-    .hud-demo-btn:hover {
-      background: #1d4ed8;
-      transform: scale(1.02);
-    }
-
-    .hud-result-box {
-      margin-top: 18px;
-      min-height: 48px;
-      background: #fafafa;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      font-size: 14px;
-      color: #3f3f46;
-      text-align: left;
-      line-height: 1.5;
-      position: relative;
-    }
-
-    .typing-cursor {
-      display: inline-block;
-      width: 2px;
-      height: 1em;
-      background: var(--accent-blue);
-      margin-left: 2px;
-      vertical-align: text-bottom;
-      animation: blink 0.8s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
     }
 
     /* 3 Simple Steps */
@@ -710,27 +585,7 @@
         </div>
       </div>
 
-      <!-- Realistic Floating HUD Preview Widget -->
-      <div class="hud-preview-wrapper">
-        <div class="hud-capsule" id="hud-capsule">
-          <div class="hud-left">
-            <span class="hud-status-dot" id="hud-dot"></span>
-            <span class="hud-text" id="hud-status">Нажмите кнопку для теста</span>
-          </div>
 
-          <div class="hud-right">
-            <span class="hud-hotkey">Ctrl + ~</span>
-            <button class="hud-demo-btn" id="demo-trigger">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 3 14 9-14 9V3z"/></svg>
-              <span>Тест</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="hud-result-box" id="hud-result">
-          <span style="color: #a1a1aa;">Нажмите «Тест», чтобы увидеть, как программа за доли секунды очищает речь от слов-паразитов и ставит пунктуацию...</span>
-        </div>
-      </div>
     </section>
 
     <!-- 3 Steps -->
@@ -906,48 +761,7 @@
       document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
     })();
 
-    // 3. Realistic Floating HUD Simulator
-    (function() {
-      const trigger = document.getElementById('demo-trigger');
-      const dot = document.getElementById('hud-dot');
-      const status = document.getElementById('hud-status');
-      const result = document.getElementById('hud-result');
-      let isBusy = false;
 
-      trigger.addEventListener('click', () => {
-        if (isBusy) return;
-        isBusy = true;
-        dot.classList.add('active');
-        status.textContent = 'Слушаю голос...';
-        result.innerHTML = '<span style="color: #71717a;">Диктовка с микрофона: </span><span style="font-style: italic; color: #18181b;">«привет ну типа отправляю отчет по проекту короче все задачи закрыты»</span>';
-
-        setTimeout(() => {
-          status.textContent = 'Обработка ИИ...';
-
-          setTimeout(() => {
-            dot.classList.remove('active');
-            status.textContent = 'Готово (180 мс)';
-            let cleanText = "Привет! Отправляю отчёт по проекту. Все задачи закрыты в срок, багов не обнаружено.";
-            let idx = 0;
-            result.innerHTML = '';
-
-            const interval = setInterval(() => {
-              if (idx < cleanText.length) {
-                result.textContent = cleanText.slice(0, idx + 1);
-                idx++;
-              } else {
-                clearInterval(interval);
-                result.innerHTML += ' <span style="display: inline-block; padding: 2px 6px; background: #ecfdf5; color: #059669; border-radius: 4px; font-size: 11px; font-weight: 700; margin-left: 6px;">Вставлено • 180 мс</span>';
-                isBusy = false;
-                setTimeout(() => {
-                  status.textContent = 'Нажмите кнопку для теста';
-                }, 3000);
-              }
-            }, 18);
-          }, 500);
-        }, 1300);
-      });
-    })();
   </script>
 </body>
 </html>
