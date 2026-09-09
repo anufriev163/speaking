@@ -255,7 +255,10 @@ function sendInputUnicode(text: string): boolean {
  */
 function injectClipboardWindows(text: string): boolean {
   try {
-    const prevClipboard = clipboard.readText();
+    const prevText = clipboard.readText();
+    const prevImage = clipboard.readImage();
+    const hadImage = !prevImage.isEmpty();
+
     clipboard.writeText(text);
 
     if (SendInput && koffi) {
@@ -275,9 +278,13 @@ function injectClipboardWindows(text: string): boolean {
 
     setTimeout(() => {
       try {
-        if (prevClipboard) clipboard.writeText(prevClipboard);
+        if (hadImage) {
+          clipboard.writeImage(prevImage);
+        } else if (prevText) {
+          clipboard.writeText(prevText);
+        }
       } catch {}
-    }, 250);
+    }, 280);
 
     return true;
   } catch (err) {
@@ -291,7 +298,10 @@ function injectClipboardWindows(text: string): boolean {
  */
 function injectTextMac(text: string): boolean {
   try {
-    const prevClipboard = clipboard.readText();
+    const prevText = clipboard.readText();
+    const prevImage = clipboard.readImage();
+    const hadImage = !prevImage.isEmpty();
+
     clipboard.writeText(text);
 
     execSync(`osascript -e 'tell application "System Events" to keystroke "v" using command down'`, {
@@ -301,7 +311,11 @@ function injectTextMac(text: string): boolean {
 
     setTimeout(() => {
       try {
-        if (prevClipboard) clipboard.writeText(prevClipboard);
+        if (hadImage) {
+          clipboard.writeImage(prevImage);
+        } else if (prevText) {
+          clipboard.writeText(prevText);
+        }
       } catch {}
     }, 300);
 
@@ -317,7 +331,10 @@ function injectTextMac(text: string): boolean {
  */
 function injectTextLinux(text: string): boolean {
   try {
-    const prevClipboard = clipboard.readText();
+    const prevText = clipboard.readText();
+    const prevImage = clipboard.readImage();
+    const hadImage = !prevImage.isEmpty();
+
     clipboard.writeText(text);
 
     execSync(`xdotool key --clearmodifiers ctrl+v`, {
@@ -327,7 +344,11 @@ function injectTextLinux(text: string): boolean {
 
     setTimeout(() => {
       try {
-        if (prevClipboard) clipboard.writeText(prevClipboard);
+        if (hadImage) {
+          clipboard.writeImage(prevImage);
+        } else if (prevText) {
+          clipboard.writeText(prevText);
+        }
       } catch {}
     }, 300);
 
@@ -358,7 +379,11 @@ export function injectText(text: string): boolean {
   if (sent) return true;
 
   // Fallback to Clipboard injection for older Windows PCs or restricted windows
-  return injectClipboardWindows(text);
+  const success = injectClipboardWindows(text);
+  if (!success) {
+    console.warn('[Platform] Text injection failed. If target application is running as Administrator, run govorilka as Administrator to satisfy Windows UIPI.');
+  }
+  return success;
 }
 
 // Backwards-compatible alias for existing callers

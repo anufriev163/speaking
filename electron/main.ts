@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Tray, Menu, screen, nativeImage, session, clipboard, shell, dialog } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, Tray, Menu, screen, nativeImage, session, clipboard, shell, dialog, systemPreferences } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { storage } from './services/storage';
@@ -20,9 +20,10 @@ let tray: Tray | null = null;
 let lastActiveContext: ActiveContext | null = null;
 let isQuitting = false;
 let pipeServer: net.Server | null = null;
+const sanitizedUser = (process.env.USERNAME || process.env.USER || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
 const PIPE_NAME = process.platform === 'win32'
-  ? '\\\\.\\pipe\\govori-single-instance-pipe'
-  : path.join(os.tmpdir(), 'govori-single-instance.sock');
+  ? `\\\\.\\pipe\\govori-${sanitizedUser}-pipe`
+  : path.join(os.tmpdir(), `govori-${sanitizedUser}.sock`);
 
 
 function wakeUpApp() {
@@ -342,17 +343,22 @@ let currentSelectionText = '';
 
 async function captureActiveSelection(): Promise<string> {
   try {
-    const oldClipboard = clipboard.readText();
-    clipboard.writeText('');
+    const oldText = clipboard.readText();
+    const oldImage = clipboard.readImage();
+    const hadImage = !oldImage.isEmpty();
+
+    clipboard.clear();
     simulateCopy();
 
     // Small delay for target app to copy selection
-    await new Promise((r) => setTimeout(r, 45));
+    await new Promise((r) => setTimeout(r, 50));
 
     const copied = clipboard.readText();
     if (!copied || copied.trim().length === 0) {
-      if (oldClipboard) {
-        clipboard.writeText(oldClipboard);
+      if (hadImage) {
+        clipboard.writeImage(oldImage);
+      } else if (oldText) {
+        clipboard.writeText(oldText);
       }
       return '';
     }
@@ -669,6 +675,17 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
     return permission === 'media';
   });
+
+  if (process.platform === 'darwin') {
+    try {
+      if (systemPreferences && typeof systemPreferences.isTrustedAccessibilityClient === 'function') {
+        const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
+        console.log('[Platform] macOS Accessibility permission status:', isTrusted);
+      }
+    } catch (err) {
+      console.warn('[Platform] macOS Accessibility check error:', err);
+    }
+  }
 
   setupIpcHandlers();
   createHudWindow();

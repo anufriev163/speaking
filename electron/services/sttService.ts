@@ -91,7 +91,8 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error(`[STT] ${provider} HTTP error ${res.status}:`, errorText);
+      const sanitizedError = errorText.replace(/(gsk_[a-zA-Z0-9]{6,}|sk-[a-zA-Z0-9]{6,})/g, '[KEY-REDACTED]');
+      console.error(`[STT] ${provider} HTTP error ${res.status}:`, sanitizedError);
       // If server error or rate limit, attempt local fallback
       if (res.status >= 429) {
         return await attemptLocalFallback(audioBuffer, mimeType, startTime, speechLang);

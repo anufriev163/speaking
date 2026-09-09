@@ -1,15 +1,23 @@
 import { VerificationResult } from '../types';
 
 export class VerificationManager {
-  private readonly KNOWN_HALLUCINATIONS = [
+  // Isolated single-word hallucinations emitted by Whisper on silence/static noise
+  private readonly ISOLATED_NOISE_TERMS = new Set([
+    'fastapi',
+    's.t.a.r.',
+    'star',
+    'amara.org',
+    'you',
+    'bye',
+    'mbc',
+    'продолжение следует'
+  ]);
+
+  // Subtitle credit hallucination patterns
+  private readonly SUBTITLE_PATTERNS = [
     /субтитры\s*(делал|сделал|создал)/i,
     /редактор\s*субтитров/i,
-    /продолжение\s*следует/i,
-    /ставьте\s*лайк/i,
-    /подписывайтесь\s*на\s*канал/i,
-    /спасибо\s*за\s*(просмотр|внимание)/i,
-    /s\.t\.a\.r\./i,
-    /fastapi/i // common hallucination on empty mic noise
+    /перевод\s*и\s*озвучка/i,
   ];
 
   public verifyTranscription(rawText: string): VerificationResult {
@@ -33,13 +41,24 @@ export class VerificationManager {
       };
     }
 
-    // 2. Known Whisper silence/noise hallucinations
-    for (const pattern of this.KNOWN_HALLUCINATIONS) {
+    // 2. Check isolated noise terms (only triggers if the whole transcript is just this artifact)
+    const normalizedWord = trimmed.toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+    if (this.ISOLATED_NOISE_TERMS.has(normalizedWord)) {
+      return {
+        isValid: false,
+        sanitizedText: '',
+        reason: `Isolated Whisper noise hallucination: "${trimmed}"`,
+        hallucinationDetected: true
+      };
+    }
+
+    // 3. Known subtitle credit hallucinations
+    for (const pattern of this.SUBTITLE_PATTERNS) {
       if (pattern.test(trimmed)) {
         return {
           isValid: false,
           sanitizedText: '',
-          reason: `Known Whisper hallucination matched: ${pattern}`,
+          reason: `Subtitle credit hallucination matched: ${pattern}`,
           hallucinationDetected: true
         };
       }

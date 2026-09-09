@@ -20,24 +20,11 @@ export class GovernanceManager {
     if (settings.provider === 'groq' && this.dailyRequestCount >= this.GROQ_DAILY_LIMIT) {
       return {
         allowed: false,
-        reason: `Daily Groq quota reached (${this.dailyRequestCount}/${this.GROQ_DAILY_LIMIT}). Please switch to OpenAI or Local.`
+        reason: `Дневной лимит Groq исчерпан (${this.dailyRequestCount}/${this.GROQ_DAILY_LIMIT}). Переключитесь на локальный Whisper или OpenAI.`
       };
     }
 
-    // 2. Secret presence check
-    if (settings.provider === 'groq' && !settings.groqApiKey) {
-      return {
-        allowed: false,
-        reason: 'Groq API key is missing in settings'
-      };
-    }
-    if (settings.provider === 'openai' && !settings.openaiApiKey) {
-      return {
-        allowed: false,
-        reason: 'OpenAI API key is missing in settings'
-      };
-    }
-
+    // Allow requests through so sttService can seamlessly fallback to local Whisper or guide the user
     return { allowed: true };
   }
 
