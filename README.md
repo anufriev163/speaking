@@ -4,7 +4,7 @@
 > В разы быстрее и функциональнее существующих аналогов (diktuy.ru, Wispr Flow).
 
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
-[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/говори.exe)
+[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/govori-setup-1.0.1.exe)
 [![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/latest)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-orange)](#)
 
@@ -14,8 +14,8 @@
 
 | Платформа | Файл загрузки | Инструкция |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | [**Скачать говори.exe**](https://github.com/anufriev163/speaking/releases/latest/download/говори.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
-| **macOS (M1/M2/M3/M4 & Intel)** | [**Скачать .dmg**](https://github.com/anufriev163/speaking/releases/latest) | Перетащите приложение в папку Applications. |
+| **Windows 10 / 11** | [**Скачать Говори (govori-setup-1.0.1.exe)**](https://github.com/anufriev163/speaking/releases/latest/download/govori-setup-1.0.1.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
+| **macOS (M1/M2/M3/M4 & Intel)** | [**Все релизы на GitHub**](https://github.com/anufriev163/speaking/releases/latest) | Скачайте сборку для вашей системы. |
 
 > [!TIP]
 > **При первом запуске на Windows (SmartScreen):**
