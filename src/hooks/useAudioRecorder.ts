@@ -12,6 +12,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [audioVolume, setAudioVolume] = useState(0);
 
+  const isRecordingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -20,7 +21,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const streamRef = useRef<MediaStream | null>(null);
 
   const updateVolume = useCallback(() => {
-    if (!analyserRef.current || !isRecording) return;
+    if (!analyserRef.current || !isRecordingRef.current) {
+      setAudioVolume(0);
+      return;
+    }
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(dataArray);
@@ -30,11 +34,12 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       sum += dataArray[i];
     }
     const avg = sum / dataArray.length;
-    const normalized = Math.min(1, avg / 80);
+    // Sensitive human speech volume calculation
+    const normalized = Math.min(1, Math.max(0, (avg - 6) / 40));
     setAudioVolume(normalized);
 
     animFrameRef.current = requestAnimationFrame(updateVolume);
-  }, [isRecording]);
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
@@ -68,6 +73,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       };
 
       recorder.start(100);
+      isRecordingRef.current = true;
       setIsRecording(true);
 
       animFrameRef.current = requestAnimationFrame(updateVolume);
@@ -79,14 +85,16 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
   const stopRecording = useCallback((): Promise<Blob | null> => {
     return new Promise((resolve) => {
+      isRecordingRef.current = false;
+      setIsRecording(false);
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
       setAudioVolume(0);
 
       const recorder = mediaRecorderRef.current;
       if (!recorder || recorder.state === 'inactive') {
-        setIsRecording(false);
         resolve(null);
         return;
       }

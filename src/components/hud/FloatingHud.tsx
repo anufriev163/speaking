@@ -402,11 +402,6 @@ export const FloatingHud: React.FC = () => {
               </div>
             ) : hudState === 'success' ? (
               <div className="flex items-center gap-2 text-xs truncate">
-                {latency && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-white font-mono text-[10px] font-semibold shrink-0">
-                    {latency}мс
-                  </span>
-                )}
                 {savedMacroInfo ? (
                   <span className="text-[#2563eb] font-semibold truncate text-[11px] flex items-center gap-1">
                     <span>💾</span>

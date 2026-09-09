@@ -6,24 +6,26 @@ interface WaveformProps {
 }
 
 export const Waveform: React.FC<WaveformProps> = ({ volume, isRecording }) => {
-  const bars = [0.35, 0.7, 1.0, 0.85, 0.55, 0.9, 0.6];
+  const bars = [0.45, 0.85, 1.25, 0.95, 1.15, 0.6];
 
   return (
-    <div className="flex items-center gap-[3px] h-5 px-1">
+    <div className="flex items-center gap-[3.5px] h-6 px-1">
       {bars.map((weight, i) => {
-        const height = isRecording
-          ? Math.max(4, Math.min(22, Math.round(volume * 26 * weight + 4)))
-          : 4;
+        const dynamicHeight = isRecording
+          ? Math.max(3.5, Math.min(22, Math.round(3.5 + volume * 22 * weight)))
+          : 3.5;
 
         return (
           <div
             key={i}
-            className={`w-[3px] rounded-full transition-all duration-75 ${
+            className={`w-[3px] rounded-full transition-all duration-75 ease-out ${
               isRecording
-                ? 'bg-black'
-                : 'bg-neutral-300'
+                ? volume > 0.08
+                  ? 'bg-neutral-900'
+                  : 'bg-neutral-700'
+                : 'bg-neutral-400'
             }`}
-            style={{ height: `${height}px` }}
+            style={{ height: `${dynamicHeight}px` }}
           />
         );
       })}
