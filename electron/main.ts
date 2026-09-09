@@ -14,6 +14,28 @@ import { initAutoUpdater } from './services/updaterService';
 import net from 'net';
 import os from 'os';
 
+// Hardware and legacy compatibility switches for older PCs/GPUs
+app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
+app.commandLine.appendSwitch('enable-transparent-visuals');
+
+// Catch GPU crash gracefully on older laptops/graphics cards
+app.on('child-process-gone', (_event, details) => {
+  if (details.type === 'GPU') {
+    console.warn('[Platform:GPU] GPU process crashed on this hardware, falling back to software rendering:', details.reason);
+    try {
+      app.disableHardwareAcceleration();
+    } catch {}
+  }
+});
+
+// Guard against uncaught runtime exceptions causing modal crashes
+process.on('uncaughtException', (err) => {
+  console.warn('[Platform:Safe] Handled uncaught exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Platform:Safe] Handled unhandled rejection:', reason);
+});
+
 let hudWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;

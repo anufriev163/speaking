@@ -427,5 +427,10 @@ export function simulateCopy(): void {
     } catch (err) {
       console.warn('[Platform] simulateCopy error:', err);
     }
+  } else {
+    try {
+      const psCmd = `powershell.exe -NoProfile -WindowStyle Hidden -Command "$ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^c')"`;
+      execSync(psCmd, { timeout: 800, stdio: ['ignore', 'ignore', 'ignore'] });
+    } catch {}
   }
 }

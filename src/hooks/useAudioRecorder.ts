@@ -43,14 +43,20 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
   const startRecording = useCallback(async () => {
     try {
-      // Don't force sampleRate here so Windows sound card uses its native rate
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }
-      });
+      // Try high-quality constraints first; gracefully fallback to basic audio on older sound cards
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+      } catch (errConstraints) {
+        console.warn('[Audio] Advanced constraints failed on this audio device, falling back to standard audio:', errConstraints);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
       streamRef.current = stream;
 
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
