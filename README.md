@@ -1,20 +1,26 @@
-# 🎙️ Говори — голосовой ввод нового поколения для Windows
+# 🎙️ Говори — голосовой ввод нового поколения для Windows и macOS
 
-> Интеллектуальный ассистент и голосовой набор текста на базе **Whisper Large-v3-turbo** и нативного **Win32 API**.
+> Интеллектуальный ассистент и голосовой набор текста на базе **Whisper Large-v3-turbo**, **Llama 3.3 70B** и нативного Win32/macOS API.
 > В разы быстрее и функциональнее существующих аналогов (diktuy.ru, Wispr Flow).
 
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
-[![Скачать для Windows](https://img.shields.io/badge/Скачать-govori.exe-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/govori.exe)
+[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/говори.exe)
+[![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/latest)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-orange)](#)
 
 ---
 
 ## 📥 Скачать и установить
 
-1. Скачайте официальный установщик: [**Скачать Говори (govori.exe)**](https://github.com/anufriev163/speaking/releases/latest/download/govori.exe).
-2. Запустите файл и следуйте подсказкам мастера установки.
-3. Программа добавит значок в трей и виджет на рабочий стол.
-4. При выходе новых версий приложение обновляется автоматически в один клик!
+| Платформа | Файл загрузки | Инструкция |
+| :--- | :--- | :--- |
+| **Windows 10 / 11** | [**Скачать говори.exe**](https://github.com/anufriev163/speaking/releases/latest/download/говори.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
+| **macOS (M1/M2/M3/M4 & Intel)** | [**Скачать .dmg**](https://github.com/anufriev163/speaking/releases/latest) | Перетащите приложение в папку Applications. |
+
+> [!TIP]
+> **При первом запуске на Windows (SmartScreen):**
+> Так как приложение новое и открытое (Open Source), Windows может показать синее окно защиты *«Система защитила ваш компьютер»*.
+> Нажмите **«Подробнее»** ➔ **«Выполнить в любом случае»**. Это стандартная процедура для программ без платного корпоративного сертификата Microsoft.
 
 ---
 
