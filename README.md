@@ -4,17 +4,17 @@
 > В разы быстрее и функциональнее существующих аналогов (diktuy.ru, Wispr Flow).
 
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
-[![Скачать для Windows](https://img.shields.io/badge/Скачать-говори.exe-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/говори.exe)
+[![Скачать для Windows](https://img.shields.io/badge/Скачать-govori.exe-success?logo=windows)](https://github.com/anufriev163/speaking/releases/latest/download/govori.exe)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-orange)](#)
 
 ---
 
 ## 📥 Скачать и установить
 
-1. Скачайте установщик [**говори.exe**](https://github.com/anufriev163/speaking/releases/latest/download/говори.exe).
+1. Скачайте официальный установщик: [**Скачать Говори (govori.exe)**](https://github.com/anufriev163/speaking/releases/latest/download/govori.exe).
 2. Запустите файл и следуйте подсказкам мастера установки.
 3. Программа добавит значок в трей и виджет на рабочий стол.
-4. При выходе новых версий приложение обновится автоматически!
+4. При выходе новых версий приложение обновляется автоматически в один клик!
 
 ---
 
