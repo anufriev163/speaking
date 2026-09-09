@@ -16,7 +16,7 @@ declare global {
 
 export const FloatingHud: React.FC = () => {
   const [hudState, setHudState] = useState<HudState>('idle');
-  const [isVisible, setIsVisible] = useState<boolean>(true);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
   const [context, setContext] = useState<ActiveContext>({
     processName: '',
     windowTitle: '',

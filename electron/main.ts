@@ -156,7 +156,7 @@ function createHudWindow() {
     skipTaskbar: true,
     resizable: false,
     hasShadow: false,
-    show: true, // Visible immediately
+    show: false, // Hidden until recording is triggered
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -188,13 +188,7 @@ function createHudWindow() {
     console.error(`[HUD Load Failed] ${code} ${desc}`);
   });
   hudWindow.webContents.on('did-finish-load', () => {
-    console.log('[HUD] Page loaded. Bounds:', JSON.stringify(hudWindow?.getBounds()), 'Visible:', hudWindow?.isVisible());
-    if (hudWindow && !hudWindow.isDestroyed()) {
-      hudWindow.showInactive();
-      hudWindow.setAlwaysOnTop(true, 'screen-saver');
-      hudWindow.moveTop();
-      hudWindow.webContents.send('hotkey:trigger', 'show');
-    }
+    console.log('[HUD] Page loaded. Bounds:', JSON.stringify(hudWindow?.getBounds()));
   });
 
   if (isDev) {
@@ -668,14 +662,6 @@ app.whenReady().then(() => {
   const isAutostart = process.argv.includes('--autostart');
   if (!isAutostart) {
     createSettingsWindow();
-    setTimeout(() => {
-      if (hudWindow && !hudWindow.isDestroyed()) {
-        hudWindow.showInactive();
-        hudWindow.setAlwaysOnTop(true, 'screen-saver');
-        hudWindow.moveTop();
-        hudWindow.webContents.send('hotkey:trigger', 'show');
-      }
-    }, 400);
   }
 
   createTray();
