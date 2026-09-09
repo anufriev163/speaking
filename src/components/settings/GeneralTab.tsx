@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../types';
-import { Keyboard, Mic, Sparkles, Volume2, Layers, Power, RefreshCw, CheckCircle2, ArrowDownToLine, AlertCircle, Languages } from 'lucide-react';
+import { Keyboard, Mic, Sparkles, Volume2, Power, RefreshCw, CheckCircle2, ArrowDownToLine, AlertCircle, Languages } from 'lucide-react';
 
 interface GeneralTabProps {
   settings: AppSettings;
@@ -105,45 +105,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
             </button>
           </div>
         </div>
-        {/* Recording Mode (Toggle vs Push-to-Talk) */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Mic className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">Режим работы записи</div>
-              <div className="text-[11px] text-neutral-500">
-                {settings.mode === 'ptt'
-                  ? 'Push-to-Talk: удерживайте клавишу во время речи'
-                  : 'Обычный: нажмите для старта, нажмите повторно для стопа'}
-              </div>
-            </div>
-          </div>
-          <div className="flex bg-neutral-100 p-1 rounded-xl border border-neutral-200/70 shrink-0">
-            <button
-              onClick={() => onChange({ mode: 'toggle' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                settings.mode === 'toggle'
-                  ? 'bg-white text-black shadow-xs font-semibold'
-                  : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              Нажатие
-            </button>
-            <button
-              onClick={() => onChange({ mode: 'ptt' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                settings.mode === 'ptt'
-                  ? 'bg-white text-black shadow-xs font-semibold'
-                  : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              Удержание (PTT)
-            </button>
-          </div>
-        </div>
-
         {/* Hotkey configuration */}
         <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
           <div className="flex items-center gap-3.5">
@@ -153,9 +114,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
             <div>
               <div className="text-xs font-semibold text-black">Горячая клавиша записи</div>
               <div className="text-[11px] text-neutral-500">
-                {settings.mode === 'ptt'
-                  ? 'Удерживайте эту комбинацию для записи'
-                  : 'Нажмите комбинацию для включения / выключения записи'}
+                Нажмите для старта, нажмите ещё раз для завершения и вставки
               </div>
             </div>
           </div>
@@ -168,29 +127,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
           />
         </div>
 
-        {/* Filler words filter */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">Удалять слова-паразиты</div>
-              <div className="text-[11px] text-neutral-500">Автоматически вырезать «эээ», «нуу», «типа», оговорки</div>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.removeFillerWords}
-              onChange={(e) => onChange({ removeFillerWords: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-          </label>
-        </div>
-
-        {/* AI-powered speech refiner & corrector */}
+        {/* Unified AI Speech Cleaner */}
         <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
@@ -198,13 +135,13 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-black">AI-корректор речи на лету</span>
+                <span className="text-xs font-semibold text-black">Умная ИИ-очистка текста</span>
                 <span className="px-1.5 py-0.5 rounded bg-neutral-100 text-[10px] font-mono font-medium text-neutral-600">
                   Llama 3.3 70B
                 </span>
               </div>
               <div className="text-[11px] text-neutral-500">
-                Мгновенная чистка запинок, исправление грамматики и пунктуации через Groq (&lt;200 мс)
+                Убирает «эээ/нуу» и запинки, расставляет знаки препинания и форматирует речь (&lt;200 мс)
               </div>
             </div>
           </div>
@@ -212,29 +149,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
             <input
               type="checkbox"
               checked={settings.aiCorrection !== false}
-              onChange={(e) => onChange({ aiCorrection: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-          </label>
-        </div>
-
-        {/* Context-aware adaptation */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">Контекстный режим приложений</div>
-              <div className="text-[11px] text-neutral-500">Автоформатирование под IDE, мессенджеры или текстовые редакторы</div>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.contextAwareMode}
-              onChange={(e) => onChange({ contextAwareMode: e.target.checked })}
+              onChange={(e) => onChange({ aiCorrection: e.target.checked, removeFillerWords: e.target.checked })}
               className="sr-only peer"
             />
             <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>

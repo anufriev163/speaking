@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { storage } from './services/storage';
 import { detectActiveContext } from './services/contextDetector';
-import { injectTextUnicode, isHotkeyTriggerHeld, simulateCopy } from './services/win32';
+import { injectTextUnicode, simulateCopy } from './services/win32';
 import { transcribeAudio } from './services/sttService';
 import { checkLocalWhisperAvailable, shutdownLocalWhisper } from './services/localWhisper';
 import { cleanTextRules, refineTextWithLLM } from './services/llmProcessor';
@@ -337,8 +337,6 @@ function createTray() {
 
 let lastHotkeyTimestamp = 0;
 
-let pttPollingTimer: NodeJS.Timeout | null = null;
-let isPttRecording = false;
 let currentSelectionText = '';
 
 async function captureActiveSelection(): Promise<string> {
@@ -369,16 +367,7 @@ async function captureActiveSelection(): Promise<string> {
   }
 }
 
-function stopPttPolling() {
-  if (pttPollingTimer) {
-    clearInterval(pttPollingTimer);
-    pttPollingTimer = null;
-  }
-  isPttRecording = false;
-}
-
 function registerHotkeys() {
-  stopPttPolling();
   globalShortcut.unregisterAll();
 
   // On Windows Control+~ / Control+`, on macOS CommandOrControl+~
@@ -392,9 +381,13 @@ function registerHotkeys() {
     try {
       const success = globalShortcut.register(key, () => {
         const now = Date.now();
-        const currentSettings = storage.getSettings();
-        const isPtt = currentSettings.mode === 'ptt';
+        // Debounce toggle clicks (350ms) to prevent accidental double-firing
+        if (now - lastHotkeyTimestamp < 350) {
+          return;
+        }
+        lastHotkeyTimestamp = now;
 
+        const currentSettings = storage.getSettings();
         lastActiveContext = detectActiveContext();
 
         if (!hudWindow || hudWindow.isDestroyed()) {
@@ -430,35 +423,8 @@ function registerHotkeys() {
             }
           });
 
-          if (isPtt) {
-            // Push-to-Talk mode: keydown starts recording, poll until key release
-            if (isPttRecording) {
-              return; // Ignore OS key-repeat
-            }
-            isPttRecording = true;
-            console.log(`[Hotkeys] PTT Start: ${key}`);
-            hudWindow.webContents.send('hotkey:trigger', 'start');
-
-            if (pttPollingTimer) clearInterval(pttPollingTimer);
-            pttPollingTimer = setInterval(() => {
-              const held = isHotkeyTriggerHeld(currentSettings.hotkey || 'Ctrl+~');
-              if (!held) {
-                stopPttPolling();
-                console.log('[Hotkeys] PTT Stop (key released)');
-                if (hudWindow && !hudWindow.isDestroyed()) {
-                  hudWindow.webContents.send('hotkey:trigger', 'stop');
-                }
-              }
-            }, 25);
-          } else {
-            // Toggle mode: start/stop on click with 600ms debounce
-            if (now - lastHotkeyTimestamp < 600) {
-              return;
-            }
-            lastHotkeyTimestamp = now;
-            console.log(`[Hotkeys] Toggle Triggered: ${key}`);
-            hudWindow.webContents.send('hotkey:trigger', 'toggle');
-          }
+          console.log(`[Hotkeys] Toggle Triggered: ${key}`);
+          hudWindow.webContents.send('hotkey:trigger', 'toggle');
         }
       });
 
@@ -660,7 +626,7 @@ function setupIpcHandlers() {
     }
   });
   ipcMain.on('hud:recording-stopped', () => {
-    stopPttPolling();
+    // recording stopped
   });
 }
 

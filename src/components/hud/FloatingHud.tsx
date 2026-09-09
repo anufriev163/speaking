@@ -404,11 +404,7 @@ export const FloatingHud: React.FC = () => {
                 <span className="text-xs font-mono font-medium text-black">
                   {formatSeconds(recordDuration)}
                 </span>
-                {appMode === 'ptt' && (
-                  <span className="text-[10px] font-semibold text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200 font-mono tracking-tight shrink-0">
-                    PTT
-                  </span>
-                )}
+
                 {selectionInfo.hasSelection ? (
                   <span className="flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md font-semibold truncate max-w-[120px]" title={selectionInfo.snippet}>
                     <Sparkles className="w-3 h-3 text-amber-500 animate-spin" />

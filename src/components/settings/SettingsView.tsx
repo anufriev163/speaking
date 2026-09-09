@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Cpu, BookA, Scissors, History } from 'lucide-react';
+import { Sliders, Cpu, History, Globe } from 'lucide-react';
 import { GovoriLogo } from '../common/GovoriLogo';
 import { GeneralTab } from './GeneralTab';
 import { ProvidersTab } from './ProvidersTab';
-import { DictionaryTab } from './DictionaryTab';
-import { SnippetsTab } from './SnippetsTab';
 import { HistoryTab } from './HistoryTab';
-import { AppSettings, CustomWord, TextSnippet, DictationHistoryItem } from '../../types';
+import { AppSettings, DictationHistoryItem } from '../../types';
 
 export const SettingsView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'providers' | 'general' | 'dictionary' | 'snippets' | 'history'>('providers');
+  const [activeTab, setActiveTab] = useState<'general' | 'providers' | 'history'>('general');
   const [settings, setSettings] = useState<AppSettings>({
     hotkey: 'Ctrl+~',
     mode: 'toggle',
@@ -24,9 +22,8 @@ export const SettingsView: React.FC = () => {
     soundFeedback: true,
     autoStart: false,
     handsFreeCommands: true,
+    aiCorrection: true,
   });
-  const [dictionary, setDictionary] = useState<CustomWord[]>([]);
-  const [snippets, setSnippets] = useState<TextSnippet[]>([]);
   const [history, setHistory] = useState<DictationHistoryItem[]>([]);
   const [savedBadge, setSavedBadge] = useState(false);
 
@@ -34,15 +31,7 @@ export const SettingsView: React.FC = () => {
     if (!window.govoriAPI) return;
 
     window.govoriAPI.getSettings().then((s: AppSettings) => s && setSettings(s));
-    window.govoriAPI.getDictionary().then((d: CustomWord[]) => d && setDictionary(d));
-    window.govoriAPI.getSnippets().then((sn: TextSnippet[]) => sn && setSnippets(sn));
     window.govoriAPI.getHistory().then((h: DictationHistoryItem[]) => h && setHistory(h));
-
-    const unsubSnippets = (window.govoriAPI as any)?.onSnippetsChanged?.((sn: TextSnippet[]) => {
-      if (sn) setSnippets(sn);
-    });
-
-    return () => unsubSnippets?.();
   }, []);
 
   const handleUpdateSettings = async (updates: Partial<AppSettings>) => {
@@ -55,20 +44,6 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleSaveDictionary = async (dict: CustomWord[]) => {
-    setDictionary(dict);
-    if (window.govoriAPI) {
-      await window.govoriAPI.saveDictionary(dict);
-    }
-  };
-
-  const handleSaveSnippets = async (sn: TextSnippet[]) => {
-    setSnippets(sn);
-    if (window.govoriAPI) {
-      await window.govoriAPI.saveSnippets(sn);
-    }
-  };
-
   const handleClearHistory = async () => {
     setHistory([]);
     if (window.govoriAPI) {
@@ -77,10 +52,8 @@ export const SettingsView: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'providers', label: 'ИИ Провайдеры', icon: Cpu },
-    { id: 'general', label: 'Основные', icon: Sliders },
-    { id: 'dictionary', label: 'Словарь', icon: BookA },
-    { id: 'snippets', label: 'Автозамена', icon: Scissors },
+    { id: 'general', label: 'Главное', icon: Sliders },
+    { id: 'providers', label: 'ИИ-движок', icon: Cpu },
     { id: 'history', label: 'История', icon: History },
   ];
 
@@ -99,12 +72,22 @@ export const SettingsView: React.FC = () => {
             </span>
           )}
         </div>
+
+        <a
+          href="https://anufriev163.github.io/speaking/"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500 hover:text-black transition-colors px-2.5 py-1 rounded-lg hover:bg-neutral-100 cursor-pointer"
+        >
+          <Globe className="w-3.5 h-3.5 text-neutral-400" />
+          <span>Сайт проекта</span>
+        </a>
       </div>
 
       {/* Main Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <div className="w-56 bg-neutral-50 border-r border-neutral-200/80 p-3 space-y-1 shrink-0">
+        <div className="w-52 bg-neutral-50 border-r border-neutral-200/80 p-3 space-y-1 shrink-0">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -132,12 +115,6 @@ export const SettingsView: React.FC = () => {
           )}
           {activeTab === 'providers' && (
             <ProvidersTab settings={settings} onChange={handleUpdateSettings} />
-          )}
-          {activeTab === 'dictionary' && (
-            <DictionaryTab dictionary={dictionary} onSave={handleSaveDictionary} />
-          )}
-          {activeTab === 'snippets' && (
-            <SnippetsTab snippets={snippets} onSave={handleSaveSnippets} />
           )}
           {activeTab === 'history' && (
             <HistoryTab history={history} onClear={handleClearHistory} />
