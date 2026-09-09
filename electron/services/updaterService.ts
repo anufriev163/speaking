@@ -21,12 +21,12 @@ export interface UpdateInfoState {
 
 let updateState: UpdateInfoState = {
   status: 'idle',
-  version: '1.0.0'
+  version: '1.0.3'
 };
 
 export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
   try {
-    updateState.version = app.getVersion() || '1.0.0';
+    updateState.version = app.getVersion() || '1.0.3';
   } catch {}
 
   // Explicitly configure GitHub feed URL to ensure correct target repo

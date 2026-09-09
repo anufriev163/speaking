@@ -8,7 +8,7 @@ import { HistoryTab } from './HistoryTab';
 import { AppSettings, TextSnippet, DictationHistoryItem } from '../../types';
 
 export const SettingsView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'providers' | 'snippets' | 'history'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'providers' | 'snippets' | 'history'>('providers');
   const [settings, setSettings] = useState<AppSettings>({
     hotkey: 'Ctrl+~',
     mode: 'toggle',
@@ -70,8 +70,8 @@ export const SettingsView: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'general', label: 'Главное', icon: Sliders },
     { id: 'providers', label: 'Нейросеть', icon: Cpu },
+    { id: 'general', label: 'Настройки', icon: Sliders },
     { id: 'snippets', label: 'Автозамена', icon: BookmarkCheck },
     { id: 'history', label: 'История', icon: History },
   ];

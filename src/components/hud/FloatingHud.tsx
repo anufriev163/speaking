@@ -339,7 +339,7 @@ export const FloatingHud: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full flex items-end justify-center pb-2 select-none overflow-hidden"
+      className="w-full h-full flex items-center justify-center select-none overflow-visible p-3"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

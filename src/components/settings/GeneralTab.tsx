@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../types';
 import { Keyboard, Mic, Sparkles, Volume2, Power, RefreshCw, CheckCircle2, ArrowDownToLine, AlertCircle, Languages } from 'lucide-react';
+import packageJson from '../../../package.json';
 
 interface GeneralTabProps {
   settings: AppSettings;
@@ -16,7 +17,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
     error?: string;
   }>({
     status: 'idle',
-    version: '1.0.0'
+    version: packageJson.version || '1.0.3'
   });
 
   useEffect(() => {

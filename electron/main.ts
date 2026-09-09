@@ -131,8 +131,8 @@ function createHudWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { bounds } = primaryDisplay;
 
-  const hudWidth = 440;
-  const hudHeight = 80;
+  const hudWidth = 520;
+  const hudHeight = 110;
 
   const settings = storage.getSettings();
   let x = settings.hudPosition?.x;
@@ -141,7 +141,7 @@ function createHudWindow() {
   if (x === undefined || y === undefined || (x === 1452 && y === 952)) {
     // Default position: centered horizontally at the bottom above taskbar
     x = Math.round(bounds.x + (bounds.width - hudWidth) / 2);
-    y = Math.round(bounds.y + bounds.height - hudHeight - 24);
+    y = Math.round(bounds.y + bounds.height - hudHeight - 16);
   }
 
   hudWindow = new BrowserWindow({
@@ -401,8 +401,8 @@ function registerHotkeys() {
           if (posX === undefined || posY === undefined || (posX === 1452 && posY === 952)) {
             const primaryDisplay = screen.getPrimaryDisplay();
             const { bounds } = primaryDisplay;
-            posX = Math.round(bounds.x + (bounds.width - 440) / 2);
-            posY = Math.round(bounds.y + bounds.height - 80 - 24);
+            posX = Math.round(bounds.x + (bounds.width - 520) / 2);
+            posY = Math.round(bounds.y + bounds.height - 110 - 16);
           }
 
           hudWindow.setPosition(posX, posY);
