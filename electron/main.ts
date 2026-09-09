@@ -12,6 +12,7 @@ import { ActiveContext } from '../src/types';
 import { initAutoUpdater } from './services/updaterService';
 
 import net from 'net';
+import os from 'os';
 
 let hudWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
@@ -19,7 +20,10 @@ let tray: Tray | null = null;
 let lastActiveContext: ActiveContext | null = null;
 let isQuitting = false;
 let pipeServer: net.Server | null = null;
-const PIPE_NAME = '\\\\.\\pipe\\govori-single-instance-pipe';
+const PIPE_NAME = process.platform === 'win32'
+  ? '\\\\.\\pipe\\govori-single-instance-pipe'
+  : path.join(os.tmpdir(), 'govori-single-instance.sock');
+
 
 function wakeUpApp() {
   console.log('[SingleInstance] Waking up app windows...');
@@ -55,6 +59,9 @@ app.on('before-quit', () => {
   if (pipeServer) {
     try { pipeServer.close(); } catch {}
   }
+  if (process.platform !== 'win32') {
+    try { if (fs.existsSync(PIPE_NAME)) fs.unlinkSync(PIPE_NAME); } catch {}
+  }
 });
 
 function notifyExistingInstanceAndExit() {
@@ -81,6 +88,9 @@ if (!gotTheLock) {
   notifyExistingInstanceAndExit();
 } else {
   try {
+    if (process.platform !== 'win32') {
+      try { if (fs.existsSync(PIPE_NAME)) fs.unlinkSync(PIPE_NAME); } catch {}
+    }
     pipeServer = net.createServer((socket) => {
       socket.on('data', (chunk) => {
         const msg = chunk.toString().trim();

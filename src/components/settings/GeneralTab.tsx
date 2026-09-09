@@ -292,7 +292,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
               <Power className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-black">Автозапуск при старте Windows</div>
+              <div className="text-xs font-semibold text-black">Автозапуск при старте системы</div>
               <div className="text-[11px] text-neutral-500">Автоматически запускать виджет диктовки в фоне при включении компьютера</div>
             </div>
           </div>

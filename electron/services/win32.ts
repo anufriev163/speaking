@@ -134,7 +134,8 @@ export function getActiveWindowInfo(): Win32ActiveWindow {
 
     const titleBuffer = new Uint16Array(512);
     GetWindowTextW(hwnd, titleBuffer, 512);
-    const windowTitle = String.fromCharCode(...titleBuffer.filter(c => c !== 0));
+    const nullIdx = titleBuffer.indexOf(0);
+    const windowTitle = String.fromCharCode(...titleBuffer.slice(0, nullIdx >= 0 ? nullIdx : 512));
 
     const pidHolder = [0];
     GetWindowThreadProcessId(hwnd, pidHolder);

@@ -15,8 +15,8 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history, onClear }) => {
   const filtered = history.filter((item) => {
     const query = search.toLowerCase();
     return (
-      item.processedText.toLowerCase().includes(query) ||
-      item.appContext.toLowerCase().includes(query)
+      (item.processedText || '').toLowerCase().includes(query) ||
+      (item.appContext || '').toLowerCase().includes(query)
     );
   });
 
