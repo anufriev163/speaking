@@ -16,7 +16,7 @@ declare global {
 
 export const FloatingHud: React.FC = () => {
   const [hudState, setHudState] = useState<HudState>('idle');
-  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
   const [context, setContext] = useState<ActiveContext>({
     processName: '',
     windowTitle: '',
@@ -234,7 +234,6 @@ export const FloatingHud: React.FC = () => {
         cancelDismiss();
         setIsVisible(true);
         setHudState('idle');
-        scheduleDismiss(6000);
       } else {
         handleToggleRecording();
       }

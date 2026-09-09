@@ -156,7 +156,7 @@ function createHudWindow() {
     skipTaskbar: true,
     resizable: false,
     hasShadow: false,
-    show: false, // Hidden until hotkey is pressed or triggered
+    show: true, // Visible immediately
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -189,6 +189,12 @@ function createHudWindow() {
   });
   hudWindow.webContents.on('did-finish-load', () => {
     console.log('[HUD] Page loaded. Bounds:', JSON.stringify(hudWindow?.getBounds()), 'Visible:', hudWindow?.isVisible());
+    if (hudWindow && !hudWindow.isDestroyed()) {
+      hudWindow.showInactive();
+      hudWindow.setAlwaysOnTop(true, 'screen-saver');
+      hudWindow.moveTop();
+      hudWindow.webContents.send('hotkey:trigger', 'show');
+    }
   });
 
   if (isDev) {
