@@ -359,7 +359,7 @@ export const FloatingHud: React.FC = () => {
                 : hudState === 'processing'
                 ? 'bg-white/70 text-black border border-black/10 backdrop-blur-md'
                 : hudState === 'success'
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-[#2563eb] text-white shadow-sm shadow-blue-500/25 ring-2 ring-blue-400/20'
                 : hudState === 'error'
                 ? 'bg-red-500 text-white'
                 : 'bg-black text-white hover:bg-neutral-800'
@@ -408,7 +408,7 @@ export const FloatingHud: React.FC = () => {
                   </span>
                 )}
                 {savedMacroInfo ? (
-                  <span className="text-emerald-800 font-semibold truncate text-[11px] flex items-center gap-1">
+                  <span className="text-[#2563eb] font-semibold truncate text-[11px] flex items-center gap-1">
                     <span>💾</span>
                     <span>Макрос: «{savedMacroInfo.trigger}»</span>
                   </span>
@@ -432,7 +432,7 @@ export const FloatingHud: React.FC = () => {
                 <span className="text-xs font-semibold text-neutral-900 tracking-tight lowercase">
                   говори
                 </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-black/5 border border-black/5 text-neutral-500 font-mono text-[9px] font-semibold tracking-tight">
+                <span className="px-1.5 py-0.5 rounded-md bg-white/40 border border-white/40 text-neutral-800 font-mono text-[9px] font-semibold tracking-tight shadow-2xs">
                   Ctrl + ~
                 </span>
               </div>
@@ -442,7 +442,7 @@ export const FloatingHud: React.FC = () => {
           {/* Quick Language Toggle */}
           <button
             onClick={cycleLanguage}
-            className="app-no-drag px-2 py-0.5 rounded-full bg-black/5 hover:bg-black/10 text-neutral-800 hover:text-black transition-all font-mono text-[10px] font-bold tracking-tight cursor-pointer border border-black/5"
+            className="app-no-drag px-2 py-0.5 rounded-full bg-white/30 hover:bg-white/50 text-neutral-800 hover:text-black transition-all font-mono text-[10px] font-bold tracking-tight cursor-pointer border border-white/40 shadow-2xs"
             title={`Язык: ${currentLanguage.toUpperCase()} (нажмите для смены RU / EN / AUTO)`}
           >
             {currentLanguage.toUpperCase()}
@@ -451,7 +451,7 @@ export const FloatingHud: React.FC = () => {
           {/* Quick Settings */}
           <button
             onClick={openSettings}
-            className="app-no-drag w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:text-black hover:bg-black/5 transition-all cursor-pointer"
+            className="app-no-drag w-7 h-7 rounded-full flex items-center justify-center text-neutral-600 hover:text-black hover:bg-white/40 transition-all cursor-pointer"
             title="Настройки"
           >
             <Settings className="w-3.5 h-3.5" />
