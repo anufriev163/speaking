@@ -29,19 +29,29 @@ html, body {
   height: 100%;
 }
 
-/* Apple-style floating pill */
+/* Liquid Glass floating pill */
 .apple-pill {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(240, 245, 255, 0.35) 100%);
+  backdrop-filter: blur(36px) saturate(220%) contrast(108%);
+  -webkit-backdrop-filter: blur(36px) saturate(220%) contrast(108%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 
+    0 20px 45px -10px rgba(0, 0, 0, 0.18),
+    0 8px 16px -4px rgba(0, 0, 0, 0.08),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .apple-pill-recording {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(0, 0, 0, 0.16);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 242, 244, 0.48) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    0 22px 50px -8px rgba(239, 68, 68, 0.22),
+    0 8px 18px -4px rgba(0, 0, 0, 0.12),
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(239, 68, 68, 0.25);
 }
 
 /* Smooth Apple-style spring slide & fade for HUD pill */

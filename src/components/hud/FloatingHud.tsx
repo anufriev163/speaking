@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Settings, Sparkles, Check, AlertCircle, Loader2, GripVertical, X } from 'lucide-react';
+import { Mic, Settings, Sparkles, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { Waveform } from './Waveform';
 import { GovoriLogo } from '../common/GovoriLogo';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
@@ -320,14 +320,6 @@ export const FloatingHud: React.FC = () => {
     }
   };
 
-  const handleDismissManually = () => {
-    cancelDismiss();
-    setIsVisible(false);
-    setTimeout(() => {
-      window.govoriAPI?.hideHud?.();
-      setHudState('idle');
-    }, 380);
-  };
 
   const cycleLanguage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -355,40 +347,32 @@ export const FloatingHud: React.FC = () => {
       <div className={`hud-spring-wrapper ${isVisible ? 'hud-spring-visible' : 'hud-spring-hidden'}`}>
         <div
           onMouseDown={handleDragStart}
-          className={`apple-pill rounded-full px-3.5 py-1.5 flex items-center gap-2.5 cursor-grab active:cursor-grabbing shadow-xl ring-1 ring-black/10 ${
-            hudState === 'recording' ? 'apple-pill-recording ring-1 ring-black/25' : ''
+          className={`apple-pill rounded-full px-3 py-1.5 flex items-center gap-2.5 cursor-grab active:cursor-grabbing ${
+            hudState === 'recording' ? 'apple-pill-recording' : ''
           }`}
         >
-          {/* Drag Handle */}
-          <div
-            className="text-neutral-300 hover:text-black transition-colors px-0.5"
-            title="Потяните для перемещения"
-          >
-            <GripVertical className="w-3.5 h-3.5" />
-          </div>
-
           {/* Record / Action Button */}
           <button
             onClick={handleToggleRecording}
-            className={`app-no-drag w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            className={`app-no-drag w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs ${
               hudState === 'recording'
-                ? 'bg-black text-white scale-105 ring-2 ring-black/10 shadow-sm'
+                ? 'bg-red-500 text-white scale-105 ring-2 ring-red-400/30'
                 : hudState === 'processing'
-                ? 'bg-neutral-100 text-black border border-black/10'
+                ? 'bg-white/70 text-black border border-black/10 backdrop-blur-md'
                 : hudState === 'success'
-                ? 'bg-black text-white'
+                ? 'bg-emerald-600 text-white'
                 : hudState === 'error'
                 ? 'bg-red-500 text-white'
                 : 'bg-black text-white hover:bg-neutral-800'
             }`}
-            title={isRecording ? 'Остановить запись' : 'Начать запись (Ctrl+~)'}
+            title={isRecording ? 'Остановить запись (Ctrl+~)' : 'Начать запись (Ctrl+~)'}
           >
             {hudState === 'processing' ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : hudState === 'recording' ? (
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
             ) : hudState === 'success' ? (
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
             ) : hudState === 'error' ? (
               <AlertCircle className="w-3.5 h-3.5" />
             ) : (
@@ -397,44 +381,40 @@ export const FloatingHud: React.FC = () => {
           </button>
 
           {/* Center Dynamic Content */}
-          <div className="flex items-center gap-2 min-w-[170px] max-w-[280px] overflow-hidden">
+          <div className="flex items-center gap-2 min-w-[150px] max-w-[260px] overflow-hidden">
             {hudState === 'recording' ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <Waveform volume={audioVolume} isRecording={isRecording} />
-                <span className="text-xs font-mono font-medium text-black">
+                <span className="text-xs font-mono font-semibold text-neutral-900 tracking-tight">
                   {formatSeconds(recordDuration)}
                 </span>
 
-                {selectionInfo.hasSelection ? (
-                  <span className="flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md font-semibold truncate max-w-[120px]" title={selectionInfo.snippet}>
-                    <Sparkles className="w-3 h-3 text-amber-500 animate-spin" />
+                {selectionInfo.hasSelection && (
+                  <span className="flex items-center gap-1 text-[10px] text-amber-900 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium truncate max-w-[100px]" title={selectionInfo.snippet}>
+                    <Sparkles className="w-2.5 h-2.5 text-amber-600 animate-spin" />
                     Редактор
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-neutral-500 truncate max-w-[95px]">
-                    {context.friendlyAppName || (context.processName ? context.processName.replace('.exe', '') : 'Слушаю...')}
                   </span>
                 )}
               </div>
             ) : hudState === 'processing' ? (
-              <div className="flex items-center gap-1.5 text-xs text-black font-medium">
-                <Sparkles className="w-3 h-3 animate-spin text-black" />
-                <span>{selectionInfo.hasSelection ? 'Редактирую текст...' : 'Обработка AI...'}</span>
+              <div className="flex items-center gap-2 text-xs text-neutral-900 font-medium">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-neutral-700" />
+                <span>{selectionInfo.hasSelection ? 'Редактирую...' : 'Обработка...'}</span>
               </div>
             ) : hudState === 'success' ? (
               <div className="flex items-center gap-2 text-xs truncate">
                 {latency && (
-                  <span className="px-1.5 py-0.5 rounded bg-black text-white font-mono text-[10px] font-semibold shrink-0">
+                  <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-white font-mono text-[10px] font-semibold shrink-0">
                     {latency}мс
                   </span>
                 )}
                 {savedMacroInfo ? (
-                  <span className="text-emerald-700 font-semibold truncate text-[11px] flex items-center gap-1">
+                  <span className="text-emerald-800 font-semibold truncate text-[11px] flex items-center gap-1">
                     <span>💾</span>
                     <span>Макрос: «{savedMacroInfo.trigger}»</span>
                   </span>
                 ) : (
-                  <span className="text-black font-medium truncate text-[11px]">
+                  <span className="text-neutral-900 font-medium truncate text-[11px]">
                     {isRewriteResult
                       ? 'Заменено!'
                       : textSnippet
@@ -449,19 +429,13 @@ export const FloatingHud: React.FC = () => {
               </span>
             ) : (
               <div className="flex items-center gap-2">
-                <GovoriLogo className="w-4 h-4" />
-                <span className="text-xs font-semibold text-black tracking-tight lowercase">
+                <GovoriLogo className="w-4 h-4 text-black shrink-0" />
+                <span className="text-xs font-semibold text-neutral-900 tracking-tight lowercase">
                   говори
                 </span>
-                {context.friendlyAppName ? (
-                  <span className="px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 text-[10px] font-medium truncate max-w-[95px]" title={context.windowTitle}>
-                    {context.friendlyAppName}
-                  </span>
-                ) : context.categoryLabel ? (
-                  <span className="px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 text-[10px] font-medium truncate max-w-[90px]">
-                    {context.categoryLabel}
-                  </span>
-                ) : null}
+                <span className="px-1.5 py-0.5 rounded-md bg-black/5 border border-black/5 text-neutral-500 font-mono text-[9px] font-semibold tracking-tight">
+                  Ctrl + ~
+                </span>
               </div>
             )}
           </div>
@@ -469,8 +443,8 @@ export const FloatingHud: React.FC = () => {
           {/* Quick Language Toggle */}
           <button
             onClick={cycleLanguage}
-            className="app-no-drag px-2 py-0.5 rounded-full bg-neutral-100 hover:bg-neutral-200/80 text-neutral-700 hover:text-black transition-colors font-mono text-[10px] font-bold tracking-tight cursor-pointer"
-            title={`Язык: ${currentLanguage.toUpperCase()} (нажмите для переключения RU / EN / AUTO)`}
+            className="app-no-drag px-2 py-0.5 rounded-full bg-black/5 hover:bg-black/10 text-neutral-800 hover:text-black transition-all font-mono text-[10px] font-bold tracking-tight cursor-pointer border border-black/5"
+            title={`Язык: ${currentLanguage.toUpperCase()} (нажмите для смены RU / EN / AUTO)`}
           >
             {currentLanguage.toUpperCase()}
           </button>
@@ -478,22 +452,11 @@ export const FloatingHud: React.FC = () => {
           {/* Quick Settings */}
           <button
             onClick={openSettings}
-            className="app-no-drag w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer"
+            className="app-no-drag w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:text-black hover:bg-black/5 transition-all cursor-pointer"
             title="Настройки"
           >
             <Settings className="w-3.5 h-3.5" />
           </button>
-
-          {/* Close/Dismiss Button (visible on hover or idle) */}
-          {hudState === 'idle' && (
-            <button
-              onClick={handleDismissManually}
-              className="app-no-drag w-5 h-5 rounded-full flex items-center justify-center text-neutral-300 hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer -ml-1"
-              title="Скрыть (Esc)"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
         </div>
       </div>
     </div>

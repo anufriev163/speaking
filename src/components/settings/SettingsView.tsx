@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Cpu, History, Globe } from 'lucide-react';
+import { Sliders, Cpu, BookmarkCheck, History } from 'lucide-react';
 import { GovoriLogo } from '../common/GovoriLogo';
 import { GeneralTab } from './GeneralTab';
 import { ProvidersTab } from './ProvidersTab';
+import { SnippetsTab } from './SnippetsTab';
 import { HistoryTab } from './HistoryTab';
-import { AppSettings, DictationHistoryItem } from '../../types';
+import { AppSettings, TextSnippet, DictationHistoryItem } from '../../types';
 
 export const SettingsView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'providers' | 'history'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'providers' | 'snippets' | 'history'>('general');
   const [settings, setSettings] = useState<AppSettings>({
     hotkey: 'Ctrl+~',
     mode: 'toggle',
@@ -24,6 +25,7 @@ export const SettingsView: React.FC = () => {
     handsFreeCommands: true,
     aiCorrection: true,
   });
+  const [snippets, setSnippets] = useState<TextSnippet[]>([]);
   const [history, setHistory] = useState<DictationHistoryItem[]>([]);
   const [savedBadge, setSavedBadge] = useState(false);
 
@@ -31,7 +33,14 @@ export const SettingsView: React.FC = () => {
     if (!window.govoriAPI) return;
 
     window.govoriAPI.getSettings().then((s: AppSettings) => s && setSettings(s));
+    window.govoriAPI.getSnippets().then((sn: TextSnippet[]) => sn && setSnippets(sn));
     window.govoriAPI.getHistory().then((h: DictationHistoryItem[]) => h && setHistory(h));
+
+    const unsubSnippets = (window.govoriAPI as any)?.onSnippetsChanged?.((sn: TextSnippet[]) => {
+      if (sn) setSnippets(sn);
+    });
+
+    return () => unsubSnippets?.();
   }, []);
 
   const handleUpdateSettings = async (updates: Partial<AppSettings>) => {
@@ -39,6 +48,15 @@ export const SettingsView: React.FC = () => {
     setSettings(next);
     if (window.govoriAPI) {
       await window.govoriAPI.updateSettings(updates);
+      setSavedBadge(true);
+      setTimeout(() => setSavedBadge(false), 1500);
+    }
+  };
+
+  const handleSaveSnippets = async (sn: TextSnippet[]) => {
+    setSnippets(sn);
+    if (window.govoriAPI) {
+      await window.govoriAPI.saveSnippets(sn);
       setSavedBadge(true);
       setTimeout(() => setSavedBadge(false), 1500);
     }
@@ -53,7 +71,8 @@ export const SettingsView: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'Главное', icon: Sliders },
-    { id: 'providers', label: 'ИИ-движок', icon: Cpu },
+    { id: 'providers', label: 'Нейросеть', icon: Cpu },
+    { id: 'snippets', label: 'Автозамена', icon: BookmarkCheck },
     { id: 'history', label: 'История', icon: History },
   ];
 
@@ -72,16 +91,6 @@ export const SettingsView: React.FC = () => {
             </span>
           )}
         </div>
-
-        <a
-          href="https://anufriev163.github.io/speaking/"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500 hover:text-black transition-colors px-2.5 py-1 rounded-lg hover:bg-neutral-100 cursor-pointer"
-        >
-          <Globe className="w-3.5 h-3.5 text-neutral-400" />
-          <span>Сайт проекта</span>
-        </a>
       </div>
 
       {/* Main Body */}
@@ -115,6 +124,9 @@ export const SettingsView: React.FC = () => {
           )}
           {activeTab === 'providers' && (
             <ProvidersTab settings={settings} onChange={handleUpdateSettings} />
+          )}
+          {activeTab === 'snippets' && (
+            <SnippetsTab snippets={snippets} onSave={handleSaveSnippets} />
           )}
           {activeTab === 'history' && (
             <HistoryTab history={history} onClear={handleClearHistory} />

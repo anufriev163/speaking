@@ -68,10 +68,10 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
     <div className="space-y-6 max-w-2xl">
       <div>
         <h3 className="text-xl font-semibold text-black tracking-tight mb-1">
-          Провайдеры распознавания
+          Нейросеть
         </h3>
         <p className="text-xs text-neutral-500">
-          Выберите движок транскрибации речи и настройте параметры доступа
+          Выберите, какая нейросеть будет переводить вашу речь в текст
         </p>
       </div>
 
