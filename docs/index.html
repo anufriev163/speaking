@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Говори — Голосовой ввод нового поколения для Windows и macOS</title>
-  <meta name="description" content="Мгновенный голосовой набор текста на базе Whisper Large-v3 и Llama 3.3 70B. В 10 раз быстрее клавиатуры. Без подписок и лимитов.">
+  <title>говори — Быстрый голосовой ввод для Windows и Mac</title>
+  <meta name="description" content="Умный голосовой ввод для компьютера. Нажал клавишу, сказал мысль — текст напечатан в любом окне.">
 
   <!-- OpenGraph -->
-  <meta property="og:title" content="Говори — Умный голосовой ввод со скоростью мысли">
-  <meta property="og:description" content="Умная диктовка речи с автоматической расстановкой пунктуации, удалением слов-паразитов и нативной вставкой в любые приложения.">
-  <meta property="og:type" content="website">
+  <meta property="og:title" content="говори — Голосовой ввод нового поколения">
+  <meta property="og:description" content="Бесплатная программа для диктовки с автоматической пунктуацией и мгновенной вставкой в любые приложения.">
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -19,331 +18,184 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="ambient-glow"></div>
 
   <!-- Header -->
   <header class="header">
-    <div class="container" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-      <a href="#" class="brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" x2="12" y1="19" y2="22"/>
-          </svg>
-        </div>
-        <span class="brand-name">говори</span>
-        <span class="brand-tag" id="release-version-badge">v1.0.1</span>
-      </a>
-
-      <nav class="nav-links">
-        <a href="#features" class="nav-link">Возможности</a>
-        <a href="#simulator" class="nav-link">Демо</a>
-        <a href="#installation" class="nav-link">Установка</a>
-        <a href="#faq" class="nav-link">Частые вопросы</a>
-      </nav>
-
-      <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer" class="github-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+    <div class="container header-content">
+      <a href="#" class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" x2="12" y1="19" y2="22"/>
         </svg>
-        <span>GitHub</span>
+        <span>говори</span>
+        <span class="logo-badge">v1.0.1</span>
       </a>
+
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <nav style="display: flex; gap: 20px;">
+          <a href="#how-it-works" class="nav-link">Как работает</a>
+          <a href="#features" class="nav-link">Возможности</a>
+          <a href="#faq" class="nav-link">FAQ</a>
+        </nav>
+        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer" class="btn-github">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
+  <!-- Hero -->
   <main class="container">
     <section class="hero">
-      <div class="badge-wrapper">
-        <span class="badge-dot"></span>
-        <span>Релиз v1.0.1 доступен для Windows и macOS</span>
+      <div class="hero-pill">
+        <span>● Релиз 1.0.1 доступен для скачивания</span>
       </div>
 
       <h1 class="hero-title">
-        Печатайте со скоростью мысли.<br>Голосом.
+        Печатайте голосом со скоростью мысли
       </h1>
 
-      <p class="hero-subtitle">
-        Интеллектуальная AI-диктовка на базе сверхбыстрого <strong>Groq Whisper v3</strong> и <strong>Llama 3.3</strong>. Без абонентской платы и лимитов минут.
+      <p class="hero-desc">
+        Нажмите горячую клавишу, надиктуйте текст — программа сама расставит точки, запятые, уберет оговорки и моментально вставит результат в любое открытое окно.
       </p>
 
-      <!-- CTA Buttons -->
-      <div class="cta-group">
-        <a id="btn-download-win" href="https://github.com/anufriev163/speaking/releases/latest/download/govori-setup-1.0.1.exe" class="btn-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.851"/>
-          </svg>
-          <span>Скачать для Windows (.exe)</span>
-        </a>
+      <div class="download-box">
+        <div class="buttons-row">
+          <!-- Direct download link for Windows -->
+          <a id="btn-win" href="https://github.com/anufriev163/speaking/releases/download/v1.0.1/govori-setup-1.0.1.exe" class="btn-download-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.851"/>
+            </svg>
+            <span>Скачать для Windows (84 МБ)</span>
+          </a>
 
-        <a id="btn-download-mac" href="https://github.com/anufriev163/speaking/releases/latest" class="btn-secondary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 0.6-2.65 1.35-.58.66-1.08 1.73-.95 2.76 1.01.08 2.05-.51 2.68-1.26z"/>
-          </svg>
-          <span>macOS (.dmg)</span>
-        </a>
-      </div>
-
-      <div class="platform-note">
-        <span id="detected-os">Определена система: Windows 10 / 11 (x64)</span>
-        <span>•</span>
-        <span>100% бесплатно и Open Source</span>
-      </div>
-
-      <!-- Interactive HUD Mockup -->
-      <div class="mockup-wrapper" id="simulator">
-        <div class="floating-hud">
-          <div class="hud-left">
-            <button class="hud-mic-btn" id="hud-mic-trigger" title="Нажмите, чтобы запустить симуляцию диктовки">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" x2="12" y1="19" y2="22"/>
-              </svg>
-            </button>
-            <div class="hud-details">
-              <div class="hud-status" id="hud-status-text">
-                <span>Готов к записи</span>
-              </div>
-              <div class="hud-meta" id="hud-latency-text">
-                Зажмите хоткей для диктовки
-              </div>
-            </div>
-          </div>
-
-          <!-- Animated Audio Waveform -->
-          <div class="waveform-bars" id="hud-waveform">
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-          </div>
-
-          <div class="hud-tags">
-            <span class="tag-badge" id="hud-app-context">Telegram</span>
-            <span class="tag-badge hotkey">Ctrl + ~</span>
-          </div>
+          <!-- GitHub Releases link for macOS -->
+          <a id="btn-mac" href="https://github.com/anufriev163/speaking/releases/latest" class="btn-download-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 0.6-2.65 1.35-.58.66-1.08 1.73-.95 2.76 1.01.08 2.05-.51 2.68-1.26z"/>
+            </svg>
+            <span>macOS (.dmg)</span>
+          </a>
         </div>
+        <div class="version-note">
+          Поддержка Windows 10/11 и macOS • Бесплатно и с открытым исходным кодом
+        </div>
+      </div>
 
-        <!-- Live Transformation Preview -->
-        <div class="sim-window">
-          <div class="sim-header">
-            <span>Симуляция интеллектуальной обработки в реальном времени</span>
-            <span style="color:#818cf8; cursor:pointer" onclick="document.getElementById('hud-mic-trigger').click()">Нажмите микрофон для смены примера ⟳</span>
-          </div>
-          <div class="sim-body">
-            <div class="sim-col sim-raw">
-              <div class="sim-label">Сырая речь (как слышит микрофон)</div>
-              <div class="sim-text" id="sim-raw-text">Слушаю речь...</div>
-            </div>
-            <div class="sim-col sim-cleaned">
-              <div class="sim-label">Финальный результат (что вставляется в окно)</div>
-              <div class="sim-text" id="sim-clean-text">Ожидание завершения фразы...</div>
-            </div>
-          </div>
+      <!-- SmartScreen info banner -->
+      <div class="alert-card info" style="text-align: left; max-width: 680px; margin: 0 auto;">
+        <div class="alert-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>Подсказка для первого запуска на Windows:</span>
+        </div>
+        <div class="alert-desc">
+          Если Windows покажет синее окно защиты <em>«Система защитила ваш компьютер»</em>, нажмите <strong>«Подробнее»</strong> ➔ <strong>«Выполнить в любом случае»</strong>. Это обычное поведение для новых независимых программ без платного сертификата Microsoft.
         </div>
       </div>
     </section>
 
-    <!-- Benchmarks -->
-    <section class="benchmarks">
-      <div class="benchmarks-grid">
-        <div class="benchmark-card">
-          <div class="stat-value cyan">200 мс</div>
-          <div class="stat-label">Скорость распознавания на LPU-чипах Groq</div>
+    <!-- How it works (3 steps) -->
+    <section class="steps-section" id="how-it-works">
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">01. СКАЧАЛ</div>
+          <div class="step-title">Установил в 1 клик</div>
+          <div class="step-desc">Скачайте и запустите установщик. Программа добавит компактный значок в трей и виджет.</div>
         </div>
-        <div class="benchmark-card">
-          <div class="stat-value purple">14 400</div>
-          <div class="stat-label">Бесплатных запросов в день по вашему ключу</div>
+
+        <div class="step-card">
+          <div class="step-num">02. ЗАЖАЛ</div>
+          <div class="step-title">Нажал клавишу <span class="hotkey-kbd">Ctrl + ~</span></div>
+          <div class="step-desc">В любом окне (Telegram, Word, браузер, код) зажмите комбинацию и говорите то, что думаете.</div>
         </div>
-        <div class="benchmark-card">
-          <div class="stat-value emerald">100%</div>
-          <div class="stat-label">Приватность и аппаратное шифрование ключей</div>
+
+        <div class="step-card">
+          <div class="step-num">03. ВСТАВИЛОСЬ</div>
+          <div class="step-title">Текст уже напечатан</div>
+          <div class="step-desc">Отпустите клавишу — идеальный текст с пунктуацией и без слов-паразитов появится в поле ввода.</div>
         </div>
       </div>
     </section>
 
-    <!-- Features Section -->
-    <section class="features" id="features">
-      <div class="section-header">
-        <div class="section-tag">Преимущества</div>
-        <h2 class="section-title">Создан для максимальной продуктивности</h2>
-        <p class="section-desc">Никаких компромиссов: ультрабыстрый отклик, идеальная пунктуация и полный контроль над данными.</p>
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="section-head">
+        <h2 class="section-title">Почему «говори» удобнее аналогов</h2>
+        <p class="section-subtitle">Простота, скорость и полная независимость от платных подписок.</p>
       </div>
 
       <div class="features-grid">
-        <!-- Card 1 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Push-to-Talk (Удержание)</h3>
-          <p class="feature-desc">Зажали клавишу — надиктовали мысль — отпустили. Текст моментально напечатался в активное окно без лишних кликов.</p>
+        <div class="feature-box">
+          <span class="feature-tag">СКОРОСТЬ &lt; 300 МС</span>
+          <h3 class="feature-heading">Моментальный отклик</h3>
+          <p class="feature-text">Распознавание речи работает на базе движка Whisper Large v3 через чипы Groq LPU — текст печатается почти без задержки.</p>
         </div>
 
-        <!-- Card 2 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9"/>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">AI-корректор (Llama 3.3 70B)</h3>
-          <p class="feature-desc">Удаляет слова-паразиты («эээ», «нуу», «типа»), оговорки и автоматически расставляет знаки препинания под стиль общения.</p>
+        <div class="feature-box">
+          <span class="feature-tag">БЕЗ АБОНЕНТСКОЙ ПЛАТЫ</span>
+          <h3 class="feature-heading">14 400 запросов в день бесплатно</h3>
+          <p class="feature-text">Работает по модели своего бесплатного ключа Groq (получается за минуту без банковской карты). Никаких тарифов по 15$ в месяц.</p>
         </div>
 
-        <!-- Card 3 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="18" height="18" x="3" y="3" rx="2"/>
-              <path d="M3 9h18"/>
-              <path d="M9 21V9"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Вставка в любые приложения</h3>
-          <p class="feature-desc">Интеграция через Win32 API и AppleScript. Работает в Telegram, VS Code, Notion, Microsoft Word, браузерах и терминалах.</p>
+        <div class="feature-box">
+          <span class="feature-tag">УМНАЯ ПУНКТУАЦИЯ</span>
+          <h3 class="feature-heading">Очистка от паразитов</h3>
+          <p class="feature-text">ИИ убирает заикания, запинки («эээ», «типа», «ну»), исправляет оговорки на лету и расставляет знаки препинания под контекст.</p>
         </div>
 
-        <!-- Card 4 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Аппаратное шифрование ключей</h3>
-          <p class="feature-desc">Ключи доступа защищены системным DPAPI (Windows) и Keychain (macOS). Никаких открытых конфигурационных файлов.</p>
+        <div class="feature-box">
+          <span class="feature-tag">ВЕЗДЕХОД</span>
+          <h3 class="feature-heading">Работает в любом софте</h3>
+          <p class="feature-text">Нативная вставка символов через Win32 API и AppleScript. Поддерживает мессенджеры, редакторы кода, таблицы и браузеры.</p>
         </div>
 
-        <!-- Card 5 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="2" x2="22" y1="12" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Офлайн-режим (Faster-Whisper)</h3>
-          <p class="feature-desc">Возможность локальной транскрибации прямо на вашем процессоре или видеокарте без интернета для конфиденциальных данных.</p>
+        <div class="feature-box">
+          <span class="feature-tag">БЕЗОПАСНОСТЬ</span>
+          <h3 class="feature-heading">Аппаратное шифрование</h3>
+          <p class="feature-text">Ключи хранятся в защищенном хранилище Windows DPAPI / Keychain. Голосовые записи не сохраняются на серверах.</p>
         </div>
 
-        <!-- Card 6 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Голосовые макросы и словарь</h3>
-          <p class="feature-desc">Сложные IT-термины, названия компаний и личные сниппеты (шаблоны писем, email, реквизиты) по одной голосовой команде.</p>
+        <div class="feature-box">
+          <span class="feature-tag">ОФЛАЙН РЕЖИМ</span>
+          <h3 class="feature-heading">Работает без интернета</h3>
+          <p class="feature-text">Если вам нужна 100% изоляция данных, включите локальный движок Faster-Whisper, работающий прямо на процессоре вашего ПК.</p>
         </div>
       </div>
     </section>
 
-    <!-- Install & SmartScreen Section -->
-    <section class="install-section" id="installation">
-      <div class="guide-box">
-        <div>
-          <div class="section-tag">Простая установка</div>
-          <h3 style="font-size: 26px; font-weight: 800; margin-bottom: 12px;">Быстрый старт за 2 минуты</h3>
-          <div class="guide-steps">
-            <div class="step-item">
-              <span class="step-number">1</span>
-              <span>Скачайте установщик <strong>говори.exe</strong> (или .dmg для Mac) и запустите его.</span>
-            </div>
-            <div class="step-item">
-              <span class="step-number">2</span>
-              <span>Получите бесплатный ключ на <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style="color:#38bdf8; text-decoration: underline;">console.groq.com</a> (без банковской карты).</span>
-            </div>
-            <div class="step-item">
-              <span class="step-number">3</span>
-              <span>Вставьте ключ в окно настроек «Говори». Нажмите <strong>Ctrl + ~</strong> в любом окне и говорите!</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="smartscreen-alert">
-          <h4>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <span>Предупреждение Windows SmartScreen</span>
-          </h4>
-          <p>
-            Так как проект новый и с открытым исходным кодом, при первом запуске Windows может показать синее окно: <em>«Система защитила ваш компьютер»</em>.
-          </p>
-          <p style="margin-top: 8px; color: #f8fafc; font-weight: 600;">
-            Нажмите: <u>«Подробнее»</u> ➔ <u>«Выполнить в любом случае»</u>.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="faq-section" id="faq">
-      <div class="section-header">
-        <div class="section-tag">Вопросы и ответы</div>
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="section-head">
         <h2 class="section-title">Часто задаваемые вопросы</h2>
       </div>
 
       <div class="faq-list">
         <div class="faq-item">
-          <div class="faq-question">
-            <span>Действительно ли это бесплатно?</span>
-            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            Да. Программа работает по модели BYOK (Bring Your Own Key). Облачный провайдер Groq Cloud предоставляет бесплатный тир до 14 400 запросов в день без необходимости привязывать банковскую карту. Для 99% пользователей этого хватает с огромным запасом.
-          </div>
+          <div class="faq-q">Где взять ключ Groq и платный ли он?</div>
+          <div class="faq-a">Ключ абсолютно бесплатный. Перейдите на <strong>console.groq.com/keys</strong>, войдите через Google/GitHub и скопируйте ключ (начинается на <code>gsk_...</code>). Банковская карта не требуется.</div>
         </div>
 
         <div class="faq-item">
-          <div class="faq-question">
-            <span>Куда сохраняются мои записи и звук?</span>
-            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            Аудиозаписи не сохраняются на диске и удаляются из оперативной памяти сразу после транскрибации. Текстовая история диктовок хранится исключительно локально на вашем ПК в файле конфигурации и никогда не отправляется третьим лицам.
-          </div>
+          <div class="faq-q">Какие горячие клавиши по умолчанию?</div>
+          <div class="faq-a">По умолчанию используется комбинация <strong>Ctrl + ~</strong> (клавиша под Esc, где буква «Ё»). В настройках можно переключить режим на удержание (Push-to-Talk) или одиночный клик.</div>
         </div>
 
         <div class="faq-item">
-          <div class="faq-question">
-            <span>Как работает режим Push-to-Talk?</span>
-            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            В настройках переключите режим на «Удержание (PTT)». Теперь запись идет ровно столько, сколько зажата комбинация клавиш (по умолчанию Ctrl + ~). Как только вы отпустили клавишу, запись завершается и текст вставляется в активное поле ввода.
-          </div>
+          <div class="faq-q">Куда сохраняются мои записи?</div>
+          <div class="faq-a">Звук никуда не сохраняется и удаляется сразу после распознавания. Текстовая история хранится только локально на вашем компьютере.</div>
         </div>
 
         <div class="faq-item">
-          <div class="faq-question">
-            <span>Как программа обновляется?</span>
-            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            В приложении есть встроенный автоапдейтер. При появлении новой версии в трее или в окне настроек появится уведомление, и программа обновится в один клик.
-          </div>
+          <div class="faq-q">Будет ли программа обновляться сама?</div>
+          <div class="faq-a">Да, встроен автоматический апдейтер: при выходе новых версий в приложении появится кнопка «Обновить в 1 клик».</div>
         </div>
       </div>
     </section>
@@ -351,18 +203,28 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <div class="container footer-content">
+    <div class="container footer-inner">
       <div>
-        © 2026 <strong>говори</strong> • Сделано для быстрой и свободной работы с текстом
+        © 2026 <strong>говори</strong> • Просто, быстро и бесплатно
       </div>
       <div class="footer-links">
-        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://github.com/anufriev163/speaking/releases" target="_blank" rel="noreferrer">Релизы</a>
-        <a href="https://github.com/anufriev163/speaking/blob/main/LICENSE" target="_blank" rel="noreferrer">Лицензия MIT</a>
+        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer">GitHub репозиторий</a>
+        <a href="https://github.com/anufriev163/speaking/releases/latest" target="_blank" rel="noreferrer">Релизы</a>
       </div>
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <script>
+    // Simple OS detection to highlight button
+    (function() {
+      const isMac = navigator.userAgent.toLowerCase().includes('mac');
+      const winBtn = document.getElementById('btn-win');
+      const macBtn = document.getElementById('btn-mac');
+      if (isMac && macBtn && winBtn) {
+        macBtn.className = 'btn-download-primary';
+        winBtn.className = 'btn-download-secondary';
+      }
+    })();
+  </script>
 </body>
 </html>
