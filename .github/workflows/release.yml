@@ -11,7 +11,10 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Check out Git repository
@@ -26,7 +29,14 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build and Publish
+      - name: Build and Publish (Windows)
+        if: matrix.os == 'windows-latest'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist -- -p always
+        run: npm run dist -- --win -p always
+
+      - name: Build and Publish (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist -- --mac -p always

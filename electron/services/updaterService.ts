@@ -29,6 +29,17 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
     updateState.version = app.getVersion() || '1.0.0';
   } catch {}
 
+  // Explicitly configure GitHub feed URL to ensure correct target repo
+  try {
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'anufriev163',
+      repo: 'speaking'
+    });
+  } catch (err) {
+    console.warn('[AutoUpdater] Failed to set explicit feed URL:', err);
+  }
+
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 

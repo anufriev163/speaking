@@ -5,20 +5,28 @@ import { AppSettings, CustomWord, TextSnippet, DictationHistoryItem } from '../.
 
 function encryptSecret(secret: string): string {
   if (!secret) return '';
-  if (secret.startsWith('enc:')) return secret;
+  if (secret.startsWith('enc:') || secret.startsWith('b64:')) return secret;
   try {
     if (safeStorage && safeStorage.isEncryptionAvailable()) {
       const encryptedBuffer = safeStorage.encryptString(secret);
       return 'enc:' + encryptedBuffer.toString('base64');
     }
   } catch (err) {
-    console.warn('[Storage] Encryption unavailable, fallback to plain:', err);
+    console.warn('[Storage] Encryption unavailable, fallback to base64 obfuscation:', err);
   }
-  return secret;
+  // Safe fallback if safeStorage is not available on this platform/session
+  return 'b64:' + Buffer.from(secret, 'utf-8').toString('base64');
 }
 
 function decryptSecret(val: string): string {
   if (!val) return '';
+  if (val.startsWith('b64:')) {
+    try {
+      return Buffer.from(val.slice(4), 'base64').toString('utf-8');
+    } catch {
+      return val.slice(4);
+    }
+  }
   if (!val.startsWith('enc:')) return val;
   try {
     if (safeStorage && safeStorage.isEncryptionAvailable()) {
@@ -26,9 +34,11 @@ function decryptSecret(val: string): string {
       return safeStorage.decryptString(buffer);
     }
   } catch (err) {
-    console.warn('[Storage] Decryption failed:', err);
+    console.warn('[Storage] Decryption failed or not ready:', err);
   }
-  return '';
+  // CRITICAL: If safeStorage is not yet initialized or failed, NEVER return empty string!
+  // Return the original encrypted value so it is NOT overwritten or destroyed.
+  return val;
 }
 
 interface AppData {
@@ -79,19 +89,45 @@ class StorageService {
   private data: AppData;
 
   constructor() {
-    let userDataPath = process.env.APPDATA ? path.join(process.env.APPDATA, 'govori') : process.cwd();
-    if (app?.getPath) {
-      try {
-        const appPath = app.getPath('userData');
-        if (fs.existsSync(path.join(appPath, 'govori-data.json'))) {
-          userDataPath = appPath;
-        }
-      } catch {
-        // Fallback to process.env.APPDATA
+    this.filePath = this.resolveFilePath();
+    this.data = this.loadData();
+  }
+
+  private resolveFilePath(): string {
+    let dir = '';
+    try {
+      if (app && typeof app.getPath === 'function') {
+        dir = app.getPath('userData');
+      }
+    } catch {}
+
+    if (!dir) {
+      if (process.platform === 'win32' && process.env.APPDATA) {
+        dir = path.join(process.env.APPDATA, 'govori');
+      } else if (process.platform === 'darwin') {
+        const home = process.env.HOME || '';
+        dir = path.join(home, 'Library', 'Application Support', 'govori');
+      } else {
+        const home = process.env.HOME || '';
+        dir = path.join(home, '.config', 'govori');
       }
     }
-    this.filePath = path.join(userDataPath, 'govori-data.json');
-    this.data = this.loadData();
+
+    // Check if legacy file exists in APPDATA/govori
+    if (process.platform === 'win32' && process.env.APPDATA) {
+      const legacyPath = path.join(process.env.APPDATA, 'govori', 'govori-data.json');
+      if (fs.existsSync(legacyPath) && !fs.existsSync(path.join(dir, 'govori-data.json'))) {
+        return legacyPath;
+      }
+    }
+
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    } catch {}
+
+    return path.join(dir, 'govori-data.json');
   }
 
   private loadData(): AppData {
@@ -101,7 +137,8 @@ class StorageService {
         const parsed = JSON.parse(raw);
         const settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
 
-        // Decrypt secrets if encrypted with safeStorage
+        // Do not eagerly destroy keys if decryption isn't ready.
+        // We will decrypt lazily in getSettings().
         if (settings.groqApiKey) settings.groqApiKey = decryptSecret(settings.groqApiKey);
         if (settings.openaiApiKey) settings.openaiApiKey = decryptSecret(settings.openaiApiKey);
         if (settings.deepgramApiKey) settings.deepgramApiKey = decryptSecret(settings.deepgramApiKey);
@@ -138,20 +175,42 @@ class StorageService {
         settings: clonedSettings
       };
 
-      fs.writeFileSync(this.filePath, JSON.stringify(toSave, null, 2), 'utf-8');
+      const tempPath = `${this.filePath}.tmp`;
+      fs.writeFileSync(tempPath, JSON.stringify(toSave, null, 2), 'utf-8');
+      fs.renameSync(tempPath, this.filePath);
     } catch (err) {
       console.error('[Storage] Error saving data:', err);
     }
   }
 
   getSettings(): AppSettings {
-    return this.data.settings;
+    // Lazily decrypt any secrets if they were loaded before safeStorage became ready
+    const s = this.data.settings;
+    if (s.groqApiKey && (s.groqApiKey.startsWith('enc:') || s.groqApiKey.startsWith('b64:'))) {
+      const dec = decryptSecret(s.groqApiKey);
+      if (dec && !dec.startsWith('enc:') && !dec.startsWith('b64:')) {
+        s.groqApiKey = dec;
+      }
+    }
+    if (s.openaiApiKey && (s.openaiApiKey.startsWith('enc:') || s.openaiApiKey.startsWith('b64:'))) {
+      const dec = decryptSecret(s.openaiApiKey);
+      if (dec && !dec.startsWith('enc:') && !dec.startsWith('b64:')) {
+        s.openaiApiKey = dec;
+      }
+    }
+    if (s.deepgramApiKey && (s.deepgramApiKey.startsWith('enc:') || s.deepgramApiKey.startsWith('b64:'))) {
+      const dec = decryptSecret(s.deepgramApiKey);
+      if (dec && !dec.startsWith('enc:') && !dec.startsWith('b64:')) {
+        s.deepgramApiKey = dec;
+      }
+    }
+    return { ...this.data.settings };
   }
 
   updateSettings(settings: Partial<AppSettings>): AppSettings {
     this.data.settings = { ...this.data.settings, ...settings };
     this.save();
-    return this.data.settings;
+    return this.getSettings();
   }
 
   getDictionary(): CustomWord[] {

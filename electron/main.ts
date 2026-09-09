@@ -365,8 +365,11 @@ function registerHotkeys() {
   stopPttPolling();
   globalShortcut.unregisterAll();
 
-  // On Windows, Control+~ or Control+` covers both US and RU layout (Ctrl+ё)
-  const primaryKeys = ['Control+`', 'Control+~'];
+  // On Windows Control+~ / Control+`, on macOS CommandOrControl+~
+  const isMac = process.platform === 'darwin';
+  const primaryKeys = isMac
+    ? ['CommandOrControl+`', 'CommandOrControl+~', 'Option+Space']
+    : ['Control+`', 'Control+~'];
   let registered = false;
 
   for (const key of primaryKeys) {
