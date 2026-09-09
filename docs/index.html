@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>говори — Быстрый голосовой ввод для Windows и Mac</title>
-  <meta name="description" content="Умный голосовой ввод для компьютера. Нажал клавишу, надиктовал мысль — текст напечатан в любом окне.">
+  <meta name="description" content="Умный голосовой ввод для компьютера. Нажал клавишу, надиктовал мысль — чистый текст с пунктуацией напечатан в любом окне.">
 
   <!-- OpenGraph -->
   <meta property="og:title" content="говори — Голосовой ввод нового поколения">
-  <meta property="og:description" content="Бесплатная программа для диктовки с автоматической пунктуацией и мгновенной вставкой в любые приложения.">
+  <meta property="og:description" content="Бесплатная программа для диктовки с автоматической пунктуацией, очисткой от оговорок и мгновенной вставкой в любые приложения.">
+  <meta property="og:type" content="website">
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,9 +25,11 @@
       --text-muted: #64748b;
       --text-light: #94a3b8;
       --border: #e2e8f0;
-      --border-hover: #09090b;
+      --border-dark: #09090b;
       --accent-blue: #2563eb;
       --accent-blue-hover: #1d4ed8;
+      --accent-blue-light: #eff6ff;
+      --accent-blue-border: #bfdbfe;
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
@@ -38,27 +41,47 @@
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #ffffff !important;
-      color: #09090b !important;
+      background-color: var(--bg) !important;
+      color: var(--text-main) !important;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     .container {
-      max-width: 980px;
+      max-width: 960px;
       margin: 0 auto;
       padding: 0 24px;
+    }
+
+    /* Micro-animation transitions */
+    .fade-in-section {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .fade-in-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     /* Header */
     .header {
       border-bottom: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.98);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
       z-index: 50;
+      transition: border-color 0.2s;
     }
 
     .header-content {
@@ -73,21 +96,31 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
-      color: #09090b;
+      color: var(--text-main);
       font-weight: 700;
       font-size: 18px;
       letter-spacing: -0.02em;
+      transition: transform 0.15s;
+    }
+
+    .logo:hover {
+      transform: scale(1.02);
     }
 
     .logo-badge {
       font-size: 11px;
-      background: #eff6ff;
-      border: 1px solid #dbeafe;
+      background: var(--accent-blue-light);
+      border: 1px solid var(--accent-blue-border);
       padding: 2px 8px;
       border-radius: 20px;
-      color: #2563eb;
+      color: var(--accent-blue);
       font-weight: 600;
       font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
     }
 
     .nav-link {
@@ -99,7 +132,7 @@
     }
 
     .nav-link:hover {
-      color: #09090b;
+      color: var(--text-main);
     }
 
     .btn-github {
@@ -110,66 +143,86 @@
       background: var(--bg-subtle);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      color: #09090b;
+      color: var(--text-main);
       text-decoration: none;
       font-size: 13px;
       font-weight: 600;
-      transition: all 0.15s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .btn-github:hover {
-      border-color: #09090b;
+      border-color: var(--border-dark);
+      transform: translateY(-1px);
     }
 
     /* Hero */
     .hero {
-      padding: 60px 0 45px;
+      padding: 55px 0 35px;
       text-align: center;
     }
 
     .hero-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      background: #eff6ff;
-      border: 1px solid #dbeafe;
+      gap: 8px;
+      padding: 5px 14px;
+      background: var(--accent-blue-light);
+      border: 1px solid var(--accent-blue-border);
       border-radius: 20px;
-      color: #2563eb;
+      color: var(--accent-blue);
       font-size: 13px;
       font-weight: 600;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
+      transition: transform 0.2s;
+    }
+
+    .hero-pill:hover {
+      transform: translateY(-1px);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--accent-blue);
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(37, 99, 235, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
     }
 
     .hero-title {
-      font-size: clamp(34px, 5.5vw, 54px);
+      font-size: clamp(34px, 5.5vw, 56px);
       font-weight: 800;
       letter-spacing: -0.04em;
       line-height: 1.12;
-      color: #09090b;
-      margin-bottom: 16px;
+      color: var(--text-main);
+      margin-bottom: 18px;
     }
 
     .hero-desc {
       font-size: 17px;
-      color: #475569;
-      max-width: 600px;
+      color: var(--text-muted);
+      max-width: 620px;
       margin: 0 auto 32px;
       line-height: 1.55;
     }
 
-    /* Actions */
+    /* Download Box */
     .download-box {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 32px;
+      gap: 16px;
+      margin-bottom: 30px;
     }
 
     .buttons-row {
       display: flex;
-      align-items: center;
       gap: 12px;
       flex-wrap: wrap;
       justify-content: center;
@@ -179,75 +232,285 @@
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      background: #2563eb;
+      background: var(--accent-blue);
       color: #ffffff !important;
-      padding: 14px 28px;
-      border-radius: var(--radius-md);
-      font-size: 15px;
-      font-weight: 600;
       text-decoration: none;
-      transition: all 0.15s ease;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+      padding: 13px 24px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
     }
 
     .btn-download-primary:hover {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+      background: var(--accent-blue-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.32);
+    }
+
+    .btn-download-primary:active {
+      transform: translateY(0);
     }
 
     .btn-download-secondary {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       background: #ffffff;
-      color: #09090b;
-      padding: 14px 22px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
+      color: var(--text-main) !important;
       border: 1px solid var(--border);
-      transition: all 0.15s ease;
+      text-decoration: none;
+      padding: 13px 22px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .btn-download-secondary:hover {
-      border-color: #09090b;
-      background: var(--bg-subtle);
+      border-color: var(--border-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
-    .version-note {
+    .btn-download-secondary:active {
+      transform: translateY(0);
+    }
+
+    .trust-badges {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .trust-badge-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Interactive Live Demo Widget */
+    .demo-container {
+      margin: 36px auto 10px;
+      max-width: 680px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+      text-align: left;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .demo-container:hover {
+      border-color: #cbd5e1;
+    }
+
+    .demo-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .demo-app-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .demo-interactive-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .demo-interactive-btn:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      background: var(--accent-blue-light);
+    }
+
+    .demo-interactive-btn.recording {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #dc2626;
+      animation: pulse-red 1.2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    .demo-soundwave {
+      display: none;
+      align-items: center;
+      gap: 3px;
+      height: 16px;
+    }
+
+    .demo-soundwave.active {
+      display: inline-flex;
+    }
+
+    .soundwave-bar {
+      width: 3px;
+      background: #dc2626;
+      border-radius: 2px;
+      animation: wave 0.8s ease-in-out infinite alternate;
+    }
+
+    .soundwave-bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+    .soundwave-bar:nth-child(2) { height: 14px; animation-delay: 0.25s; }
+    .soundwave-bar:nth-child(3) { height: 10px; animation-delay: 0.15s; }
+    .soundwave-bar:nth-child(4) { height: 16px; animation-delay: 0.35s; }
+    .soundwave-bar:nth-child(5) { height: 8px; animation-delay: 0.2s; }
+
+    @keyframes wave {
+      0% { transform: scaleY(0.4); }
+      100% { transform: scaleY(1); }
+    }
+
+    .demo-editor {
+      min-height: 84px;
+      font-size: 15px;
+      color: var(--text-main);
+      line-height: 1.6;
+      border-radius: var(--radius-sm);
+      position: relative;
+    }
+
+    .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: var(--accent-blue);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .demo-footnote {
+      margin-top: 14px;
       font-size: 12px;
       color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    /* 3 Steps Visual */
+    /* Collapsible Details/Accordion Cards */
+    .collapsible-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #ffffff;
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .collapsible-card:hover {
+      border-color: #cbd5e1;
+    }
+
+    .collapsible-card[open] {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .collapsible-header {
+      padding: 16px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      list-style: none;
+    }
+
+    .collapsible-header::-webkit-details-marker {
+      display: none;
+    }
+
+    .collapsible-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .collapsible-card[open] .collapsible-icon {
+      transform: rotate(180deg);
+      color: var(--accent-blue);
+    }
+
+    .collapsible-body {
+      padding: 0 20px 18px;
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.6;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 2px;
+    }
+
+    /* Steps Section */
     .steps-section {
-      padding: 20px 0 50px;
+      padding: 45px 0 35px;
     }
 
     .steps-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
     }
 
     .step-card {
-      background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 24px;
-      transition: border-color 0.15s;
+      padding: 22px;
+      background: #ffffff;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .step-card:hover {
-      border-color: #09090b;
+      border-color: var(--border-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
     }
 
     .step-num {
       font-size: 12px;
       font-weight: 700;
-      color: #2563eb;
+      color: var(--accent-blue);
       font-family: 'JetBrains Mono', monospace;
       margin-bottom: 8px;
     }
@@ -255,7 +518,7 @@
     .step-title {
       font-size: 16px;
       font-weight: 700;
-      color: #09090b;
+      color: var(--text-main);
       margin-bottom: 6px;
     }
 
@@ -268,13 +531,13 @@
     .hotkey-kbd {
       display: inline-block;
       padding: 2px 6px;
-      background: #ffffff;
+      background: var(--bg-subtle);
       border: 1px solid var(--border);
       border-radius: 4px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       font-weight: 600;
-      color: #09090b;
+      color: var(--text-main);
     }
 
     /* Features Grid */
@@ -292,13 +555,13 @@
       font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.03em;
-      color: #09090b;
+      color: var(--text-main);
       margin-bottom: 8px;
     }
 
     .section-subtitle {
       font-size: 15px;
-      color: #475569;
+      color: var(--text-muted);
     }
 
     .features-grid {
@@ -312,28 +575,29 @@
       border-radius: var(--radius-md);
       padding: 22px;
       background: #ffffff;
-      transition: all 0.15s;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .feature-box:hover {
-      border-color: #09090b;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      border-color: var(--border-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
     }
 
     .feature-tag {
-      display: inline-block;
       font-size: 11px;
-      font-weight: 600;
-      color: #2563eb;
-      margin-bottom: 8px;
+      font-weight: 700;
+      color: var(--accent-blue);
       font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+      display: block;
     }
 
     .feature-heading {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 700;
-      margin-bottom: 6px;
-      color: #09090b;
+      color: var(--text-main);
+      margin-bottom: 8px;
     }
 
     .feature-text {
@@ -342,66 +606,10 @@
       line-height: 1.55;
     }
 
-    /* Alert Banner */
-    .alert-card {
-      margin: 20px auto 30px;
-      padding: 20px;
-      border-radius: var(--radius-md);
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      max-width: 680px;
-      text-align: left;
-    }
-
-    .alert-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #09090b;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .alert-desc {
-      font-size: 13px;
-      color: #475569;
-      line-height: 1.5;
-    }
-
-    /* FAQ */
-    .faq-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    .faq-item {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: #ffffff;
-      padding: 16px 20px;
-    }
-
-    .faq-q {
-      font-size: 14px;
-      font-weight: 700;
-      color: #09090b;
-      margin-bottom: 6px;
-    }
-
-    .faq-a {
-      font-size: 13px;
-      color: #475569;
-      line-height: 1.55;
-    }
-
     /* Footer */
     .footer {
       border-top: 1px solid var(--border);
-      padding: 32px 0;
+      padding: 36px 0;
       margin-top: 40px;
       font-size: 13px;
       color: var(--text-muted);
@@ -418,17 +626,18 @@
 
     .footer-links {
       display: flex;
-      gap: 18px;
+      gap: 20px;
     }
 
     .footer-links a {
-      color: #09090b;
+      color: var(--text-main);
       text-decoration: none;
       font-weight: 500;
+      transition: color 0.15s;
     }
 
     .footer-links a:hover {
-      color: #2563eb;
+      color: var(--accent-blue);
     }
 
     @media (max-width: 640px) {
@@ -442,6 +651,9 @@
       .btn-download-primary, .btn-download-secondary {
         width: 100%;
         justify-content: center;
+      }
+      .steps-grid {
+        grid-template-columns: 1fr;
       }
       .header-content nav {
         display: none;
@@ -465,9 +677,10 @@
       </a>
 
       <div style="display: flex; align-items: center; gap: 20px;">
-        <nav style="display: flex; gap: 20px;">
+        <nav class="nav-links">
+          <a href="#demo" class="nav-link">Демо</a>
           <a href="#how-it-works" class="nav-link">Как работает</a>
-          <a href="#features" class="nav-link">Возможности</a>
+          <a href="#features" class="nav-link">Преимущества</a>
           <a href="#faq" class="nav-link">FAQ</a>
         </nav>
         <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer" class="btn-github">
@@ -480,11 +693,12 @@
     </div>
   </header>
 
-  <!-- Hero -->
+  <!-- Main Hero -->
   <main class="container">
-    <section class="hero">
+    <section class="hero fade-in-section">
       <div class="hero-pill">
-        <span>● Релиз 1.0.2 доступен для скачивания</span>
+        <span class="pulse-dot"></span>
+        <span>Релиз 1.0.2 доступен • Windows и macOS</span>
       </div>
 
       <h1 class="hero-title">
@@ -492,7 +706,7 @@
       </h1>
 
       <p class="hero-desc">
-        Нажмите горячую клавишу, надиктуйте текст — программа сама расставит точки, запятые, уберет оговорки и моментально вставит результат в любое открытое окно.
+        Нажмите клавишу в любом приложении, надиктуйте мысль — ИИ уберёт оговорки, расставит пунктуацию и мгновенно напечатает идеальный текст.
       </p>
 
       <div class="download-box">
@@ -510,55 +724,104 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 0.6-2.65 1.35-.58.66-1.08 1.73-.95 2.76 1.01.08 2.05-.51 2.68-1.26z"/>
             </svg>
-            <span>Скачать для macOS (.dmg 110 МБ)</span>
+            <span>macOS (.dmg 110 МБ)</span>
           </a>
         </div>
-        <div class="version-note">
-          Поддержка Windows 10/11 и macOS • Бесплатно и с открытым исходным кодом
+
+        <div class="trust-badges">
+          <div class="trust-badge-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>100% бесплатно и без подписок</span>
+          </div>
+          <div class="trust-badge-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Открытый исходный код</span>
+          </div>
+          <div class="trust-badge-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Локальная конфиденциальность</span>
+          </div>
         </div>
       </div>
 
-      <!-- SmartScreen info banner -->
-      <div class="alert-card">
-        <div class="alert-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-          <span>Подсказка для первого запуска на Windows:</span>
+      <!-- Collapsible First Run Instructions (Folded by default) -->
+      <details class="collapsible-card" style="max-width: 680px; margin: 0 auto; text-align: left;">
+        <summary class="collapsible-header">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Подсказка по первому запуску (Windows SmartScreen / Mac Gatekeeper)
+          </span>
+          <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="collapsible-body">
+          <p style="margin-bottom: 8px;">Так как «говори» — это бесплатное независимое Open-Source приложение без платных корпоративных сертификатов за 400$/год:</p>
+          <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 6px;">
+            <li><strong>На Windows:</strong> при появлении синего окна <em>«Система защитила ваш компьютер»</em> нажмите <strong>«Подробнее» ➔ «Выполнить в любом случае»</strong>.</li>
+            <li><strong>На macOS:</strong> если система предупреждает о неизвестном разработчике — нажмите правой кнопкой по файлу ➔ <strong>«Открыть»</strong> (или подтвердите в <em>«Системные настройки ➔ Конфиденциальность»</em>).</li>
+          </ul>
         </div>
-        <div class="alert-desc">
-          Если Windows покажет синее окно защиты <em>«Система защитила ваш компьютер»</em>, нажмите <strong>«Подробнее»</strong> ➔ <strong>«Выполнить в любом случае»</strong>. Это обычное поведение для новых независимых программ без платного сертификата Microsoft.
+      </details>
+
+      <!-- Interactive Live Demo Widget -->
+      <div class="demo-container" id="demo">
+        <div class="demo-topbar">
+          <div class="demo-app-tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 8 6 4-6 4Z"/></svg>
+            ИНТЕРАКТИВНЫЙ ТЕСТ
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="demo-soundwave" id="demo-wave">
+              <span class="soundwave-bar"></span>
+              <span class="soundwave-bar"></span>
+              <span class="soundwave-bar"></span>
+              <span class="soundwave-bar"></span>
+              <span class="soundwave-bar"></span>
+            </div>
+
+            <button class="demo-interactive-btn" id="demo-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+              <span>Нажмите для теста диктовки</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="demo-editor" id="demo-editor">
+          <span style="color: #94a3b8;">Нажмите кнопку выше, чтобы симулировать голосовой ввод и увидеть, как ИИ мгновенно форматирует речь...</span>
+        </div>
+
+        <div class="demo-footnote">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+          <span>В реальной программе диктовка вызывается по клавише <kbd class="hotkey-kbd">Ctrl + ~</kbd> поверх любого окна</span>
         </div>
       </div>
     </section>
 
     <!-- How it works (3 steps) -->
-    <section class="steps-section" id="how-it-works">
+    <section class="steps-section fade-in-section" id="how-it-works">
       <div class="steps-grid">
         <div class="step-card">
           <div class="step-num">01. СКАЧАЛ</div>
-          <div class="step-title">Установил в 1 клик</div>
-          <div class="step-desc">Скачайте и запустите установщик. Программа добавит компактный значок в трей и виджет.</div>
+          <div class="step-title">Установка за 10 секунд</div>
+          <div class="step-desc">Скачайте и запустите установщик. Программа добавит компактный значок в трей и компактный плавающий виджет.</div>
         </div>
 
         <div class="step-card">
           <div class="step-num">02. ЗАЖАЛ</div>
-          <div class="step-title">Нажал клавишу <span class="hotkey-kbd">Ctrl + ~</span></div>
-          <div class="step-desc">В любом окне (Telegram, Word, браузер, код) зажмите комбинацию и говорите то, что думаете.</div>
+          <div class="step-title">Нажал <span class="hotkey-kbd">Ctrl + ~</span></div>
+          <div class="step-desc">В любом окне (Telegram, Word, браузер, VS Code) зажмите клавишу и говорите свободно своими словами.</div>
         </div>
 
         <div class="step-card">
           <div class="step-num">03. ВСТАВИЛОСЬ</div>
-          <div class="step-title">Текст уже напечатан</div>
-          <div class="step-desc">Отпустите клавишу — идеальный текст с пунктуацией и без слов-паразитов появится в поле ввода.</div>
+          <div class="step-title">Готовый чистый текст</div>
+          <div class="step-desc">Отпустите клавишу — идеальный текст с правильной пунктуацией и без слов-паразитов мгновенно появится в фокусе.</div>
         </div>
       </div>
     </section>
 
     <!-- Features -->
-    <section class="section" id="features">
+    <section class="section fade-in-section" id="features">
       <div class="section-head">
         <h2 class="section-title">Почему «говори» удобнее аналогов</h2>
         <p class="section-subtitle">Простота, скорость и полная независимость от платных подписок.</p>
@@ -568,13 +831,13 @@
         <div class="feature-box">
           <span class="feature-tag">СКОРОСТЬ &lt; 300 МС</span>
           <h3 class="feature-heading">Моментальный отклик</h3>
-          <p class="feature-text">Распознавание речи работает на базе движка Whisper Large v3 через чипы Groq LPU — текст печатается почти без задержки.</p>
+          <p class="feature-text">Распознавание речи работает на базе движка Whisper Large v3 через чипы Groq LPU — текст печатается со скоростью мысли.</p>
         </div>
 
         <div class="feature-box">
           <span class="feature-tag">БЕЗ АБОНЕНТСКОЙ ПЛАТЫ</span>
           <h3 class="feature-heading">14 400 запросов в день бесплатно</h3>
-          <p class="feature-text">Работает по модели своего бесплатного ключа Groq (получается за минуту без банковской карты). Никаких тарифов по 15$ в месяц.</p>
+          <p class="feature-text">Работает по модели своего бесплатного ключа Groq (получается за минуту без карты). Никаких тарифов по 15$ в месяц.</p>
         </div>
 
         <div class="feature-box">
@@ -603,32 +866,63 @@
       </div>
     </section>
 
-    <!-- FAQ -->
-    <section class="section" id="faq">
+    <!-- FAQ (Animated Foldable Accordions) -->
+    <section class="section fade-in-section" id="faq">
       <div class="section-head">
         <h2 class="section-title">Часто задаваемые вопросы</h2>
+        <p class="section-subtitle">Всё, что нужно знать о ключах, настройке и безопасности.</p>
       </div>
 
-      <div class="faq-list">
-        <div class="faq-item">
-          <div class="faq-q">Где взять ключ Groq и платный ли он?</div>
-          <div class="faq-a">Ключ абсолютно бесплатный. Перейдите на <strong>console.groq.com/keys</strong>, войдите через Google/GitHub и скопируйте ключ (начинается на <code>gsk_...</code>). Банковская карта не требуется.</div>
-        </div>
+      <div style="max-width: 720px; margin: 0 auto;">
+        <details class="collapsible-card" open>
+          <summary class="collapsible-header">
+            <span>Где взять ключ Groq и платный ли он?</span>
+            <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="collapsible-body">
+            Ключ <strong>абсолютно бесплатный</strong>. Перейдите на <strong>console.groq.com/keys</strong>, войдите через Google/GitHub и скопируйте ключ (начинается на <code>gsk_...</code>). Банковская карта не требуется, даётся 14 400 запросов каждый день.
+          </div>
+        </details>
 
-        <div class="faq-item">
-          <div class="faq-q">Какие горячие клавиши по умолчанию?</div>
-          <div class="faq-a">По умолчанию используется комбинация <strong>Ctrl + ~</strong> (клавиша под Esc, где буква «Ё»). В настройках можно переключить режим на удержание (Push-to-Talk) или одиночный клик.</div>
-        </div>
+        <details class="collapsible-card">
+          <summary class="collapsible-header">
+            <span>Какие горячие клавиши по умолчанию?</span>
+            <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="collapsible-body">
+            По умолчанию используется удобная комбинация <strong>Ctrl + ~</strong> (клавиша под Esc, где буква «Ё»). В настройках можно назначить любую клавишу (например, <code>Ctrl + Пробел</code> или <code>Caps Lock</code>) и выбрать режим удержания (Push-to-Talk) или клика.
+          </div>
+        </details>
 
-        <div class="faq-item">
-          <div class="faq-q">Куда сохраняются мои записи?</div>
-          <div class="faq-a">Звук никуда не сохраняется и удаляется сразу после распознавания. Текстовая история хранится только локально на вашем компьютере.</div>
-        </div>
+        <details class="collapsible-card">
+          <summary class="collapsible-header">
+            <span>Куда сохраняются аудиозаписи и конфиденциален ли ввод?</span>
+            <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="collapsible-body">
+            Звук никуда не сохраняется и стирается из оперативной памяти сразу после распознавания. Вся текстовая история хранится исключительно локально на вашем компьютере. При необходимости можно включить полностью оффлайн-режим через локальный Whisper.
+          </div>
+        </details>
 
-        <div class="faq-item">
-          <div class="faq-q">Будет ли программа обновляться сама?</div>
-          <div class="faq-a">Да, встроен автоматический апдейтер: при выходе новых версий в приложении появится кнопка «Обновить в 1 клик».</div>
-        </div>
+        <details class="collapsible-card">
+          <summary class="collapsible-header">
+            <span>Как работает функция умного рерайта текста?</span>
+            <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="collapsible-body">
+            Выделите любой текст в любом окне (письмо, сообщение, черновик) и нажмите горячую клавишу. Надиктуйте команду (например: <em>«переведи на английский»</em>, <em>«сделай вежливее»</em> или <em>«исправь ошибки»</em>) — программа перепишет выделенный текст за секунду.
+          </div>
+        </details>
+
+        <details class="collapsible-card">
+          <summary class="collapsible-header">
+            <span>Будет ли приложение обновляться автоматически?</span>
+            <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="collapsible-body">
+            Да! В «говори» встроен автоапдейтер через GitHub Releases. Как только выходит свежая версия с новыми возможностями, в приложении появляется кнопка обновления в один клик.
+          </div>
+        </details>
       </div>
     </section>
   </main>
@@ -637,16 +931,18 @@
   <footer class="footer">
     <div class="container footer-inner">
       <div>
-        © 2026 <strong>говори</strong> • Просто, быстро и бесплатно
+        © 2026 <strong>говори</strong> • Быстро, чисто и с открытым кодом
       </div>
       <div class="footer-links">
-        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer">GitHub репозиторий</a>
-        <a href="https://github.com/anufriev163/speaking/releases/latest" target="_blank" rel="noreferrer">Релизы</a>
+        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://github.com/anufriev163/speaking/releases" target="_blank" rel="noreferrer">Релизы</a>
+        <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Получить ключ Groq</a>
       </div>
     </div>
   </footer>
 
   <script>
+    // 1. OS-aware CTA button auto-priority
     (function() {
       const isMac = navigator.userAgent.toLowerCase().includes('mac');
       const winBtn = document.getElementById('btn-win');
@@ -655,6 +951,64 @@
         macBtn.className = 'btn-download-primary';
         winBtn.className = 'btn-download-secondary';
       }
+    })();
+
+    // 2. IntersectionObserver for smooth scroll fade-in animations
+    (function() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll('.fade-in-section').forEach(section => {
+        observer.observe(section);
+      });
+    })();
+
+    // 3. Interactive Live Demo Simulator
+    (function() {
+      const btn = document.getElementById('demo-btn');
+      const wave = document.getElementById('demo-wave');
+      const editor = document.getElementById('demo-editor');
+      let isRunning = false;
+
+      btn.addEventListener('click', () => {
+        if (isRunning) return;
+        isRunning = true;
+        btn.classList.add('recording');
+        btn.querySelector('span').textContent = 'Слушаю голос...';
+        wave.classList.add('active');
+        editor.innerHTML = '<span style="color: #64748b;">[Слушаю речь]: </span><span style="font-style: italic; color: #09090b;">«привет ну типа отправляю отчет по проекту короче все задачи закрыты»</span>';
+
+        setTimeout(() => {
+          btn.querySelector('span').textContent = 'Обработка ИИ...';
+          editor.innerHTML = '<span style="color: #2563eb; font-weight: 600;">[Очистка от паразитов и расстановка знаков...]:</span><span class="typing-cursor"></span>';
+
+          setTimeout(() => {
+            btn.classList.remove('recording');
+            btn.querySelector('span').textContent = 'Попробовать снова';
+            wave.classList.remove('active');
+
+            let fullText = "Привет! Отправляю отчёт по проекту. Все задачи закрыты в срок, багов не обнаружено. Релиз 1.0.2 успешно развёрнут и готов к тестированию.";
+            let charIndex = 0;
+            editor.innerHTML = '';
+
+            const typeInterval = setInterval(() => {
+              if (charIndex < fullText.length) {
+                editor.textContent = fullText.slice(0, charIndex + 1);
+                charIndex++;
+              } else {
+                clearInterval(typeInterval);
+                editor.innerHTML += ' <span style="display: inline-block; padding: 2px 6px; background: #ecfdf5; color: #059669; border-radius: 4px; font-size: 11px; font-weight: 700; margin-left: 6px;">Готово • 180 мс</span>';
+                isRunning = false;
+              }
+            }, 18);
+          }, 600);
+        }, 1400);
+      });
     })();
   </script>
 </body>
