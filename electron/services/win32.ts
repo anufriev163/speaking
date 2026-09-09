@@ -18,6 +18,7 @@ let OpenProcess: any = null;
 let CloseHandle: any = null;
 let QueryFullProcessImageNameW: any = null;
 let SendInput: any = null;
+let GetAsyncKeyState: any = null;
 
 const INPUT_KEYBOARD = 1;
 const KEYEVENTF_UNICODE = 0x0004;
