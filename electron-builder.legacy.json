@@ -1,0 +1,66 @@
+{
+  "appId": "com.govori.app.legacy",
+  "productName": "говори",
+  "npmRebuild": false,
+  "electronVersion": "22.3.27",
+  "directories": {
+    "output": "release"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "anufriev163",
+    "repo": "speaking",
+    "releaseType": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "assets/**/*",
+    "resources/**/*",
+    "package.json"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "node_modules/koffi/**/*",
+    "resources/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "resources/scripts",
+      "to": "scripts",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "assets",
+      "to": "assets",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "ia32"
+        ]
+      }
+    ],
+    "icon": "assets/icon.ico"
+  },
+  "nsis": {
+    "artifactName": "govori-legacy-setup-${version}.${ext}",
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "говори",
+    "installerIcon": "assets/icon.ico",
+    "uninstallerIcon": "assets/icon.ico",
+    "runAfterFinish": true,
+    "multiLanguageInstaller": true
+  }
+}

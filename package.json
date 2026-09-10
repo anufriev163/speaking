@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "concurrently -k \"vite\" \"npm run dev:electron\"",
     "dev:electron": "node wait-dev.js",
-    "build:electron": "esbuild electron/main.ts electron/preload.ts --bundle --platform=node --format=cjs --outdir=dist-electron --external:electron --external:koffi",
+    "build:electron": "esbuild electron/main.ts electron/preload.ts --bundle --platform=node --target=node16,chrome108 --format=cjs --outdir=dist-electron --external:electron --external:koffi",
     "build": "tsc && vite build && npm run build:electron",
     "dist": "npm run dist:win",
-    "dist:win": "npm run build && electron-builder --win",
+    "dist:win": "npm run build && electron-builder --win --x64",
+    "dist:legacy": "npm run build && electron-builder --win --ia32 --config electron-builder.legacy.json",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:dir": "npm run build && electron-builder --dir",
     "start": "electron .",
@@ -85,8 +86,7 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "ia32"
+            "x64"
           ]
         }
       ],
@@ -111,6 +111,7 @@
       ],
       "category": "public.app-category.productivity",
       "icon": "assets/icon.png",
+      "artifactName": "govori-${version}.${ext}",
       "identity": null,
       "hardenedRuntime": false,
       "gatekeeperAssess": false
@@ -137,7 +138,7 @@
       "icon": "assets/icon.png"
     },
     "nsis": {
-      "artifactName": "${productName}.${ext}",
+      "artifactName": "govori-setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,

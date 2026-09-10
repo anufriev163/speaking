@@ -50,9 +50,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build and Publish (Windows)
+      - name: Build and Publish (Windows Modern x64)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run build
-          npx electron-builder --win -p always
+          npx electron-builder --win --x64 -p always
+
+      - name: Build and Publish (Windows Legacy Win7/8/32-bit)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx electron-builder --win --ia32 --config electron-builder.legacy.json -p always

@@ -327,6 +327,33 @@
       color: var(--text-light);
     }
 
+    .legacy-download-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    .btn-download-legacy {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px dashed var(--border);
+      background: #fafafa;
+      transition: all 0.15s ease;
+    }
+
+    .btn-download-legacy:hover {
+      color: var(--text-main);
+      border-color: #a1a1aa;
+      background: #f4f4f5;
+    }
+
     /* 3 Simple Steps */
     .steps-section {
       padding: 40px 0;
@@ -627,6 +654,16 @@
             <span data-i18n="btnMac">macOS (.dmg)</span>
           </a>
         </div>
+        <div class="legacy-download-row">
+          <a id="btn-legacy" href="https://github.com/anufriev163/speaking/releases/download/v1.0.3/govori-legacy-setup-1.0.3.exe" class="btn-download-legacy">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="3" rx="2"/>
+              <line x1="8" x2="16" y1="21" y2="21"/>
+              <line x1="12" x2="12" y1="17" y2="21"/>
+            </svg>
+            <span data-i18n="btnLegacy">Для старых ПК (Windows 7 / 8 / 32-бит)</span>
+          </a>
+        </div>
         <div class="subnote" data-i18n="subnote">
           100% бесплатно • Открытый исходный код • Без регистрации
         </div>
@@ -765,6 +802,16 @@
             Выделите текст в любом окне, нажмите горячую клавишу и скажите команду: <em>«переведи на английский»</em>, <em>«сделай вежливым письмом»</em> или <em>«исправь опечатки»</em>. Текст мгновенно обновится на месте.
           </div>
         </details>
+
+        <details class="faq-card">
+          <summary class="faq-header">
+            <span data-i18n="faqLegacyQ">Поддерживаются ли старые компьютеры (Windows 7 / 8 / 32-бит)?</span>
+            <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="faq-body" data-i18n-html="faqLegacyA">
+            <strong>Да!</strong> Для слабых компьютеров и ноутбуков есть специальная версия <strong>«govori (Legacy)»</strong> на базе долгосрочной платформы с поддержкой 32-битных систем (x86). Она стабильно запускается на Windows 7 SP1, Windows 8, 8.1 и 10 без ошибки <em>«не является приложением Win32»</em>. Ссылка на скачивание доступна прямо под кнопками загрузки.
+          </div>
+        </details>
       </div>
     </section>
   </main>
@@ -797,6 +844,7 @@
         heroDesc: 'Нажмите клавишу в любом приложении — умная диктовка на базе Whisper и Llama мгновенно напечатает текст с правильной пунктуацией.',
         btnWin: 'Скачать для Windows',
         btnMac: 'macOS (.dmg)',
+        btnLegacy: 'Для старых ПК (Windows 7 / 8 / 32-бит)',
         subnote: '100% бесплатно • Открытый исходный код • Без регистрации',
 
         step1Num: '01. СКАЧАЛ',
@@ -842,6 +890,8 @@
         faq4A: 'Звук никуда не сохраняется и удаляется из памяти сразу после расшифровки. Текстовая история хранится только локально на вашем устройстве.',
         faq5Q: 'Как работает голосовой рерайт?',
         faq5A: 'Выделите текст в любом окне, нажмите горячую клавишу и скажите команду: <em>«переведи на английский»</em>, <em>«сделай вежливым письмом»</em> или <em>«исправь опечатки»</em>. Текст мгновенно обновится на месте.',
+        faqLegacyQ: 'Поддерживаются ли старые компьютеры (Windows 7 / 8 / 32-бит)?',
+        faqLegacyA: '<strong>Да!</strong> Для слабых компьютеров и ноутбуков есть специальная версия <strong>«govori (Legacy)»</strong> на базе долгосрочной платформы с поддержкой 32-битных систем (x86). Она стабильно запускается на Windows 7 SP1, Windows 8, 8.1 и 10 без ошибки <em>«не является приложением Win32»</em>. Ссылка на скачивание доступна прямо под кнопками загрузки.',
 
         footerCopy: '© 2026 <strong>говори</strong> • Быстрый голосовой ввод с открытым кодом',
         footerReleases: 'Релизы',
@@ -859,6 +909,7 @@
         heroDesc: 'Press a shortcut in any application — smart dictation powered by Whisper and Llama instantly types punctuation-perfect text.',
         btnWin: 'Download for Windows',
         btnMac: 'macOS (.dmg)',
+        btnLegacy: 'For older PCs (Windows 7 / 8 / 32-bit)',
         subnote: '100% Free • Open Source • No Account Required',
 
         step1Num: '01. DOWNLOAD',
@@ -904,6 +955,8 @@
         faq4A: 'Audio is never saved and is purged from memory immediately after transcription. Text history remains strictly on your local device.',
         faq5Q: 'How does voice rewrite work?',
         faq5A: 'Select text in any window, press your recording shortcut, and give a command: <em>"translate to English"</em>, <em>"make this polite"</em>, or <em>"fix grammar"</em>. The text updates immediately in place.',
+        faqLegacyQ: 'Are older computers supported (Windows 7 / 8 / 32-bit)?',
+        faqLegacyA: '<strong>Yes!</strong> For older PCs and laptops, we provide a dedicated <strong>«govori (Legacy)»</strong> 32-bit (x86) build supporting Windows 7 SP1, 8, and 8.1. It runs without modern Windows 10 subsystem requirements and avoids the <em>"not a valid Win32 application"</em> error.',
 
         footerCopy: '© 2026 <strong>govori</strong> • Fast open-source voice typing',
         footerReleases: 'Releases',
