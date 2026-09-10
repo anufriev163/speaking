@@ -12,13 +12,15 @@ export interface ActiveContext {
   friendlyAppName?: string;
 }
 
-export type SpeechLanguage = 'ru' | 'en' | 'auto';
+export type SpeechLanguage = 'ru' | 'en' | 'es' | 'de' | 'fr' | 'zh' | 'auto';
+export type UILanguage = 'auto' | 'ru' | 'en' | 'es' | 'de' | 'fr' | 'zh';
 
 export interface AppSettings {
   hotkey: string;
   mode: AppMode;
   provider: STTProvider;
   language?: SpeechLanguage;
+  uiLanguage?: UILanguage;
   groqApiKey: string;
   openaiApiKey: string;
   deepgramApiKey: string;

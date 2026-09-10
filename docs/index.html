@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>говори — Быстрый голосовой ввод для Windows и Mac</title>
-  <meta name="description" content="Умный голосовой ввод для компьютера. Нажал клавишу, надиктовал мысль — чистый текст с пунктуацией напечатан в любом окне.">
+  <title id="doc-title">говори — Быстрый голосовой ввод для Windows и Mac</title>
+  <meta id="meta-desc" name="description" content="Умный голосовой ввод для компьютера. Нажал клавишу, надиктовал мысль — чистый текст с пунктуацией напечатан в любом окне.">
 
   <!-- OpenGraph -->
   <meta property="og:title" content="говори — Голосовой ввод нового поколения">
@@ -144,6 +144,48 @@
 
     .btn-github:hover {
       border-color: var(--text-main);
+    }
+
+    .lang-switcher {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: #f4f4f5;
+      border: 1px solid var(--border);
+      padding: 2px 4px;
+      border-radius: var(--radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .lang-btn {
+      background: none;
+      border: none;
+      color: #71717a;
+      padding: 3px 7px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      transition: all 0.15s ease;
+    }
+
+    .lang-btn:hover {
+      color: var(--text-main);
+    }
+
+    .lang-btn.active {
+      background: #ffffff;
+      color: var(--text-main);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .lang-divider {
+      color: #d4d4d8;
+      font-size: 10px;
+      user-select: none;
     }
 
     /* Hero Section */
@@ -526,12 +568,17 @@
         <span class="logo-badge">v1.0.3</span>
       </a>
 
-      <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
         <nav class="nav-links">
-          <a href="#how-it-works" class="nav-link">Как работает</a>
-          <a href="#features" class="nav-link">Возможности</a>
-          <a href="#faq" class="nav-link">FAQ</a>
+          <a href="#how-it-works" class="nav-link" data-i18n="navHow">Как работает</a>
+          <a href="#features" class="nav-link" data-i18n="navFeatures">Возможности</a>
+          <a href="#faq" class="nav-link" data-i18n="navFaq">FAQ</a>
         </nav>
+        <div class="lang-switcher">
+          <button id="lang-btn-ru" class="lang-btn active" onclick="setSiteLanguage('ru')">RU</button>
+          <span class="lang-divider">/</span>
+          <button id="lang-btn-en" class="lang-btn" onclick="setSiteLanguage('en')">EN</button>
+        </div>
         <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer" class="btn-github">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
@@ -547,18 +594,18 @@
     <section class="hero fade-in">
       <!-- Sleek Modern Announcement Pill -->
       <a href="https://github.com/anufriev163/speaking/releases/tag/v1.0.3" target="_blank" rel="noreferrer" class="hero-pill">
-        <span class="pill-badge">Релиз 1.0.3</span>
+        <span class="pill-badge" data-i18n="heroPillBadge">Релиз 1.0.3</span>
         <span class="pill-text">
-          <span>Доступен для Windows и macOS</span>
+          <span data-i18n="heroPillText">Доступен для Windows и macOS</span>
           <span class="pill-arrow">→</span>
         </span>
       </a>
 
-      <h1 class="hero-title">
+      <h1 class="hero-title" data-i18n="heroTitle">
         Печатайте голосом со скоростью мысли
       </h1>
 
-      <p class="hero-desc">
+      <p class="hero-desc" data-i18n="heroDesc">
         Нажмите клавишу в любом приложении — умная диктовка на базе Whisper и Llama мгновенно напечатает текст с правильной пунктуацией.
       </p>
 
@@ -569,7 +616,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.851"/>
             </svg>
-            <span>Скачать для Windows</span>
+            <span data-i18n="btnWin">Скачать для Windows</span>
           </a>
 
           <!-- Direct download link for macOS -->
@@ -577,10 +624,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 0.6-2.65 1.35-.58.66-1.08 1.73-.95 2.76 1.01.08 2.05-.51 2.68-1.26z"/>
             </svg>
-            <span>macOS (.dmg)</span>
+            <span data-i18n="btnMac">macOS (.dmg)</span>
           </a>
         </div>
-        <div class="subnote">
+        <div class="subnote" data-i18n="subnote">
           100% бесплатно • Открытый исходный код • Без регистрации
         </div>
       </div>
@@ -592,21 +639,21 @@
     <section class="steps-section fade-in" id="how-it-works">
       <div class="steps-grid">
         <div class="step-card">
-          <div class="step-num">01. СКАЧАЛ</div>
-          <div class="step-title">Установка в 1 клик</div>
-          <div class="step-desc">Скачайте инсталлятор. Программа тихо сворачивается в трей и готова к работе.</div>
+          <div class="step-num" data-i18n="step1Num">01. СКАЧАЛ</div>
+          <div class="step-title" data-i18n="step1Title">Установка в 1 клик</div>
+          <div class="step-desc" data-i18n="step1Desc">Скачайте инсталлятор. Программа тихо сворачивается в трей и готова к работе.</div>
         </div>
 
         <div class="step-card">
-          <div class="step-num">02. ЗАЖАЛ</div>
-          <div class="step-title">Нажал <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px;">Ctrl + ~</span></div>
-          <div class="step-desc">В любом приложении (Word, Telegram, браузер, код) зажмите клавишу и диктуйте.</div>
+          <div class="step-num" data-i18n="step2Num">02. ЗАЖАЛ</div>
+          <div class="step-title" data-i18n-html="step2Title">Нажал <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px;">Ctrl + ~</span></div>
+          <div class="step-desc" data-i18n="step2Desc">В любом приложении (Word, Telegram, браузер, код) зажмите клавишу и диктуйте.</div>
         </div>
 
         <div class="step-card">
-          <div class="step-num">03. ВСТАВИЛОСЬ</div>
-          <div class="step-title">Готовый чистый текст</div>
-          <div class="step-desc">Отпустите клавишу — идеальный текст со знаками препинания напечатан в окне.</div>
+          <div class="step-num" data-i18n="step3Num">03. ВСТАВИЛОСЬ</div>
+          <div class="step-title" data-i18n="step3Title">Готовый чистый текст</div>
+          <div class="step-desc" data-i18n="step3Desc">Отпустите клавишу — идеальный текст со знаками препинания напечатан в окне.</div>
         </div>
       </div>
     </section>
@@ -614,45 +661,45 @@
     <!-- Features -->
     <section class="section fade-in" id="features">
       <div class="section-head">
-        <h2 class="section-title">Почему «говори» удобнее аналогов</h2>
-        <p class="section-subtitle">Простота, скорость и полная независимость от платных подписок.</p>
+        <h2 class="section-title" data-i18n="featTitle">Почему «говори» удобнее аналогов</h2>
+        <p class="section-subtitle" data-i18n="featSubtitle">Простота, скорость и полная независимость от платных подписок.</p>
       </div>
 
       <div class="features-grid">
         <div class="feature-box">
-          <span class="feature-tag">&lt; 300 МС</span>
-          <h3 class="feature-heading">Мгновенный отклик</h3>
-          <p class="feature-text">Распознавание на базе Whisper Large v3 через чипы Groq — текст появляется без заметных задержек.</p>
+          <span class="feature-tag" data-i18n="f1Tag">&lt; 300 МС</span>
+          <h3 class="feature-heading" data-i18n="f1Head">Мгновенный отклик</h3>
+          <p class="feature-text" data-i18n="f1Text">Распознавание на базе Whisper Large v3 через чипы Groq — текст появляется без заметных задержек.</p>
         </div>
 
         <div class="feature-box">
-          <span class="feature-tag">БЕСПЛАТНО</span>
-          <h3 class="feature-heading">14 400 запросов в день</h3>
-          <p class="feature-text">Работает по бесплатному ключу Groq. Никаких платных тарифов по 15$ каждый месяц.</p>
+          <span class="feature-tag" data-i18n="f2Tag">БЕСПЛАТНО</span>
+          <h3 class="feature-heading" data-i18n="f2Head">14 400 запросов в день</h3>
+          <p class="feature-text" data-i18n="f2Text">Работает по бесплатному ключу Groq. Никаких платных тарифов по 15$ каждый месяц.</p>
         </div>
 
         <div class="feature-box">
-          <span class="feature-tag">ИИ ОЧИСТКА</span>
-          <h3 class="feature-heading">Удаление паразитов</h3>
-          <p class="feature-text">Llama 3.3 убирает запинки («эээ», «ну», «короче»), исправляет оговорки и форматирует знаки препинания.</p>
+          <span class="feature-tag" data-i18n="f3Tag">ИИ ОЧИСТКА</span>
+          <h3 class="feature-heading" data-i18n="f3Head">Удаление паразитов</h3>
+          <p class="feature-text" data-i18n="f3Text">Llama 3.3 убирает запинки («эээ», «ну», «короче»), исправляет оговорки и форматирует знаки препинания.</p>
         </div>
 
         <div class="feature-box">
-          <span class="feature-tag">УНИВЕРСАЛЬНОСТЬ</span>
-          <h3 class="feature-heading">Любое приложение</h3>
-          <p class="feature-text">Прямая вставка символов через Win32 API и AppleScript: мессенджеры, редакторы, таблицы и код.</p>
+          <span class="feature-tag" data-i18n="f4Tag">УНИВЕРСАЛЬНОСТЬ</span>
+          <h3 class="feature-heading" data-i18n="f4Head">Любое приложение</h3>
+          <p class="feature-text" data-i18n="f4Text">Прямая вставка символов через Win32 API и AppleScript: мессенджеры, редакторы, таблицы и код.</p>
         </div>
 
         <div class="feature-box">
-          <span class="feature-tag">ПРИВАТНОСТЬ</span>
-          <h3 class="feature-heading">Локальное шифрование</h3>
-          <p class="feature-text">Ключи защищены через Windows DPAPI / Keychain. Голос не сохраняется и не используется для обучения.</p>
+          <span class="feature-tag" data-i18n="f5Tag">ПРИВАТНОСТЬ</span>
+          <h3 class="feature-heading" data-i18n="f5Head">Локальное шифрование</h3>
+          <p class="feature-text" data-i18n="f5Text">Ключи защищены через Windows DPAPI / Keychain. Голос не сохраняется и не используется для обучения.</p>
         </div>
 
         <div class="feature-box">
-          <span class="feature-tag">ОФЛАЙН</span>
-          <h3 class="feature-heading">Работа без интернета</h3>
-          <p class="feature-text">Поддержка локального движка Faster-Whisper, если нужна абсолютная изоляция данных.</p>
+          <span class="feature-tag" data-i18n="f6Tag">ОФЛАЙН</span>
+          <h3 class="feature-heading" data-i18n="f6Head">Работа без интернета</h3>
+          <p class="feature-text" data-i18n="f6Text">Поддержка локального движка Faster-Whisper, если нужна абсолютная изоляция данных.</p>
         </div>
       </div>
     </section>
@@ -660,18 +707,18 @@
     <!-- FAQ Accordion -->
     <section class="section fade-in" id="faq">
       <div class="section-head">
-        <h2 class="section-title">Вопросы и ответы</h2>
-        <p class="section-subtitle">Всё о настройке, ключах и запуске.</p>
+        <h2 class="section-title" data-i18n="faqTitle">Вопросы и ответы</h2>
+        <p class="section-subtitle" data-i18n="faqSubtitle">Всё о настройке, ключах и запуске.</p>
       </div>
 
       <div class="faq-list">
         <!-- Foldable First Run Notice (Moved into FAQ) -->
         <details class="faq-card">
           <summary class="faq-header">
-            <span>Что делать, если Windows или Mac предупреждают при первом запуске?</span>
+            <span data-i18n="faq1Q">Что делать, если Windows или Mac предупреждают при первом запуске?</span>
             <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </summary>
-          <div class="faq-body">
+          <div class="faq-body" data-i18n-html="faq1A">
             «говори» — это бесплатное независимое Open-Source приложение без платных корпоративных сертификатов за 400$/год.
             <br><br>
             • <strong>Windows:</strong> при появлении синего окна <em>«Система защитила ваш компьютер»</em> нажмите <strong>«Подробнее» ➔ «Выполнить в любом случае»</strong>.<br>
@@ -681,40 +728,40 @@
 
         <details class="faq-card" open>
           <summary class="faq-header">
-            <span>Где взять ключ Groq и платный ли он?</span>
+            <span data-i18n="faq2Q">Где взять ключ Groq и платный ли он?</span>
             <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </summary>
-          <div class="faq-body">
+          <div class="faq-body" data-i18n-html="faq2A">
             Ключ <strong>полностью бесплатный</strong>. Перейдите на <strong>console.groq.com/keys</strong>, войдите через Google/GitHub и создайте ключ. Банковская карта не требуется.
           </div>
         </details>
 
         <details class="faq-card">
           <summary class="faq-header">
-            <span>Какие горячие клавиши по умолчанию?</span>
+            <span data-i18n="faq3Q">Какие горячие клавиши по умолчанию?</span>
             <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </summary>
-          <div class="faq-body">
+          <div class="faq-body" data-i18n-html="faq3A">
             По умолчанию используется <strong>Ctrl + ~</strong> (клавиша под Esc, где буква «Ё»). В настройках можно изменить сочетание (например, <code>Ctrl + Пробел</code>) и режим (удержание или одиночный клик).
           </div>
         </details>
 
         <details class="faq-card">
           <summary class="faq-header">
-            <span>Куда сохраняются аудиозаписи?</span>
+            <span data-i18n="faq4Q">Куда сохраняются аудиозаписи?</span>
             <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </summary>
-          <div class="faq-body">
+          <div class="faq-body" data-i18n-html="faq4A">
             Звук никуда не сохраняется и удаляется из памяти сразу после расшифровки. Текстовая история хранится только локально на вашем устройстве.
           </div>
         </details>
 
         <details class="faq-card">
           <summary class="faq-header">
-            <span>Как работает голосовой рерайт?</span>
+            <span data-i18n="faq5Q">Как работает голосовой рерайт?</span>
             <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </summary>
-          <div class="faq-body">
+          <div class="faq-body" data-i18n-html="faq5A">
             Выделите текст в любом окне, нажмите горячую клавишу и скажите команду: <em>«переведи на английский»</em>, <em>«сделай вежливым письмом»</em> или <em>«исправь опечатки»</em>. Текст мгновенно обновится на месте.
           </div>
         </details>
@@ -725,19 +772,194 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="container footer-inner">
-      <div>
+      <div data-i18n-html="footerCopy">
         © 2026 <strong>говори</strong> • Быстрый голосовой ввод с открытым кодом
       </div>
       <div class="footer-links">
         <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://github.com/anufriev163/speaking/releases" target="_blank" rel="noreferrer">Релизы</a>
-        <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Получить ключ Groq</a>
+        <a href="https://github.com/anufriev163/speaking/releases" target="_blank" rel="noreferrer" data-i18n="footerReleases">Релизы</a>
+        <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" data-i18n="footerKey">Получить ключ Groq</a>
       </div>
     </div>
   </footer>
 
   <script>
-    // 1. Auto-priority for OS download button
+    const SITE_I18N = {
+      ru: {
+        docTitle: 'говори — Быстрый голосовой ввод для Windows и Mac',
+        metaDesc: 'Умный голосовой ввод для компьютера. Нажал клавишу, надиктовал мысль — чистый текст с пунктуацией напечатан в любом окне.',
+        navHow: 'Как работает',
+        navFeatures: 'Возможности',
+        navFaq: 'FAQ',
+        heroPillBadge: 'Релиз 1.0.3',
+        heroPillText: 'Доступен для Windows и macOS',
+        heroTitle: 'Печатайте голосом со скоростью мысли',
+        heroDesc: 'Нажмите клавишу в любом приложении — умная диктовка на базе Whisper и Llama мгновенно напечатает текст с правильной пунктуацией.',
+        btnWin: 'Скачать для Windows',
+        btnMac: 'macOS (.dmg)',
+        subnote: '100% бесплатно • Открытый исходный код • Без регистрации',
+
+        step1Num: '01. СКАЧАЛ',
+        step1Title: 'Установка в 1 клик',
+        step1Desc: 'Скачайте инсталлятор. Программа тихо сворачивается в трей и готова к работе.',
+        step2Num: '02. ЗАЖАЛ',
+        step2Title: 'Нажал <span style="font-family: \'JetBrains Mono\', monospace; font-size: 12px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px;">Ctrl + ~</span>',
+        step2Desc: 'В любом приложении (Word, Telegram, браузер, код) зажмите клавишу и диктуйте.',
+        step3Num: '03. ВСТАВИЛОСЬ',
+        step3Title: 'Готовый чистый текст',
+        step3Desc: 'Отпустите клавишу — идеальный текст со знаками препинания напечатан в окне.',
+
+        featTitle: 'Почему «говори» удобнее аналогов',
+        featSubtitle: 'Простота, скорость и полная независимость от платных подписок.',
+        f1Tag: '< 300 МС',
+        f1Head: 'Мгновенный отклик',
+        f1Text: 'Распознавание на базе Whisper Large v3 через чипы Groq — текст появляется без заметных задержек.',
+        f2Tag: 'БЕСПЛАТНО',
+        f2Head: '14 400 запросов в день',
+        f2Text: 'Работает по бесплатному ключу Groq. Никаких платных тарифов по 15$ каждый месяц.',
+        f3Tag: 'ИИ ОЧИСТКА',
+        f3Head: 'Удаление паразитов',
+        f3Text: 'Llama 3.3 убирает запинки («эээ», «ну», «короче»), исправляет оговорки и форматирует знаки препинания.',
+        f4Tag: 'УНИВЕРСАЛЬНОСТЬ',
+        f4Head: 'Любое приложение',
+        f4Text: 'Прямая вставка символов через Win32 API и AppleScript: мессенджеры, редакторы, таблицы и код.',
+        f5Tag: 'ПРИВАТНОСТЬ',
+        f5Head: 'Локальное шифрование',
+        f5Text: 'Ключи защищены через Windows DPAPI / Keychain. Голос не сохраняется и не используется для обучения.',
+        f6Tag: 'ОФЛАЙН',
+        f6Head: 'Работа без интернета',
+        f6Text: 'Поддержка локального движка Faster-Whisper, если нужна абсолютная изоляция данных.',
+
+        faqTitle: 'Вопросы и ответы',
+        faqSubtitle: 'Всё о настройке, ключах и запуске.',
+        faq1Q: 'Что делать, если Windows или Mac предупреждают при первом запуске?',
+        faq1A: '«говори» — это бесплатное независимое Open-Source приложение без платных корпоративных сертификатов за 400$/год.<br><br>• <strong>Windows:</strong> при появлении синего окна <em>«Система защитила ваш компьютер»</em> нажмите <strong>«Подробнее» ➔ «Выполнить в любом случае»</strong>.<br>• <strong>macOS:</strong> если Gatekeeper пишет о непроверенном разработчике — нажмите правой кнопкой ➔ <strong>«Открыть»</strong> (или подтвердите в <em>«Системные настройки ➔ Конфиденциальность»</em>).',
+        faq2Q: 'Где взять ключ Groq и платный ли он?',
+        faq2A: 'Ключ <strong>полностью бесплатный</strong>. Перейдите на <strong>console.groq.com/keys</strong>, войдите через Google/GitHub и создайте ключ. Банковская карта не требуется.',
+        faq3Q: 'Какие горячие клавиши по умолчанию?',
+        faq3A: 'По умолчанию используется <strong>Ctrl + ~</strong> (клавиша под Esc, где буква «Ё»). В настройках можно изменить сочетание (например, <code>Ctrl + Пробел</code>) и режим (удержание или одиночный клик).',
+        faq4Q: 'Куда сохраняются аудиозаписи?',
+        faq4A: 'Звук никуда не сохраняется и удаляется из памяти сразу после расшифровки. Текстовая история хранится только локально на вашем устройстве.',
+        faq5Q: 'Как работает голосовой рерайт?',
+        faq5A: 'Выделите текст в любом окне, нажмите горячую клавишу и скажите команду: <em>«переведи на английский»</em>, <em>«сделай вежливым письмом»</em> или <em>«исправь опечатки»</em>. Текст мгновенно обновится на месте.',
+
+        footerCopy: '© 2026 <strong>говори</strong> • Быстрый голосовой ввод с открытым кодом',
+        footerReleases: 'Релизы',
+        footerKey: 'Получить ключ Groq'
+      },
+      en: {
+        docTitle: 'govori — Ultra-Fast AI Voice Typing for Windows and Mac',
+        metaDesc: 'Intelligent computer dictation. Press a key, speak your thought — clean, punctuated text is typed directly into any window.',
+        navHow: 'How it works',
+        navFeatures: 'Features',
+        navFaq: 'FAQ',
+        heroPillBadge: 'Release 1.0.3',
+        heroPillText: 'Available for Windows & macOS',
+        heroTitle: 'Voice typing at the speed of thought',
+        heroDesc: 'Press a shortcut in any application — smart dictation powered by Whisper and Llama instantly types punctuation-perfect text.',
+        btnWin: 'Download for Windows',
+        btnMac: 'macOS (.dmg)',
+        subnote: '100% Free • Open Source • No Account Required',
+
+        step1Num: '01. DOWNLOAD',
+        step1Title: '1-Click Setup',
+        step1Desc: 'Download the lightweight installer. The app sits quietly in your tray, ready whenever you need it.',
+        step2Num: '02. HOLD',
+        step2Title: 'Press <span style="font-family: \'JetBrains Mono\', monospace; font-size: 12px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px;">Ctrl + ~</span>',
+        step2Desc: 'In any application (Word, Slack, browser, IDE), hold the shortcut key and speak naturally.',
+        step3Num: '03. INSERTED',
+        step3Title: 'Clean, Perfect Text',
+        step3Desc: 'Release the key — clean, punctuated text is typed automatically directly into your active window.',
+
+        featTitle: 'Why «govori» is better than alternatives',
+        featSubtitle: 'Simplicity, instant speed, and zero recurring monthly subscription costs.',
+        f1Tag: '< 300 MS',
+        f1Head: 'Instant Response',
+        f1Text: 'Whisper Large v3 transcription powered by Groq LPU silicon — text appears with virtually zero latency.',
+        f2Tag: 'FREE',
+        f2Head: '14,400 Requests / Day',
+        f2Text: 'Runs on Groq’s generous free tier. No mandatory $15/month subscriptions.',
+        f3Tag: 'AI CLEANER',
+        f3Head: 'Filler Word Removal',
+        f3Text: 'Llama 3.3 automatically cuts out "um", "uh", "like", false starts, and formats proper punctuation.',
+        f4Tag: 'UNIVERSAL',
+        f4Head: 'Any Application',
+        f4Text: 'Direct OS-level unicode typing via Win32 API and AppleScript: messengers, text editors, sheets, and code.',
+        f5Tag: 'PRIVACY',
+        f5Head: 'Local Encryption',
+        f5Text: 'API keys are stored securely using Windows DPAPI / Keychain. Voice data is never saved or used for AI training.',
+        f6Tag: 'OFFLINE',
+        f6Head: 'Works Without Internet',
+        f6Text: 'Built-in support for on-device Faster-Whisper if you require total offline data air-gapping.',
+
+        faqTitle: 'Frequently Asked Questions',
+        faqSubtitle: 'Everything about configuration, API keys, and getting started.',
+        faq1Q: 'What if Windows or Mac shows an untrusted developer warning on first launch?',
+        faq1A: '«govori» is a free, independent open-source tool without expensive $400/year corporate code-signing certificates.<br><br>• <strong>Windows:</strong> if SmartScreen displays <em>"Windows protected your PC"</em>, click <strong>"More info" ➔ "Run anyway"</strong>.<br>• <strong>macOS:</strong> if Gatekeeper warns about an unverified developer, right-click the app ➔ <strong>"Open"</strong> (or allow it in <em>System Settings ➔ Privacy & Security</em>).',
+        faq2Q: 'Where do I get a Groq API key, and is it free?',
+        faq2A: 'The key is <strong>completely free</strong>. Visit <strong>console.groq.com/keys</strong>, sign in with Google or GitHub, and generate an API key. No credit card required.',
+        faq3Q: 'What is the default recording shortcut?',
+        faq3A: 'The default shortcut is <strong>Ctrl + ~</strong> (the tilde key directly below Esc). In Settings, you can customize the key combination (e.g. <code>Ctrl + Space</code>) and toggle mode.',
+        faq4Q: 'Where are audio recordings stored?',
+        faq4A: 'Audio is never saved and is purged from memory immediately after transcription. Text history remains strictly on your local device.',
+        faq5Q: 'How does voice rewrite work?',
+        faq5A: 'Select text in any window, press your recording shortcut, and give a command: <em>"translate to English"</em>, <em>"make this polite"</em>, or <em>"fix grammar"</em>. The text updates immediately in place.',
+
+        footerCopy: '© 2026 <strong>govori</strong> • Fast open-source voice typing',
+        footerReleases: 'Releases',
+        footerKey: 'Get Groq API Key'
+      }
+    };
+
+    function setSiteLanguage(lang) {
+      const pack = SITE_I18N[lang] || SITE_I18N.ru;
+      document.documentElement.lang = lang;
+      try {
+        localStorage.setItem('govori_landing_lang', lang);
+      } catch (e) {}
+
+      const docTitle = document.getElementById('doc-title');
+      if (docTitle && pack.docTitle) docTitle.textContent = pack.docTitle;
+
+      const metaDesc = document.getElementById('meta-desc');
+      if (metaDesc && pack.metaDesc) metaDesc.setAttribute('content', pack.metaDesc);
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (pack[key]) {
+          el.textContent = pack[key];
+        }
+      });
+
+      document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (pack[key]) {
+          el.innerHTML = pack[key];
+        }
+      });
+
+      const ruBtn = document.getElementById('lang-btn-ru');
+      const enBtn = document.getElementById('lang-btn-en');
+      if (ruBtn) ruBtn.classList.toggle('active', lang === 'ru');
+      if (enBtn) enBtn.classList.toggle('active', lang === 'en');
+    }
+
+    // Auto-detect browser language or load saved preference
+    (function initLanguage() {
+      let preferredLang = 'ru';
+      try {
+        const saved = localStorage.getItem('govori_landing_lang');
+        if (saved === 'ru' || saved === 'en') {
+          preferredLang = saved;
+        } else {
+          const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+          preferredLang = (nav.startsWith('ru') || nav.startsWith('be') || nav.startsWith('uk') || nav.startsWith('kk')) ? 'ru' : 'en';
+        }
+      } catch (e) {}
+      setSiteLanguage(preferredLang);
+    })();
+
+    // Auto-priority for OS download button
     (function() {
       const isMac = navigator.userAgent.toLowerCase().includes('mac');
       const winBtn = document.getElementById('btn-win');
@@ -748,7 +970,7 @@
       }
     })();
 
-    // 2. Scroll fade-in animation
+    // Scroll fade-in animation
     (function() {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -760,8 +982,6 @@
 
       document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
     })();
-
-
   </script>
 </body>
 </html>

@@ -7,12 +7,15 @@ import { SnippetsTab } from './SnippetsTab';
 import { HistoryTab } from './HistoryTab';
 import { AppSettings, TextSnippet, DictationHistoryItem } from '../../types';
 
+import { getTranslations } from '../../utils/i18n';
+
 export const SettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'providers' | 'snippets' | 'history'>('providers');
   const [settings, setSettings] = useState<AppSettings>({
     hotkey: 'Ctrl+~',
     mode: 'toggle',
     provider: 'groq',
+    uiLanguage: 'auto',
     groqApiKey: '',
     openaiApiKey: '',
     deepgramApiKey: '',
@@ -28,6 +31,8 @@ export const SettingsView: React.FC = () => {
   const [snippets, setSnippets] = useState<TextSnippet[]>([]);
   const [history, setHistory] = useState<DictationHistoryItem[]>([]);
   const [savedBadge, setSavedBadge] = useState(false);
+
+  const t = getTranslations(settings.uiLanguage);
 
   useEffect(() => {
     if (!window.govoriAPI) return;
@@ -70,10 +75,10 @@ export const SettingsView: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'providers', label: 'Нейросеть', icon: Cpu },
-    { id: 'general', label: 'Настройки', icon: Sliders },
-    { id: 'snippets', label: 'Автозамена', icon: BookmarkCheck },
-    { id: 'history', label: 'История', icon: History },
+    { id: 'providers', label: t.tabProviders, icon: Cpu },
+    { id: 'general', label: t.tabGeneral, icon: Sliders },
+    { id: 'snippets', label: t.tabSnippets, icon: BookmarkCheck },
+    { id: 'history', label: t.tabHistory, icon: History },
   ];
 
   return (
@@ -87,7 +92,7 @@ export const SettingsView: React.FC = () => {
           </span>
           {savedBadge && (
             <span className="text-[10px] text-neutral-700 font-medium bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-full">
-              Сохранено
+              {t.saved}
             </span>
           )}
         </div>
@@ -126,10 +131,10 @@ export const SettingsView: React.FC = () => {
             <ProvidersTab settings={settings} onChange={handleUpdateSettings} />
           )}
           {activeTab === 'snippets' && (
-            <SnippetsTab snippets={snippets} onSave={handleSaveSnippets} />
+            <SnippetsTab snippets={snippets} onSave={handleSaveSnippets} uiLanguage={settings.uiLanguage} />
           )}
           {activeTab === 'history' && (
-            <HistoryTab history={history} onClear={handleClearHistory} />
+            <HistoryTab history={history} onClear={handleClearHistory} uiLanguage={settings.uiLanguage} />
           )}
         </div>
       </div>

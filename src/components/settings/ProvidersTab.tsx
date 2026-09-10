@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings, STTProvider } from '../../types';
 import { Key, ExternalLink, Zap, Cloud, HardDrive, Check, Eye, EyeOff, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { getTranslations } from '../../utils/i18n';
 
 interface ProvidersTabProps {
   settings: AppSettings;
@@ -8,6 +9,7 @@ interface ProvidersTabProps {
 }
 
 export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }) => {
+  const t = getTranslations(settings.uiLanguage);
   const [showKey, setShowKey] = useState(false);
   const [localStatus, setLocalStatus] = useState<{ available?: boolean; checking: boolean }>({ checking: true });
 
@@ -33,9 +35,9 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
       id: 'groq',
       name: 'Groq Cloud Whisper',
       model: 'Whisper Large-v3-turbo',
-      tag: 'Рекомендуется • LPU',
-      latency: '~200 мс',
-      desc: 'Максимальная скорость на LPU-чипах. Бесплатно до 14 400 запросов в день.',
+      tag: t.groqTag,
+      latency: t.groqLatency,
+      desc: t.groqDesc,
       icon: Zap,
       badgeColor: 'bg-black text-white',
     },
@@ -43,19 +45,19 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
       id: 'openai',
       name: 'OpenAI Whisper',
       model: 'Whisper-1',
-      tag: 'Облачный API',
-      latency: '~1.5 с',
-      desc: 'Оригинальный облачный сервис от создателей модели Whisper.',
+      tag: t.openaiTag,
+      latency: t.openaiLatency,
+      desc: t.openaiDesc,
       icon: Cloud,
       badgeColor: 'bg-neutral-100 text-neutral-700',
     },
     {
       id: 'local',
-      name: 'Локальный движок',
+      name: 'Local Whisper',
       model: 'Whisper On-Device',
-      tag: '100% Офлайн',
-      latency: '~600 мс',
-      desc: 'Полная приватность. Работает автономно прямо на компьютере без интернета.',
+      tag: t.localTag,
+      latency: t.localLatency,
+      desc: t.localDesc,
       icon: HardDrive,
       badgeColor: 'bg-neutral-100 text-neutral-700',
     }
@@ -68,10 +70,10 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
     <div className="space-y-6 max-w-2xl">
       <div>
         <h3 className="text-xl font-semibold text-black tracking-tight mb-1">
-          Нейросеть
+          {t.providersTitle}
         </h3>
         <p className="text-xs text-neutral-500">
-          Выберите, какая нейросеть будет переводить вашу речь в текст
+          {t.providersSubtitle}
         </p>
       </div>
 
@@ -157,23 +159,23 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-black">
-                    {settings.provider === 'groq' ? 'API-ключ Groq Cloud' : 'API-ключ OpenAI'}
+                    {settings.provider === 'groq' ? 'Groq Cloud' : 'OpenAI'} {t.apiKeyTitle}
                   </span>
                   {isKeyConfigured ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Активен
+                      {t.keyValid}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-medium">
-                      Требуется ключ
+                      {t.keyRequired}
                     </span>
                   )}
                 </div>
                 <span className="text-[11px] text-neutral-500">
                   {settings.provider === 'groq'
-                    ? 'Бесплатный ключ на console.groq.com (без банковской карты)'
-                    : 'Ключ платформы platform.openai.com'}
+                    ? t.getKeyGroq
+                    : t.getKeyOpenAI}
                 </span>
               </div>
             </div>
@@ -185,7 +187,7 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
                 rel="noreferrer"
                 className="text-xs text-black font-semibold flex items-center gap-1.5 bg-neutral-100 hover:bg-neutral-200/80 px-3 py-1.5 rounded-xl transition-colors shrink-0"
               >
-                <span>Получить ключ</span>
+                <span>Groq Console</span>
                 <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
               </a>
             )}
@@ -211,7 +213,7 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
                 type="button"
                 onClick={() => setShowKey(!showKey)}
                 className="absolute right-3 text-neutral-400 hover:text-black transition-colors"
-                title={showKey ? 'Скрыть ключ' : 'Показать ключ'}
+                title={showKey ? 'Hide' : 'Show'}
               >
                 {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -219,7 +221,7 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
 
             <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-              <span>Ключ хранится локально на вашем ПК в зашифрованном файле конфигурации.</span>
+              <span>{t.apiKeyDesc}</span>
             </div>
           </div>
         </div>
@@ -233,35 +235,27 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({ settings, onChange }
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-black">
-                    Локальный движок Faster-Whisper
+                    Faster-Whisper
                   </span>
                   {localStatus.checking ? (
-                    <span className="text-[10px] text-neutral-400">Проверка...</span>
+                    <span className="text-[10px] text-neutral-400">{t.checkingUpdates}</span>
                   ) : localStatus.available ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-medium">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Готов к работе офлайн
+                      {t.localInstalled}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-medium">
                       <AlertCircle className="w-3 h-3 text-amber-600" />
-                      Не найден
+                      {t.localNotInstalled}
                     </span>
                   )}
                 </div>
                 <span className="text-[11px] text-neutral-500">
-                  Модель: Faster-Whisper Small (int8 CPU) • Полная приватность без интернета
+                  {t.localDesc}
                 </span>
               </div>
             </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/60 text-xs text-neutral-600 space-y-1">
-            <p className="text-[11px] leading-relaxed">
-              {localStatus.available
-                ? 'Движок готов. Запись распознается прямо на вашем процессоре без отправки аудиоданных в сеть.'
-                : 'Для работы оффлайн-движка требуется установленный Python с библиотекой faster-whisper.'}
-            </p>
           </div>
         </div>
       )}

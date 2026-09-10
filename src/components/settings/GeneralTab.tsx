@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../../types';
-import { Keyboard, Mic, Sparkles, Volume2, Power, RefreshCw, CheckCircle2, ArrowDownToLine, AlertCircle, Languages } from 'lucide-react';
+import { Keyboard, Mic, Sparkles, Volume2, Power, RefreshCw, CheckCircle2, ArrowDownToLine, AlertCircle, Languages, Globe } from 'lucide-react';
 import packageJson from '../../../package.json';
+import { getTranslations } from '../../utils/i18n';
 
 interface GeneralTabProps {
   settings: AppSettings;
@@ -9,6 +10,8 @@ interface GeneralTabProps {
 }
 
 export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) => {
+  const t = getTranslations(settings.uiLanguage);
+
   const [updateState, setUpdateState] = useState<{
     status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
     version: string;
@@ -48,28 +51,55 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
   const handleInstall = () => {
     (window as any).govoriAPI?.installUpdate?.();
   };
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h3 className="text-xl font-semibold text-black tracking-tight mb-1">Основные настройки</h3>
-        <p className="text-xs text-neutral-500">Параметры горячих клавиш и интеллектуальной обработки речи</p>
+        <h3 className="text-xl font-semibold text-black tracking-tight mb-1">{t.generalTitle}</h3>
+        <p className="text-xs text-neutral-500">{t.generalSubtitle}</p>
       </div>
 
       <div className="space-y-3">
-        {/* Language Selection (RU / EN / Auto) */}
+        {/* Interface Language (Auto / RU / EN / ES / DE / FR / ZH) */}
+        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
+              <Globe className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-black">{t.uiLangTitle}</div>
+              <div className="text-[11px] text-neutral-500">{t.uiLangDesc}</div>
+            </div>
+          </div>
+          <select
+            value={settings.uiLanguage || 'auto'}
+            onChange={(e) => onChange({ uiLanguage: e.target.value as any })}
+            className="px-3 py-1.5 rounded-xl bg-neutral-100 border border-neutral-200/80 text-xs font-semibold text-black focus:outline-none focus:border-black transition-all cursor-pointer shadow-2xs"
+          >
+            <option value="auto">🌐 {t.uiLangAuto}</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="zh">🇨🇳 中文</option>
+          </select>
+        </div>
+
+        {/* Speech Recognition Language (RU / EN / Auto) */}
         <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
               <Languages className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-black">Язык распознавания речи</div>
+              <div className="text-xs font-semibold text-black">{t.speechLangTitle}</div>
               <div className="text-[11px] text-neutral-500">
                 {settings.language === 'en'
-                  ? 'Английский язык (English Whisper)'
+                  ? t.speechLangDescEn
                   : settings.language === 'auto'
-                  ? 'Автоопределение языка (русский / английский)'
-                  : 'Русский язык (максимальная точность)'}
+                  ? t.speechLangDescAuto
+                  : t.speechLangDescRu}
               </div>
             </div>
           </div>
@@ -102,7 +132,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
                   : 'text-neutral-500 hover:text-black'
               }`}
             >
-              Авто
+              {t.uiLangAuto.split(' ')[0]}
             </button>
           </div>
         </div>
@@ -113,9 +143,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
               <Keyboard className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-black">Горячая клавиша записи</div>
+              <div className="text-xs font-semibold text-black">{t.hotkeyTitle}</div>
               <div className="text-[11px] text-neutral-500">
-                Нажмите для старта, нажмите ещё раз для завершения и вставки
+                {t.hotkeyDesc}
               </div>
             </div>
           </div>
@@ -136,13 +166,13 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-black">Умная ИИ-очистка текста</span>
+                <span className="text-xs font-semibold text-black">{t.aiCorrectionTitle}</span>
                 <span className="px-1.5 py-0.5 rounded bg-neutral-100 text-[10px] font-mono font-medium text-neutral-600">
                   Llama 3.3 70B
                 </span>
               </div>
               <div className="text-[11px] text-neutral-500">
-                Убирает «эээ/нуу» и запинки, расставляет знаки препинания и форматирует речь (&lt;200 мс)
+                {t.aiCorrectionDesc}
               </div>
             </div>
           </div>
@@ -157,28 +187,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
           </label>
         </div>
 
-        {/* Hands-free voice commands */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Mic className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">Голосовые команды пунктуации</div>
-              <div className="text-[11px] text-neutral-500">«Новая строка», «новый абзац», «точка с запятой», «тире»</div>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.handsFreeCommands}
-              onChange={(e) => onChange({ handsFreeCommands: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-          </label>
-        </div>
-
         {/* Sound Feedback */}
         <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
           <div className="flex items-center gap-3.5">
@@ -186,8 +194,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
               <Volume2 className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-black">Звуковой отклик</div>
-              <div className="text-[11px] text-neutral-500">Мягкий сигнал Apple-style при старте и завершении записи</div>
+              <div className="text-xs font-semibold text-black">{t.soundTitle}</div>
+              <div className="text-[11px] text-neutral-500">{t.soundDesc}</div>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -208,8 +216,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
               <Power className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-black">Автозапуск при старте системы</div>
-              <div className="text-[11px] text-neutral-500">Автоматически запускать виджет диктовки в фоне при включении компьютера</div>
+              <div className="text-xs font-semibold text-black">{t.autoStartTitle}</div>
+              <div className="text-[11px] text-neutral-500">{t.autoStartDesc}</div>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -232,20 +240,20 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-black">Версия программы</span>
+                  <span className="text-xs font-semibold text-black">{t.versionLabel}</span>
                   <span className="px-2 py-0.5 rounded-md bg-neutral-100 font-mono text-[10px] font-semibold text-neutral-600">
                     v{updateState.version}
                   </span>
                 </div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">
-                  {updateState.status === 'checking' && 'Проверка доступных обновлений...'}
-                  {updateState.status === 'not-available' && 'У вас установлена актуальная версия'}
-                  {updateState.status === 'available' && `Доступна новая версия v${updateState.latestVersion}`}
-                  {updateState.status === 'downloading' && `Загрузка обновления: ${updateState.progressPercent || 0}%`}
+                  {updateState.status === 'checking' && t.checkingUpdates}
+                  {updateState.status === 'not-available' && t.updateLatest}
+                  {updateState.status === 'available' && `${t.updateAvailable} v${updateState.latestVersion}`}
+                  {updateState.status === 'downloading' && `${t.downloadingUpdate} ${updateState.progressPercent || 0}%`}
                   {updateState.status === 'error' && (
-                    <span className="text-amber-600 font-medium">{updateState.error || 'Сервер обновлений пока не подключен'}</span>
+                    <span className="text-amber-600 font-medium">{updateState.error || t.updateError}</span>
                   )}
-                  {updateState.status === 'idle' && 'Автоматическая проверка через GitHub Releases'}
+                  {updateState.status === 'idle' && `${t.updatesTitle} • GitHub Releases`}
                 </div>
               </div>
             </div>
@@ -258,7 +266,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
                   className="px-3 py-1.5 rounded-xl bg-black text-white text-xs font-semibold hover:bg-neutral-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <ArrowDownToLine className="w-3.5 h-3.5" />
-                  <span>Загрузить</span>
+                  <span>{t.downloadUpdate}</span>
                 </button>
               ) : updateState.status === 'downloaded' ? (
                 <button
@@ -267,7 +275,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
                   className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Перезапустить</span>
+                  <span>{t.installRestart}</span>
                 </button>
               ) : (
                 <button
@@ -276,7 +284,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
                   disabled={updateState.status === 'checking' || updateState.status === 'downloading'}
                   className="px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200/80 text-black text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  {updateState.status === 'checking' ? 'Проверка...' : 'Проверить'}
+                  {updateState.status === 'checking' ? t.checkingUpdates : t.checkUpdates}
                 </button>
               )}
             </div>

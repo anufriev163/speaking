@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   mode: 'toggle',
   provider: 'groq',
   language: 'ru',
+  uiLanguage: 'auto',
   groqApiKey: '',
   openaiApiKey: '',
   deepgramApiKey: '',

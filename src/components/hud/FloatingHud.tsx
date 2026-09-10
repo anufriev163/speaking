@@ -3,8 +3,9 @@ import { Mic, Settings, Sparkles, Check, AlertCircle, Loader2 } from 'lucide-rea
 import { Waveform } from './Waveform';
 import { GovoriLogo } from '../common/GovoriLogo';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
-import { ActiveContext, HudState } from '../../types';
+import { ActiveContext, HudState, UILanguage } from '../../types';
 import { soundEffects } from '../../utils/soundEffects';
+import { getTranslations } from '../../utils/i18n';
 
 declare global {
   interface Window {
@@ -31,8 +32,11 @@ export const FloatingHud: React.FC = () => {
   const [selectionInfo, setSelectionInfo] = useState<{ hasSelection: boolean; snippet: string }>({ hasSelection: false, snippet: '' });
   const [isRewriteResult, setIsRewriteResult] = useState<boolean>(false);
   const [currentLanguage, setCurrentLanguage] = useState<'ru' | 'en' | 'auto'>('ru');
+  const [uiLanguage, setUiLanguage] = useState<UILanguage>('auto');
   const [appMode, setAppMode] = useState<'toggle' | 'ptt'>('toggle');
   const [savedMacroInfo, setSavedMacroInfo] = useState<{ trigger: string; replacement: string } | null>(null);
+
+  const t = getTranslations(uiLanguage);
 
   const { isRecording, audioVolume, startRecording, stopRecording } = useAudioRecorder();
   const timerRef = useRef<any>(null);
@@ -195,6 +199,9 @@ export const FloatingHud: React.FC = () => {
         if (s.language) {
           setCurrentLanguage(s.language);
         }
+        if (s.uiLanguage) {
+          setUiLanguage(s.uiLanguage);
+        }
         if (s.mode) {
           setAppMode(s.mode);
         }
@@ -208,6 +215,9 @@ export const FloatingHud: React.FC = () => {
         }
         if (s.language) {
           setCurrentLanguage(s.language);
+        }
+        if (s.uiLanguage) {
+          setUiLanguage(s.uiLanguage);
         }
         if (s.mode) {
           setAppMode(s.mode);
@@ -364,7 +374,7 @@ export const FloatingHud: React.FC = () => {
                 ? 'bg-red-500 text-white'
                 : 'bg-black text-white hover:bg-neutral-800'
             }`}
-            title={isRecording ? 'Остановить запись (Ctrl+~)' : 'Начать запись (Ctrl+~)'}
+            title={isRecording ? t.hudStopRecordTooltip : t.hudStartRecordTooltip}
           >
             {hudState === 'processing' ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -391,35 +401,35 @@ export const FloatingHud: React.FC = () => {
                 {selectionInfo.hasSelection && (
                   <span className="flex items-center gap-1 text-[10px] text-amber-900 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium truncate max-w-[100px]" title={selectionInfo.snippet}>
                     <Sparkles className="w-2.5 h-2.5 text-amber-600 animate-spin" />
-                    Редактор
+                    {t.hudEditor}
                   </span>
                 )}
               </div>
             ) : hudState === 'processing' ? (
               <div className="flex items-center gap-2 text-xs text-neutral-900 font-medium">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-neutral-700" />
-                <span>{selectionInfo.hasSelection ? 'Редактирую...' : 'Обработка...'}</span>
+                <span>{selectionInfo.hasSelection ? t.hudRewriting : t.hudProcessing}</span>
               </div>
             ) : hudState === 'success' ? (
               <div className="flex items-center gap-2 text-xs truncate">
                 {savedMacroInfo ? (
                   <span className="text-[#2563eb] font-semibold truncate text-[11px] flex items-center gap-1">
                     <span>💾</span>
-                    <span>Макрос: «{savedMacroInfo.trigger}»</span>
+                    <span>{t.hudMacro}: «{savedMacroInfo.trigger}»</span>
                   </span>
                 ) : (
                   <span className="text-neutral-900 font-medium truncate text-[11px]">
                     {isRewriteResult
-                      ? 'Заменено!'
+                      ? t.hudReplaced
                       : textSnippet
                       ? `«${textSnippet}»`
-                      : 'Вставлено!'}
+                      : t.hudPasted}
                   </span>
                 )}
               </div>
             ) : hudState === 'error' ? (
               <span className="text-xs text-red-600 truncate text-[11px] font-medium">
-                {errorMessage || 'Ошибка'}
+                {errorMessage || t.hudMicError}
               </span>
             ) : (
               <div className="flex items-center gap-2">
@@ -438,7 +448,7 @@ export const FloatingHud: React.FC = () => {
           <button
             onClick={cycleLanguage}
             className="app-no-drag px-2 py-0.5 rounded-full bg-white/30 hover:bg-white/50 text-neutral-800 hover:text-black transition-all font-mono text-[10px] font-bold tracking-tight cursor-pointer border border-white/40 shadow-2xs"
-            title={`Язык: ${currentLanguage.toUpperCase()} (нажмите для смены RU / EN / AUTO)`}
+            title={t.hudLangTooltip.replace('{lang}', currentLanguage.toUpperCase())}
           >
             {currentLanguage.toUpperCase()}
           </button>
@@ -447,7 +457,7 @@ export const FloatingHud: React.FC = () => {
           <button
             onClick={openSettings}
             className="app-no-drag w-7 h-7 rounded-full flex items-center justify-center text-neutral-600 hover:text-black hover:bg-white/40 transition-all cursor-pointer"
-            title="Настройки"
+            title={t.hudSettingsTooltip}
           >
             <Settings className="w-3.5 h-3.5" />
           </button>

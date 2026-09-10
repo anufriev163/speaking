@@ -320,41 +320,75 @@ function createTray() {
         );
 
     tray = new Tray(icon);
-    tray.setToolTip('говори');
-
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: 'Настройки и профили',
-        click: () => createSettingsWindow()
-      },
-      {
-        label: 'Показать виджет',
-        click: () => {
-          if (!hudWindow || hudWindow.isDestroyed()) {
-            createHudWindow();
-          }
-          if (hudWindow) {
-            hudWindow.showInactive();
-            hudWindow.setAlwaysOnTop(true, 'screen-saver');
-            hudWindow.moveTop();
-            hudWindow.webContents.send('hotkey:trigger', 'show');
-          }
-        }
-      },
-      { type: 'separator' },
-      {
-        label: 'Выход',
-        click: () => {
-          app.quit();
-        }
-      }
-    ]);
-
-    tray.setContextMenu(contextMenu);
+    updateTrayMenu();
     tray.on('double-click', () => createSettingsWindow());
   } catch (err) {
     console.warn('[Tray] Could not initialize tray icon:', err);
   }
+}
+
+function getTrayLabels() {
+  const currentSettings = storage.getSettings();
+  const uiLang = currentSettings.uiLanguage || 'auto';
+  let isRu = true;
+  if (uiLang === 'auto') {
+    const locale = (app.getLocale() || '').toLowerCase();
+    isRu = locale.startsWith('ru') || locale.startsWith('be') || locale.startsWith('uk') || locale.startsWith('kk');
+  } else {
+    isRu = uiLang === 'ru';
+  }
+
+  if (isRu) {
+    return {
+      settings: 'Настройки и профили',
+      showWidget: 'Показать виджет',
+      exit: 'Выход',
+      tooltip: 'говори — голосовой ввод'
+    };
+  }
+
+  return {
+    settings: 'Settings & Profiles',
+    showWidget: 'Show Widget',
+    exit: 'Exit',
+    tooltip: 'govori — AI Voice Assistant'
+  };
+}
+
+function updateTrayMenu() {
+  if (!tray || tray.isDestroyed()) return;
+  const labels = getTrayLabels();
+  tray.setToolTip(labels.tooltip);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: labels.settings,
+      click: () => createSettingsWindow()
+    },
+    {
+      label: labels.showWidget,
+      click: () => {
+        if (!hudWindow || hudWindow.isDestroyed()) {
+          createHudWindow();
+        }
+        if (hudWindow) {
+          hudWindow.showInactive();
+          hudWindow.setAlwaysOnTop(true, 'screen-saver');
+          hudWindow.moveTop();
+          hudWindow.webContents.send('hotkey:trigger', 'show');
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: labels.exit,
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setContextMenu(contextMenu);
 }
 
 let lastHotkeyTimestamp = 0;
@@ -527,6 +561,9 @@ function setupIpcHandlers() {
     }
     if (newSettings.autoStart !== undefined) {
       applyAutoStart(newSettings.autoStart);
+    }
+    if (newSettings.uiLanguage !== undefined) {
+      updateTrayMenu();
     }
     if (hudWindow && !hudWindow.isDestroyed()) {
       hudWindow.webContents.send('settings:changed', updated);

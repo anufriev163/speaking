@@ -145,7 +145,8 @@
       "shortcutName": "говори",
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "multiLanguageInstaller": true
     }
   }
 }
