@@ -6,6 +6,7 @@
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
 [![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-setup-1.0.4.exe)
 [![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-1.0.4.dmg)
+[![GitHub Stars](https://img.shields.io/github/stars/anufriev163/speaking?style=social)](https://github.com/anufriev163/speaking)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-orange)](#)
 
 ---
@@ -80,4 +81,18 @@ npm run dev
 # 3. Сборка установщика для Windows
 npm run dist
 ```
+
+---
+
+## ⭐ Поддержите проект
+
+Если **«Говори»** экономит ваше время и ускоряет работу — поставьте **звезду на GitHub**! Это лучшая мотивация развивать проект и добавлять новые функции.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=anufriev163/speaking&type=Date)](https://star-history.com/#anufriev163/speaking&Date)
+
+---
+
+## 📄 Лицензия
+
+Распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
 

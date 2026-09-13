@@ -101,25 +101,37 @@ export const SettingsView: React.FC = () => {
       {/* Main Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <div className="w-52 bg-neutral-50 border-r border-neutral-200/80 p-3 space-y-1 shrink-0">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full px-3 py-2 rounded-xl flex items-center gap-2.5 text-xs font-medium transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-black text-white shadow-sm'
-                    : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-neutral-500'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        <div className="w-52 bg-neutral-50 border-r border-neutral-200/80 p-3 flex flex-col justify-between shrink-0">
+          <div className="space-y-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`w-full px-3 py-2 rounded-xl flex items-center gap-2.5 text-xs font-medium transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-black text-white shadow-sm'
+                      : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-neutral-500'}`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <a
+            href="https://github.com/anufriev163/speaking"
+            target="_blank"
+            rel="noreferrer"
+            className="w-full px-3 py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-neutral-800 hover:text-black bg-white hover:bg-neutral-100 border border-neutral-200/90 shadow-xs transition-all cursor-pointer group"
+          >
+            <span className="text-amber-500 group-hover:scale-110 transition-transform">⭐</span>
+            <span>Star on GitHub</span>
+          </a>
         </div>
 
         {/* Content Area */}
