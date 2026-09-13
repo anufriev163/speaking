@@ -250,6 +250,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
                   {updateState.status === 'not-available' && t.updateLatest}
                   {updateState.status === 'available' && `${t.updateAvailable} v${updateState.latestVersion}`}
                   {updateState.status === 'downloading' && `${t.downloadingUpdate} ${updateState.progressPercent || 0}%`}
+                  {updateState.status === 'downloaded' && `${t.updateAvailable} v${updateState.latestVersion} — готово к установке`}
                   {updateState.status === 'error' && (
                     <span className="text-amber-600 font-medium">{updateState.error || t.updateError}</span>
                   )}
