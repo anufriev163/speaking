@@ -26,16 +26,18 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       return;
     }
 
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(dataArray);
+    const dataArray = new Float32Array(analyserRef.current.fftSize);
+    analyserRef.current.getFloatTimeDomainData(dataArray);
 
-    let sum = 0;
+    let sumSquares = 0;
     for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i];
+      sumSquares += dataArray[i] * dataArray[i];
     }
-    const avg = sum / dataArray.length;
-    // Sensitive human speech volume calculation
-    const normalized = Math.min(1, Math.max(0, (avg - 6) / 40));
+    const rms = Math.sqrt(sumSquares / dataArray.length);
+
+    // Strict noise gate: room silence/hiss is < 0.015; human voice starts > 0.025
+    const NOISE_GATE = 0.016;
+    const normalized = rms < NOISE_GATE ? 0 : Math.min(1, (rms - NOISE_GATE) * 4.5);
     setAudioVolume(normalized);
 
     animFrameRef.current = requestAnimationFrame(updateVolume);
@@ -61,12 +63,19 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioCtx;
+
+      // 85Hz High-pass filter removes sub-bass rumble, desk thumps, 50/60Hz AC hum
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 85;
+
       const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64;
+      analyser.fftSize = 256;
       analyserRef.current = analyser;
 
       const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
+      source.connect(highpass);
+      highpass.connect(analyser);
 
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;

@@ -21,12 +21,12 @@ export interface UpdateInfoState {
 
 let updateState: UpdateInfoState = {
   status: 'idle',
-  version: '1.0.3'
+  version: '1.0.4'
 };
 
 export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
   try {
-    updateState.version = app.getVersion() || '1.0.3';
+    updateState.version = app.getVersion() || '1.0.4';
   } catch {}
 
   // Explicitly configure GitHub feed URL to ensure correct target repo
@@ -171,9 +171,19 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
       return;
     }
 
-    updateState = { ...updateState, status: 'downloading', progressPercent: 0 };
-    broadcastState();
-    return autoUpdater.downloadUpdate();
+    try {
+      updateState = { ...updateState, status: 'downloading', progressPercent: 0, error: undefined };
+      broadcastState();
+      await autoUpdater.downloadUpdate();
+    } catch (err: any) {
+      console.error('[AutoUpdater] Download failed:', err);
+      updateState = {
+        ...updateState,
+        status: 'error',
+        error: 'Сбой скачивания: ' + (err?.message || 'ошибка сети')
+      };
+      broadcastState();
+    }
   });
 
   ipcMain.handle('updater:install', () => {

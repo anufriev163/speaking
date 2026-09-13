@@ -1,23 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Settings, Sparkles, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Mic, Settings, Sparkles, Check, AlertCircle, Loader2, X } from 'lucide-react';
 import { Waveform } from './Waveform';
+import { CapsuleBorder } from './CapsuleBorder';
 import { GovoriLogo } from '../common/GovoriLogo';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import { ActiveContext, HudState, UILanguage } from '../../types';
 import { soundEffects } from '../../utils/soundEffects';
 import { getTranslations } from '../../utils/i18n';
 
-declare global {
-  interface Window {
-    govoriAPI?: any;
-  }
-}
-
-
-
 export const FloatingHud: React.FC = () => {
   const [hudState, setHudState] = useState<HudState>('idle');
-  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(() => typeof window !== 'undefined' && !window.govoriAPI);
   const [context, setContext] = useState<ActiveContext>({
     processName: '',
     windowTitle: '',
@@ -29,6 +22,7 @@ export const FloatingHud: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [recordDuration, setRecordDuration] = useState<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [mockVoicing, setMockVoicing] = useState<boolean>(false);
   const [selectionInfo, setSelectionInfo] = useState<{ hasSelection: boolean; snippet: string }>({ hasSelection: false, snippet: '' });
   const [isRewriteResult, setIsRewriteResult] = useState<boolean>(false);
   const [currentLanguage, setCurrentLanguage] = useState<'ru' | 'en' | 'auto'>('ru');
@@ -62,6 +56,11 @@ export const FloatingHud: React.FC = () => {
   };
 
   const scheduleDismiss = (delayMs = 1400) => {
+    // In browser preview, never auto-dismiss so the UI can be freely inspected
+    if (typeof window !== 'undefined' && !window.govoriAPI) {
+      return;
+    }
+
     cancelDismiss();
     dismissTimerRef.current = setTimeout(() => {
       if (hoverRef.current) {
@@ -109,64 +108,63 @@ export const FloatingHud: React.FC = () => {
   };
 
   const stopRecordingAction = async () => {
-    if (!isRecordingRef.current || isTransitioningRef.current || hudState === 'processing') {
+    if (!isRecordingRef.current && hudState !== 'recording') {
       return;
     }
 
-    const now = Date.now();
-    const elapsed = now - recordStartTimeRef.current;
-    // In PTT or fast release, guarantee at least 350ms buffer before finalizing audio
-    if (elapsed < 350) {
-      await new Promise((r) => setTimeout(r, 350 - elapsed));
-    }
-
+    if (isTransitioningRef.current) return;
     isTransitioningRef.current = true;
-    soundEffects.playStop();
+
     setHudState('processing');
+    soundEffects.playStop();
 
     try {
-      const audioBlob = await stopRecording();
       isRecordingRef.current = false;
-      window.govoriAPI?.notifyRecordingStopped?.();
+      const audioBlob = await stopRecording();
 
-      if (!audioBlob || audioBlob.size === 0) {
-        scheduleDismiss(200);
+      if (!audioBlob || audioBlob.size < 800) {
+        setHudState('idle');
+        scheduleDismiss(600);
+        window.govoriAPI?.notifyRecordingStopped?.();
         return;
       }
 
       const arrayBuffer = await audioBlob.arrayBuffer();
+
       if (window.govoriAPI) {
         const result = await window.govoriAPI.transcribeAudio(arrayBuffer, audioBlob.type);
-        if (result) {
-          if (result.macroCreated) {
-            setSavedMacroInfo(result.macroCreated);
-            setTextSnippet('');
-            setIsRewriteResult(false);
-            setLatency(result.latencyMs);
-            setHudState('success');
-            soundEffects.playSuccess();
-            scheduleDismiss(2200);
-          } else if (result.text) {
-            setSavedMacroInfo(null);
-            setLatency(result.latencyMs);
-            setTextSnippet(result.text);
-            setIsRewriteResult(Boolean(result.isRewrite));
-            setHudState('success');
-            soundEffects.playSuccess();
-            scheduleDismiss(1400); // Display result for 1.4s then smoothly glide down
+
+        if (result.success && result.text) {
+          soundEffects.playSuccess();
+          setHudState('success');
+          setTextSnippet(result.text);
+          setLatency(result.latencyMs);
+          setIsRewriteResult(!!result.isRewrite);
+          if (result.macroSaved) {
+            setSavedMacroInfo(result.macroSaved);
           } else {
-            setHudState('idle');
-            scheduleDismiss(300);
+            setSavedMacroInfo(null);
           }
+
+          scheduleDismiss(1600);
+        } else {
+          soundEffects.playError();
+          setHudState('error');
+          const cleanErr = (result.error || 'Ошибка распознавания').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+          setErrorMessage(cleanErr);
+          scheduleDismiss(2500);
         }
       } else {
-        setHudState('idle');
-        scheduleDismiss(300);
+        setHudState('success');
+        setTextSnippet('Демо-режим: API недоступен');
+        scheduleDismiss(1200);
       }
     } catch (err: any) {
-      console.error('[HUD] Transcription error:', err);
+      console.error('[HUD] Error stopping recording:', err);
+      soundEffects.playError();
       setHudState('error');
-      setErrorMessage(err?.message || 'Ошибка распознавания');
+      const cleanErr = (err?.message || 'Ошибка обработки').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+      setErrorMessage(cleanErr);
       scheduleDismiss(2500);
     } finally {
       isTransitioningRef.current = false;
@@ -174,9 +172,68 @@ export const FloatingHud: React.FC = () => {
     }
   };
 
-  const handleToggleRecording = () => {
+  const handleCancelRecording = (e?: React.MouseEvent) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    cancelDismiss();
+
     if (isRecordingRef.current) {
+      isRecordingRef.current = false;
+      stopRecording(); // stop and discard audio
+    }
+    soundEffects.playStop();
+    setHudState('idle');
+    if (typeof window !== 'undefined' && window.govoriAPI) {
+      setIsVisible(false);
+      setTimeout(() => {
+        window.govoriAPI?.notifyRecordingStopped?.();
+        window.govoriAPI?.hideHud?.();
+      }, 180);
+    }
+  };
+
+  const handleConfirmRecording = (e?: React.MouseEvent) => {
+    e?.stopPropagation?.();
+    if (isRecordingRef.current || hudState === 'recording') {
       stopRecordingAction();
+    } else if (hudState === 'success' || hudState === 'error') {
+      // Result is shown: clicking checkmark smoothly dismisses HUD
+      cancelDismiss();
+      setIsVisible(false);
+      setTimeout(() => {
+        window.govoriAPI?.notifyRecordingStopped?.();
+        window.govoriAPI?.hideHud?.();
+        setHudState('idle');
+        setTextSnippet('');
+        setErrorMessage('');
+        setLatency(null);
+      }, 180);
+    } else if (hudState === 'idle') {
+      startRecordingAction();
+    }
+  };
+
+  const handleCapsuleClick = () => {
+    if (hudState === 'success' || hudState === 'error') {
+      cancelDismiss();
+      setIsVisible(false);
+      setTimeout(() => {
+        window.govoriAPI?.notifyRecordingStopped?.();
+        window.govoriAPI?.hideHud?.();
+        setHudState('idle');
+        setTextSnippet('');
+        setErrorMessage('');
+        setLatency(null);
+      }, 180);
+    }
+  };
+
+  const handleToggleRecording = () => {
+    if (hudState === 'recording' || isRecordingRef.current) {
+      stopRecordingAction();
+    } else if (hudState === 'success' || hudState === 'error') {
+      cancelDismiss();
+      startRecordingAction();
     } else {
       startRecordingAction();
     }
@@ -193,35 +250,17 @@ export const FloatingHud: React.FC = () => {
 
     window.govoriAPI.getSettings?.().then((s: any) => {
       if (s) {
-        if (typeof s.soundFeedback === 'boolean') {
-          soundEffects.setEnabled(s.soundFeedback);
-        }
-        if (s.language) {
-          setCurrentLanguage(s.language);
-        }
-        if (s.uiLanguage) {
-          setUiLanguage(s.uiLanguage);
-        }
-        if (s.mode) {
-          setAppMode(s.mode);
-        }
+        if (s.language) setCurrentLanguage(s.language);
+        if (s.uiLanguage) setUiLanguage(s.uiLanguage);
+        if (s.mode) setAppMode(s.mode);
       }
     });
 
     const unsubSettings = window.govoriAPI.onSettingsChanged?.((s: any) => {
       if (s) {
-        if (typeof s.soundFeedback === 'boolean') {
-          soundEffects.setEnabled(s.soundFeedback);
-        }
-        if (s.language) {
-          setCurrentLanguage(s.language);
-        }
-        if (s.uiLanguage) {
-          setUiLanguage(s.uiLanguage);
-        }
-        if (s.mode) {
-          setAppMode(s.mode);
-        }
+        if (s.language) setCurrentLanguage(s.language);
+        if (s.uiLanguage) setUiLanguage(s.uiLanguage);
+        if (s.mode) setAppMode(s.mode);
       }
     });
 
@@ -236,27 +275,22 @@ export const FloatingHud: React.FC = () => {
     });
 
     const unsubHotkey = window.govoriAPI.onTriggerRecording((action: string) => {
-      if (action === 'start') {
+      if (action === 'toggle') {
+        handleToggleRecordingRef.current();
+      } else if (action === 'start') {
         startRecordingAction();
       } else if (action === 'stop') {
         stopRecordingAction();
       } else if (action === 'show') {
         cancelDismiss();
         setIsVisible(true);
-        setHudState('idle');
-      } else {
-        handleToggleRecording();
+        scheduleDismiss(3500);
       }
     });
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        cancelDismiss();
-        setIsVisible(false);
-        setTimeout(() => {
-          window.govoriAPI?.hideHud?.();
-          setHudState('idle');
-        }, 380);
+        handleCancelRecording();
       }
     };
 
@@ -273,42 +307,49 @@ export const FloatingHud: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isRecording) {
+    if (hudState === 'recording') {
       setRecordDuration(0);
       timerRef.current = setInterval(() => {
         setRecordDuration((prev) => prev + 1);
       }, 1000);
     } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRecording]);
+  }, [hudState]);
+
+  const dragStartPos = useRef<{ mouseX: number; mouseY: number } | null>(null);
+  const isDragging = useRef<boolean>(false);
 
   const handleDragStart = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) return;
+    if ((e.target as HTMLElement).closest('.app-no-drag')) {
+      return;
+    }
+    isDragging.current = true;
+    dragStartPos.current = { mouseX: e.screenX, mouseY: e.screenY };
 
-    let startX = e.screenX;
-    let startY = e.screenY;
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.screenX - startX;
-      const deltaY = moveEvent.screenY - startY;
-      startX = moveEvent.screenX;
-      startY = moveEvent.screenY;
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDragging.current || !dragStartPos.current) return;
+      const deltaX = moveEvent.screenX - dragStartPos.current.mouseX;
+      const deltaY = moveEvent.screenY - dragStartPos.current.mouseY;
+      dragStartPos.current = { mouseX: moveEvent.screenX, mouseY: moveEvent.screenY };
       window.govoriAPI?.moveHud?.(deltaX, deltaY);
     };
 
-    const onMouseUp = () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      dragStartPos.current = null;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   };
 
   const handleMouseEnter = () => {
@@ -320,6 +361,9 @@ export const FloatingHud: React.FC = () => {
   const handleMouseLeave = () => {
     setIsHovered(false);
     hoverRef.current = false;
+    if (typeof window !== 'undefined' && !window.govoriAPI) {
+      return;
+    }
     if (hudState === 'success') {
       scheduleDismiss(800);
     } else if (hudState === 'error') {
@@ -328,7 +372,6 @@ export const FloatingHud: React.FC = () => {
       scheduleDismiss(3000);
     }
   };
-
 
   const cycleLanguage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -349,120 +392,124 @@ export const FloatingHud: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center select-none overflow-visible p-3"
+      className="w-full h-full flex items-center justify-center select-none overflow-visible p-5"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div className={`hud-spring-wrapper ${isVisible ? 'hud-spring-visible' : 'hud-spring-hidden'}`}>
         <div
           onMouseDown={handleDragStart}
-          className={`apple-pill rounded-full px-3 py-1.5 flex items-center gap-2.5 cursor-grab active:cursor-grabbing ${
-            hudState === 'recording' ? 'apple-pill-recording' : ''
+          onClick={handleCapsuleClick}
+          className={`wispr-capsule cursor-grab active:cursor-grabbing select-none ${
+            (isRecording || hudState === 'recording') ? 'wispr-capsule-recording' : ''
           }`}
         >
-          {/* Record / Action Button */}
+          {/* Unified capsule border: permanent 1px base + traveling tapered white beam */}
+          <CapsuleBorder isRecording={isRecording || hudState === 'recording'} />
+
+          {/* Left: Cancel Circle Button (✕) */}
           <button
-            onClick={handleToggleRecording}
-            className={`app-no-drag w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs ${
-              hudState === 'recording'
-                ? 'bg-red-500 text-white scale-105 ring-2 ring-red-400/30'
-                : hudState === 'processing'
-                ? 'bg-white/70 text-black border border-black/10 backdrop-blur-md'
-                : hudState === 'success'
-                ? 'bg-[#2563eb] text-white shadow-sm shadow-blue-500/25 ring-2 ring-blue-400/20'
-                : hudState === 'error'
-                ? 'bg-red-500 text-white'
-                : 'bg-black text-white hover:bg-neutral-800'
-            }`}
-            title={isRecording ? t.hudStopRecordTooltip : t.hudStartRecordTooltip}
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={handleCancelRecording}
+            className="app-no-drag wispr-circle-btn cursor-pointer relative z-10"
+            title="Отменить (Esc)"
           >
-            {hudState === 'processing' ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : hudState === 'recording' ? (
-              <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-            ) : hudState === 'success' ? (
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-            ) : hudState === 'error' ? (
-              <AlertCircle className="w-3.5 h-3.5" />
-            ) : (
-              <Mic className="w-3.5 h-3.5" />
-            )}
+            <X className="w-3.5 h-3.5 stroke-[2.5] pointer-events-none" />
           </button>
 
-          {/* Center Dynamic Content */}
-          <div className="flex items-center gap-2 min-w-[150px] max-w-[260px] overflow-hidden">
-            {hudState === 'recording' ? (
-              <div className="flex items-center gap-2.5">
-                <Waveform volume={audioVolume} isRecording={isRecording} />
-                <span className="text-xs font-mono font-semibold text-neutral-900 tracking-tight">
-                  {formatSeconds(recordDuration)}
-                </span>
-
-                {selectionInfo.hasSelection && (
-                  <span className="flex items-center gap-1 text-[10px] text-amber-900 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium truncate max-w-[100px]" title={selectionInfo.snippet}>
-                    <Sparkles className="w-2.5 h-2.5 text-amber-600 animate-spin" />
-                    {t.hudEditor}
-                  </span>
-                )}
-              </div>
-            ) : hudState === 'processing' ? (
-              <div className="flex items-center gap-2 text-xs text-neutral-900 font-medium">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-neutral-700" />
-                <span>{selectionInfo.hasSelection ? t.hudRewriting : t.hudProcessing}</span>
+          {/* Center: Waveform / Status */}
+          <div className="flex items-center justify-center min-w-[70px] px-1 relative z-10">
+            {hudState === 'processing' ? (
+              <div className="flex items-center gap-2 px-2 text-white/90 text-xs font-medium">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                <span className="text-[11px] tracking-tight">{selectionInfo.hasSelection ? t.hudRewriting : t.hudProcessing}</span>
               </div>
             ) : hudState === 'success' ? (
-              <div className="flex items-center gap-2 text-xs truncate">
-                {savedMacroInfo ? (
-                  <span className="text-[#2563eb] font-semibold truncate text-[11px] flex items-center gap-1">
-                    <span>💾</span>
-                    <span>{t.hudMacro}: «{savedMacroInfo.trigger}»</span>
-                  </span>
-                ) : (
-                  <span className="text-neutral-900 font-medium truncate text-[11px]">
-                    {isRewriteResult
-                      ? t.hudReplaced
-                      : textSnippet
-                      ? `«${textSnippet}»`
-                      : t.hudPasted}
-                  </span>
-                )}
+              <div className="flex items-center gap-1.5 px-2 text-white text-xs font-medium max-w-[200px] truncate">
+                <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-400 shrink-0" />
+                <span className="text-[11px] truncate text-white/90">
+                  {savedMacroInfo ? savedMacroInfo.trigger : textSnippet ? `«${textSnippet}»` : t.hudPasted}
+                </span>
               </div>
             ) : hudState === 'error' ? (
-              <span className="text-xs text-red-600 truncate text-[11px] font-medium">
-                {errorMessage || t.hudMicError}
-              </span>
-            ) : (
-              <div className="flex items-center gap-2">
-                <GovoriLogo className="w-4 h-4 text-black shrink-0" />
-                <span className="text-xs font-semibold text-neutral-900 tracking-tight lowercase">
-                  говори
-                </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-white/40 border border-white/40 text-neutral-800 font-mono text-[9px] font-semibold tracking-tight shadow-2xs">
-                  Ctrl + ~
-                </span>
+              <div className="flex items-center gap-1.5 px-2 text-rose-300 text-xs font-medium max-w-[180px] truncate">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="text-[11px] truncate">{errorMessage || t.hudMicError}</span>
               </div>
+            ) : (
+              /* Equalizer waveform */
+              <Waveform
+                volume={mockVoicing ? 0.36 : audioVolume}
+                isRecording={isRecording || hudState === 'recording'}
+              />
             )}
           </div>
 
-          {/* Quick Language Toggle */}
+          {/* Right: Confirm Circle Button (✓) */}
           <button
-            onClick={cycleLanguage}
-            className="app-no-drag px-2 py-0.5 rounded-full bg-white/30 hover:bg-white/50 text-neutral-800 hover:text-black transition-all font-mono text-[10px] font-bold tracking-tight cursor-pointer border border-white/40 shadow-2xs"
-            title={t.hudLangTooltip.replace('{lang}', currentLanguage.toUpperCase())}
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={handleConfirmRecording}
+            className="app-no-drag wispr-circle-btn cursor-pointer relative z-10"
+            title={hudState === 'recording' ? "Завершить и вставить (Ctrl + ~)" : hudState === 'success' ? "Готово (закрыть)" : "Начать запись"}
           >
-            {currentLanguage.toUpperCase()}
-          </button>
-
-          {/* Quick Settings */}
-          <button
-            onClick={openSettings}
-            className="app-no-drag w-7 h-7 rounded-full flex items-center justify-center text-neutral-600 hover:text-black hover:bg-white/40 transition-all cursor-pointer"
-            title={t.hudSettingsTooltip}
-          >
-            <Settings className="w-3.5 h-3.5" />
+            {hudState === 'processing' ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-white pointer-events-none" />
+            ) : (
+              <Check className="w-3.5 h-3.5 stroke-[2.5] pointer-events-none" />
+            )}
           </button>
         </div>
       </div>
+
+      {/* Developer / Browser Preview Controls (only rendered in browser when window.govoriAPI is absent) */}
+      {typeof window !== 'undefined' && !window.govoriAPI && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-neutral-900/90 border border-white/20 rounded-full px-3.5 py-1.5 shadow-2xl backdrop-blur-md z-50 select-none">
+          <span className="text-neutral-400 font-mono text-[10px] mr-1">Тест HUD:</span>
+          <button
+            id="test-btn-idle"
+            onClick={() => { setHudState('idle'); setIsVisible(true); setMockVoicing(false); }}
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+              hudState === 'idle' ? 'bg-sky-500 text-white shadow-sm' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+            }`}
+          >
+            Готов
+          </button>
+          <button
+            id="test-btn-recording"
+            onClick={() => { setHudState('recording'); setIsVisible(true); setMockVoicing(true); }}
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+              hudState === 'recording' && mockVoicing ? 'bg-sky-500 text-white shadow-sm' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+            }`}
+          >
+            Запись + Речь
+          </button>
+          <button
+            id="test-btn-processing"
+            onClick={() => { setHudState('processing'); setIsVisible(true); }}
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+              hudState === 'processing' ? 'bg-sky-500 text-white shadow-sm' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+            }`}
+          >
+            Обработка
+          </button>
+          <button
+            id="test-btn-success"
+            onClick={() => {
+              setHudState('success');
+              setTextSnippet('Привет! Всё отлично работает.');
+              setLatency(190);
+              setIsVisible(true);
+            }}
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+              hudState === 'success' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+            }`}
+          >
+            Успех
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { storage } from './services/storage';
 import { detectActiveContext } from './services/contextDetector';
-import { injectTextUnicode, simulateCopy } from './services/win32';
+import { injectTextUnicode, simulateCopy, rememberForegroundWindow } from './services/win32';
 import { transcribeAudio } from './services/sttService';
 import { checkLocalWhisperAvailable, shutdownLocalWhisper } from './services/localWhisper';
 import { cleanTextRules, refineTextWithLLM } from './services/llmProcessor';
@@ -154,7 +154,7 @@ function createHudWindow() {
   const { bounds } = primaryDisplay;
 
   const hudWidth = 520;
-  const hudHeight = 110;
+  const hudHeight = 140;
 
   const settings = storage.getSettings();
   let x = settings.hudPosition?.x;
@@ -305,12 +305,24 @@ function createSettingsWindow() {
 
 function createTray() {
   try {
-    const iconPath = app.isPackaged
-      ? (fs.existsSync(path.join(process.resourcesPath, 'assets/icon-16.png'))
-          ? path.join(process.resourcesPath, 'assets/icon-16.png')
-          : path.join(__dirname, '../assets/icon-16.png'))
-      : path.join(__dirname, '../assets/icon-16.png');
-    const icon = fs.existsSync(iconPath)
+    let iconPath = '';
+    if (process.platform === 'win32') {
+      const candidates = [
+        path.join(process.resourcesPath, 'assets/icon.ico'),
+        path.join(__dirname, '../assets/icon.ico'),
+        path.join(process.cwd(), 'assets/icon.ico')
+      ];
+      iconPath = candidates.find(p => fs.existsSync(p)) || '';
+    } else {
+      const candidates = [
+        path.join(process.resourcesPath, 'assets/icon-16.png'),
+        path.join(__dirname, '../assets/icon-16.png'),
+        path.join(process.cwd(), 'assets/icon-16.png')
+      ];
+      iconPath = candidates.find(p => fs.existsSync(p)) || '';
+    }
+
+    const icon = iconPath && fs.existsSync(iconPath)
       ? nativeImage.createFromPath(iconPath)
       : nativeImage.createFromBuffer(
           Buffer.from(
@@ -443,6 +455,7 @@ function registerHotkeys() {
         }
         lastHotkeyTimestamp = now;
 
+        rememberForegroundWindow();
         const currentSettings = storage.getSettings();
         lastActiveContext = detectActiveContext();
 
@@ -458,7 +471,7 @@ function registerHotkeys() {
             const primaryDisplay = screen.getPrimaryDisplay();
             const { bounds } = primaryDisplay;
             posX = Math.round(bounds.x + (bounds.width - 520) / 2);
-            posY = Math.round(bounds.y + bounds.height - 110 - 16);
+            posY = Math.round(bounds.y + bounds.height - 140 - 16);
           }
 
           hudWindow.setPosition(posX, posY);
@@ -730,6 +743,11 @@ app.whenReady().then(() => {
   if (settings.autoStart) {
     applyAutoStart(true);
   }
+
+  // Continuously track foreground external window so clicking HUD buttons knows where to insert text
+  setInterval(() => {
+    rememberForegroundWindow();
+  }, 400);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

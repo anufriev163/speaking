@@ -1,6 +1,6 @@
 {
   "name": "govori",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Next-gen AI Voice Dictation & Assistant for Windows and macOS",
   "main": "dist-electron/main.js",
   "scripts": {

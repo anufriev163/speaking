@@ -21,6 +21,35 @@ let CloseHandle: any = null;
 let QueryFullProcessImageNameW: any = null;
 let SendInput: any = null;
 let GetAsyncKeyState: any = null;
+let SetForegroundWindow: any = null;
+let keybd_event: any = null;
+
+let lastTargetHwnd: any = null;
+
+export function rememberForegroundWindow(): void {
+  if (process.platform === 'win32' && GetForegroundWindow && GetWindowThreadProcessId) {
+    try {
+      const hwnd = GetForegroundWindow();
+      if (!hwnd) return;
+      const pidHolder = [0];
+      GetWindowThreadProcessId(hwnd, pidHolder);
+      const pid = pidHolder[0];
+      // Only remember if foreground window belongs to an external application (not our Electron app)
+      if (pid && pid !== process.pid) {
+        lastTargetHwnd = hwnd;
+      }
+    } catch {}
+  }
+}
+
+export function restoreForegroundWindow(): boolean {
+  if (process.platform === 'win32' && SetForegroundWindow && lastTargetHwnd) {
+    try {
+      return SetForegroundWindow(lastTargetHwnd);
+    } catch {}
+  }
+  return false;
+}
 
 const INPUT_KEYBOARD = 1;
 const KEYEVENTF_UNICODE = 0x0004;
@@ -35,6 +64,7 @@ if (process.platform === 'win32') {
     kernel32 = koffi.load('kernel32.dll');
 
     GetForegroundWindow = user32.func('intptr_t GetForegroundWindow()');
+    SetForegroundWindow = user32.func('bool SetForegroundWindow(intptr_t hWnd)');
     GetWindowTextW = user32.func('int GetWindowTextW(intptr_t hWnd, _Out_ uint16_t *lpString, int nMaxCount)');
     GetWindowThreadProcessId = user32.func('uint32_t GetWindowThreadProcessId(intptr_t hWnd, _Out_ uint32_t *lpdwProcessId)');
 
@@ -58,6 +88,7 @@ if (process.platform === 'win32') {
 
     SendInput = user32.func('uint32_t SendInput(uint32_t cInputs, INPUT *pInputs, int cbSize)');
     GetAsyncKeyState = user32.func('short GetAsyncKeyState(int vKey)');
+    keybd_event = user32.func('void keybd_event(uint8_t bVk, uint8_t bScan, uint32_t dwFlags, uintptr_t dwExtraInfo)');
     console.log('[Platform] Native Win32 FFI successfully initialized via koffi');
   } catch (err) {
     console.warn('[Platform] Win32 FFI initialization skipped or failed. Falling back to clipboard/SendKeys:', err);
@@ -143,6 +174,10 @@ export function getActiveWindowInfo(): Win32ActiveWindow {
 
     if (!pid) {
       return { processName: 'unknown', processPath: '', windowTitle };
+    }
+
+    if (pid !== process.pid) {
+      lastTargetHwnd = hwnd;
     }
 
     let processPath = '';
@@ -261,16 +296,32 @@ function injectClipboardWindows(text: string): boolean {
 
     clipboard.writeText(text);
 
+    let sent = false;
     if (SendInput && koffi) {
-      const cbSize = koffi.sizeof('INPUT');
-      const inputs = [
-        { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
-        { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
-        { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
-        { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
-      ];
-      SendInput(inputs.length, inputs, cbSize);
-    } else {
+      try {
+        const cbSize = koffi.sizeof('INPUT');
+        const inputs = [
+          { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
+          { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
+          { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
+          { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
+        ];
+        const res = SendInput(inputs.length, inputs, cbSize);
+        sent = res > 0;
+      } catch {}
+    }
+
+    if (!sent && keybd_event) {
+      try {
+        keybd_event(VK.CONTROL, 0, 0, 0);
+        keybd_event(0x56, 0, 0, 0);
+        keybd_event(0x56, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK.CONTROL, 0, KEYEVENTF_KEYUP, 0);
+        sent = true;
+      } catch {}
+    }
+
+    if (!sent) {
       // Fallback via PowerShell SendKeys on older or restricted Windows setups
       const psCmd = `powershell.exe -NoProfile -WindowStyle Hidden -Command "$ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^v')"`;
       execSync(psCmd, { timeout: 1000, stdio: ['ignore', 'ignore', 'ignore'] });
@@ -363,7 +414,7 @@ function injectTextLinux(text: string): boolean {
  * Universal text injection supporting Windows (SendInput + Clipboard fallback),
  * macOS (AppleScript Cmd+V), and Linux (xdotool).
  */
-export function injectText(text: string): boolean {
+export async function injectText(text: string): Promise<boolean> {
   if (!text || typeof text !== 'string') return false;
 
   if (process.platform === 'darwin') {
@@ -373,6 +424,10 @@ export function injectText(text: string): boolean {
   if (process.platform === 'linux') {
     return injectTextLinux(text);
   }
+
+  // On Windows: Restore focus to original active window in case HUD or click stole focus
+  restoreForegroundWindow();
+  await new Promise((r) => setTimeout(r, 60));
 
   // On Windows: First attempt direct Unicode SendInput (cleanest, zero clipboard pollution)
   const sent = sendInputUnicode(text);

@@ -39,8 +39,8 @@ const api = {
     ipcRenderer.invoke('stt:check-local'),
 
   // Events from Main Process
-  onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop') => void) => {
-    const handler = (_event: any, action: 'toggle' | 'start' | 'stop') => callback(action);
+  onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop' | 'show') => void) => {
+    const handler = (_event: any, action: 'toggle' | 'start' | 'stop' | 'show') => callback(action);
     ipcRenderer.on('hotkey:trigger', handler);
     return () => ipcRenderer.removeListener('hotkey:trigger', handler);
   },
@@ -85,5 +85,3 @@ const api = {
 };
 
 contextBridge.exposeInMainWorld('govoriAPI', api);
-
-export type GovoriAPI = typeof api;

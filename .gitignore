@@ -25,6 +25,7 @@ yarn-error.log*
 # OS & Editor
 .DS_Store
 Thumbs.db
+*.lnk
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
