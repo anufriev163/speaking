@@ -1,7 +1,7 @@
-# 🎙️ Говори — голосовой ввод нового поколения для Windows и macOS
+# 🎙️ Говори — Next-gen AI Voice Dictation for Windows & macOS
 
-> Интеллектуальный ассистент и голосовой набор текста на базе **Whisper Large-v3-turbo**, **Llama 3.3 70B** и нативного Win32/macOS API.
-> В разы быстрее и функциональнее существующих аналогов (diktuy.ru, Wispr Flow).
+> **Speak naturally, write instantly.** The open-source, subscription-free alternative to Wispr Flow, Aqua Voice, and Superwhisper with sub-200ms latency.  
+> Интеллектуальный голосовой ввод в любое приложение на базе **Whisper Large-v3-turbo** и **Llama 3.3 70B** — 100% бесплатно и без подписок.
 
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
 [![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-setup-1.0.4.exe)
@@ -14,7 +14,8 @@
 
 | Платформа | Файл загрузки | Инструкция |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | [**Скачать Говори (govori-setup-1.0.4.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-setup-1.0.4.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
+| **Windows 10 / 11 (64-бит)** | [**Скачать Говори (govori-setup-1.0.4.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-setup-1.0.4.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
+| **Windows 7 / 8 / 32-бит (Legacy)** | [**Скачать для старых ПК (govori-legacy-setup-1.0.4.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-legacy-setup-1.0.4.exe) | Облегчённая сборка для 32-битных и устаревших систем. |
 | **macOS (Apple Silicon & Intel)** | [**Скачать DMG (govori-1.0.4.dmg)**](https://github.com/anufriev163/speaking/releases/download/v1.0.4/govori-1.0.4.dmg) | Откройте DMG и перетащите «говори» в папку Applications. |
 
 > [!TIP]

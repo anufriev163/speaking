@@ -70,7 +70,7 @@ function initSimulator() {
   let currentIdx = 0;
   let isSimulating = false;
 
-  async function runSimulation(index: number) {
+  async function runSimulation(index) {
     if (isSimulating) return;
     isSimulating = true;
 
