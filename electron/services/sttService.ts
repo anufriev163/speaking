@@ -1,5 +1,47 @@
+import { net } from 'electron';
 import { storage } from './storage';
 import { transcribeAudioLocal, checkLocalWhisperAvailable } from './localWhisper';
+
+// Polyfill global Blob for any secondary libraries if missing in Node
+if (typeof (globalThis as any).Blob === 'undefined') {
+  try {
+    const { Blob } = require('buffer');
+    if (Blob) (globalThis as any).Blob = Blob;
+  } catch {}
+}
+
+function buildMultipart(
+  fields: Record<string, string | undefined>,
+  fileField: { name: string; filename: string; contentType: string; buffer: Buffer }
+) {
+  const boundary = '----GovoriBoundary' + Math.random().toString(36).substring(2);
+  const chunks: Buffer[] = [];
+
+  for (const [name, val] of Object.entries(fields)) {
+    if (val === undefined || val === null) continue;
+    chunks.push(
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${val}\r\n`,
+        'utf-8'
+      )
+    );
+  }
+
+  chunks.push(
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${fileField.name}"; filename="${fileField.filename}"\r\nContent-Type: ${fileField.contentType}\r\n\r\n`,
+      'utf-8'
+    )
+  );
+  chunks.push(fileField.buffer);
+  chunks.push(Buffer.from(`\r\n--${boundary}--\r\n`, 'utf-8'));
+
+  const body = Buffer.concat(chunks);
+  return {
+    contentType: `multipart/form-data; boundary=${boundary}`,
+    body
+  };
+}
 
 export interface TranscriptionResult {
   text: string;
@@ -62,31 +104,42 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
 
   const isWebm = mimeType.includes('webm');
   const filename = isWebm ? 'audio.webm' : 'audio.wav';
-  const blob = new Blob([audioBuffer], { type: mimeType });
-  const formData = new FormData();
-  formData.append('file', blob, filename);
-  formData.append('model', model);
-  formData.append('response_format', 'json');
+
+  const fields: Record<string, string | undefined> = {
+    model,
+    response_format: 'json',
+    temperature: '0.0'
+  };
   if (speechLang !== 'auto') {
-    formData.append('language', speechLang);
+    fields.language = speechLang;
   }
-  formData.append('temperature', '0.0');
 
   // Context prompt prevents hallucination
   const dictionary = storage.getDictionary();
   if (dictionary.length > 0) {
     const terms = dictionary.slice(0, 10).map(d => d.word).join(', ');
     const promptPrefix = speechLang === 'en' ? 'English speech:' : speechLang === 'auto' ? 'Speech terms:' : 'Русская речь:';
-    formData.append('prompt', `${promptPrefix} ${terms}`);
+    fields.prompt = `${promptPrefix} ${terms}`;
   }
 
+  const { contentType, body } = buildMultipart(fields, {
+    name: 'file',
+    filename,
+    contentType: mimeType,
+    buffer: audioBuffer
+  });
+
+  const fetchFn = typeof fetch !== 'undefined' ? fetch : net.fetch;
+
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetchFn(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': contentType,
+        'Content-Length': String(body.length)
       },
-      body: formData
+      body
     });
 
     if (!res.ok) {
