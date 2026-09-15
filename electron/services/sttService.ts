@@ -150,6 +150,9 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
       if (res.status >= 429) {
         return await attemptLocalFallback(audioBuffer, mimeType, startTime, speechLang);
       }
+      if (res.status === 401) {
+        throw new Error(`Неверный API-ключ ${provider.toUpperCase()} в настройках`);
+      }
       throw new Error(`Ошибка распознавания (${provider}): ${res.status}`);
     }
 
@@ -174,6 +177,9 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
       return await attemptLocalFallback(audioBuffer, mimeType, startTime, speechLang);
     } catch (fallbackErr) {
       console.error('[STT] Offline fallback also unavailable:', fallbackErr);
+      if (err?.message && !err.message.includes('fetch failed')) {
+        throw err;
+      }
       throw new Error('Нет подключения к сети и локальный движок недоступен');
     }
   }

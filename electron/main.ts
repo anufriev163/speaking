@@ -93,14 +93,17 @@ function notifyExistingInstanceAndExit() {
       client.write('wake\n');
       client.end();
     } catch {}
+    try { app.quit(); } catch {}
     process.exit(0);
   });
 
   client.on('error', () => {
+    try { app.quit(); } catch {}
     process.exit(0);
   });
 
   setTimeout(() => {
+    try { app.quit(); } catch {}
     process.exit(0);
   }, 300);
 }
@@ -702,66 +705,68 @@ function setupIpcHandlers() {
   });
 }
 
-app.whenReady().then(() => {
-  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
-    // Only allow media (microphone) capture for speech dictation
-    if (permission === 'media') {
-      return callback(true);
-    }
-    callback(false);
-  });
-  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
-    return permission === 'media';
-  });
-
-  if (process.platform === 'darwin') {
-    try {
-      if (systemPreferences && typeof systemPreferences.isTrustedAccessibilityClient === 'function') {
-        const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
-        console.log('[Platform] macOS Accessibility permission status:', isTrusted);
+if (gotTheLock) {
+  app.whenReady().then(() => {
+    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+      // Only allow media (microphone) capture for speech dictation
+      if (permission === 'media') {
+        return callback(true);
       }
-    } catch (err) {
-      console.warn('[Platform] macOS Accessibility check error:', err);
+      callback(false);
+    });
+    session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+      return permission === 'media';
+    });
+
+    if (process.platform === 'darwin') {
+      try {
+        if (systemPreferences && typeof systemPreferences.isTrustedAccessibilityClient === 'function') {
+          const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
+          console.log('[Platform] macOS Accessibility permission status:', isTrusted);
+        }
+      } catch (err) {
+        console.warn('[Platform] macOS Accessibility check error:', err);
+      }
     }
-  }
 
-  setupIpcHandlers();
-  createHudWindow();
+    setupIpcHandlers();
+    createHudWindow();
 
-  const settings = storage.getSettings();
+    const settings = storage.getSettings();
 
-  // Show settings window on manual launch; keep quiet only on system boot autostart
-  const isAutostart = process.argv.includes('--autostart');
-  if (!isAutostart) {
-    createSettingsWindow();
-  }
-
-  createTray();
-  registerHotkeys();
-
-  // Apply autostart state if configured
-  if (settings.autoStart) {
-    applyAutoStart(true);
-  }
-
-  // Continuously track foreground external window so clicking HUD buttons knows where to insert text
-  setInterval(() => {
-    rememberForegroundWindow();
-  }, 400);
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createHudWindow();
+    // Show settings window on manual launch; keep quiet only on system boot autostart
+    const isAutostart = process.argv.includes('--autostart');
+    if (!isAutostart) {
+      createSettingsWindow();
     }
+
+    createTray();
+    registerHotkeys();
+
+    // Apply autostart state if configured
+    if (settings.autoStart) {
+      applyAutoStart(true);
+    }
+
+    // Continuously track foreground external window so clicking HUD buttons knows where to insert text
+    setInterval(() => {
+      rememberForegroundWindow();
+    }, 400);
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createHudWindow();
+      }
+    });
   });
-});
 
-app.on('will-quit', () => {
-  shutdownLocalWhisper();
-  globalShortcut.unregisterAll();
-});
+  app.on('will-quit', () => {
+    shutdownLocalWhisper();
+    globalShortcut.unregisterAll();
+  });
 
-app.on('window-all-closed', (e: any) => {
-  // Don't quit app on Windows when windows close; keep in tray
-  e?.preventDefault?.();
-});
+  app.on('window-all-closed', (e: any) => {
+    // Don't quit app on Windows when windows close; keep in tray
+    e?.preventDefault?.();
+  });
+}

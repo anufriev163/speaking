@@ -178,7 +178,12 @@ class StorageService {
 
       const tempPath = `${this.filePath}.tmp`;
       fs.writeFileSync(tempPath, JSON.stringify(toSave, null, 2), 'utf-8');
-      fs.renameSync(tempPath, this.filePath);
+      try {
+        fs.renameSync(tempPath, this.filePath);
+      } catch {
+        fs.copyFileSync(tempPath, this.filePath);
+        try { fs.unlinkSync(tempPath); } catch {}
+      }
     } catch (err) {
       console.error('[Storage] Error saving data:', err);
     }
