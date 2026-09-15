@@ -250,6 +250,23 @@ function sendInputUnicode(text: string): boolean {
     for (let i = 0; i < text.length; i++) {
       const code = text.charCodeAt(i);
 
+      if (code === 13) { // Carriage return '\r' -> skip if next is '\n', otherwise Enter
+        if (i + 1 < text.length && text.charCodeAt(i + 1) === 10) {
+          continue;
+        }
+        inputs.push({
+          type: INPUT_KEYBOARD,
+          ki: { wVk: 0x0D, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 },
+          padding: 0
+        });
+        inputs.push({
+          type: INPUT_KEYBOARD,
+          ki: { wVk: 0x0D, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 },
+          padding: 0
+        });
+        continue;
+      }
+
       if (code === 10) { // Newline '\n' -> Enter key
         inputs.push({
           type: INPUT_KEYBOARD,

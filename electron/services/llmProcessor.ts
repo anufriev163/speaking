@@ -208,7 +208,7 @@ export async function rewriteTextWithLLM(
   context: ActiveContext
 ): Promise<string> {
   const settings = storage.getSettings();
-  if (!settings.groqApiKey) {
+  if (!settings.groqApiKey && !settings.openaiApiKey) {
     return originalText;
   }
 
@@ -228,33 +228,68 @@ ${originalText}
 КОМАНДА:
 ${userInstruction}`;
 
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${settings.groqApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2048
-      })
-    });
+  // 1. Try Groq Llama-3.3-70b-versatile
+  if (settings.groqApiKey) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.groqApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.2,
+          max_tokens: 2048
+        })
+      });
 
-    if (res.ok) {
-      const data: any = await res.json();
-      const output = data.choices?.[0]?.message?.content?.trim();
-      if (output) {
-        return output;
+      if (res.ok) {
+        const data: any = await res.json();
+        const output = data.choices?.[0]?.message?.content?.trim();
+        if (output) {
+          return output;
+        }
       }
+    } catch (err) {
+      console.warn('[LLM] Groq rewrite failed, checking OpenAI fallback:', err);
     }
-  } catch (err) {
-    console.error('[LLM] Error in rewriteTextWithLLM:', err);
+  }
+
+  // 2. Fallback to OpenAI gpt-4o-mini
+  if (settings.openaiApiKey) {
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.openaiApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.2,
+          max_tokens: 2048
+        })
+      });
+
+      if (res.ok) {
+        const data: any = await res.json();
+        const output = data.choices?.[0]?.message?.content?.trim();
+        if (output) {
+          return output;
+        }
+      }
+    } catch (err) {
+      console.error('[LLM] OpenAI rewrite error:', err);
+    }
   }
 
   return originalText;

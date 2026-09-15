@@ -24,7 +24,20 @@ export class GovernanceManager {
       };
     }
 
-    // Allow requests through so sttService can seamlessly fallback to local Whisper or guide the user
+    // 2. Validate API key for cloud providers
+    if (settings.provider === 'groq' && !settings.groqApiKey) {
+      return {
+        allowed: false,
+        reason: 'Groq API key is missing'
+      };
+    }
+    if (settings.provider === 'openai' && !settings.openaiApiKey) {
+      return {
+        allowed: false,
+        reason: 'OpenAI API key is missing'
+      };
+    }
+
     return { allowed: true };
   }
 
@@ -48,10 +61,13 @@ export class GovernanceManager {
 
     for (const item of this.PII_PATTERNS) {
       if (typeof item.mask === 'string') {
+        item.regex.lastIndex = 0;
         if (item.regex.test(redacted)) {
           violations.push(item.name);
+          item.regex.lastIndex = 0;
           redacted = redacted.replace(item.regex, item.mask);
         }
+        item.regex.lastIndex = 0;
       }
     }
 

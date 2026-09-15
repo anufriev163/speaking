@@ -45,19 +45,35 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
   const startRecording = useCallback(async () => {
     try {
+      // Query user's selected microphone from settings if configured
+      let preferredDeviceId: string | undefined;
+      try {
+        const s = await window.govoriAPI?.getSettings?.();
+        if (s?.selectedMicId && s.selectedMicId !== 'default') {
+          preferredDeviceId = s.selectedMicId;
+        }
+      } catch {}
+
       // Try high-quality constraints first; gracefully fallback to basic audio on older sound cards
       let stream: MediaStream;
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      };
+      if (preferredDeviceId) {
+        audioConstraints.deviceId = { exact: preferredDeviceId };
+      }
+
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
+          audio: audioConstraints
         });
       } catch (errConstraints) {
         console.warn('[Audio] Advanced constraints failed on this audio device, falling back to standard audio:', errConstraints);
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: preferredDeviceId ? { deviceId: { exact: preferredDeviceId } } : true
+        });
       }
       streamRef.current = stream;
 
@@ -93,6 +109,14 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
       animFrameRef.current = requestAnimationFrame(updateVolume);
     } catch (err) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
       console.error('[Audio] Failed to access microphone:', err);
       throw err;
     }

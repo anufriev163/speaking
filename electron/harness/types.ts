@@ -66,5 +66,6 @@ export interface HarnessPipelineOutput {
   injected: boolean;
   isRewrite?: boolean;
   macroCreated?: { trigger: string; replacement: string };
+  macroSaved?: { trigger: string; replacement: string };
   error?: string;
 }

@@ -138,7 +138,8 @@ export class ExecutionManager {
             rawText: sttResult.text,
             latencyMs: totalLatency,
             injected: false,
-            macroCreated: macro
+            macroCreated: macro,
+            macroSaved: macro
           };
         }
       }
@@ -150,8 +151,7 @@ export class ExecutionManager {
         if (isRewrite && input.selectedText) {
           return await rewriteTextWithLLM(input.selectedText, verification.sanitizedText, enrichedContext.activeContext);
         } else {
-          const cleaned = await refineTextWithLLM(verification.sanitizedText, enrichedContext.activeContext);
-          return this.context.applySnippets(cleaned, enrichedContext.snippets);
+          return await refineTextWithLLM(verification.sanitizedText, enrichedContext.activeContext);
         }
       });
 

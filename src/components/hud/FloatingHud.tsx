@@ -139,9 +139,9 @@ export const FloatingHud: React.FC = () => {
           setHudState('success');
           setTextSnippet(result.text);
           setLatency(result.latencyMs);
-          setIsRewriteResult(!!result.isRewrite);
-          if (result.macroSaved) {
-            setSavedMacroInfo(result.macroSaved);
+          const macro = result.macroSaved || result.macroCreated;
+          if (macro) {
+            setSavedMacroInfo(macro);
           } else {
             setSavedMacroInfo(null);
           }

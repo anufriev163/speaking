@@ -150,7 +150,11 @@ async function streamDownload(
       }
     }
   } finally {
-    fileStream.end();
+    await new Promise<void>((resolve, reject) => {
+      fileStream.on('finish', () => resolve());
+      fileStream.on('error', (err) => reject(err));
+      fileStream.end();
+    });
   }
 
   onProgress(100);

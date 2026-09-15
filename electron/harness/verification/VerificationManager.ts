@@ -3,7 +3,6 @@ import { VerificationResult } from '../types';
 export class VerificationManager {
   // Isolated single-word hallucinations emitted by Whisper on silence/static noise
   private readonly ISOLATED_NOISE_TERMS = new Set([
-    'fastapi',
     's.t.a.r.',
     'star',
     'amara.org',
@@ -13,11 +12,16 @@ export class VerificationManager {
     'продолжение следует'
   ]);
 
-  // Subtitle credit hallucination patterns
+  // Subtitle & video credit hallucination patterns
   private readonly SUBTITLE_PATTERNS = [
     /субтитры\s*(делал|сделал|создал)/i,
     /редактор\s*субтитров/i,
     /перевод\s*и\s*озвучка/i,
+    /ставьте\s*лайки/i,
+    /подписывайтесь\s*на\s*канал/i,
+    /спасибо\s*за\s*просмотр/i,
+    /продолжение\s*следует/i,
+    /до\s*новых\s*встреч/i
   ];
 
   public verifyTranscription(rawText: string): VerificationResult {
