@@ -24,7 +24,7 @@ export interface UpdateInfoState {
 
 let updateState: UpdateInfoState = {
   status: 'idle',
-  version: '1.0.4'
+  version: '1.0.5'
 };
 
 let downloadedInstallerPath: string | null = null;
@@ -162,10 +162,9 @@ async function streamDownload(
 }
 
 export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
-  // Determine current version:
-  // In dev / unpackaged mode, display '1.0.3' so user can test the live in-app update flow to 1.0.4.
+  // In dev / unpackaged mode, display '1.0.4' so user can test the live in-app update flow to 1.0.5.
   // In production packaged mode, use official app.getVersion().
-  const currentVer = app.isPackaged ? (app.getVersion() || '1.0.4') : '1.0.3';
+  const currentVer = app.isPackaged ? (app.getVersion() || '1.0.5') : '1.0.4';
   updateState.version = currentVer;
 
   autoUpdater.logger = console;
@@ -264,7 +263,7 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
         throw new Error('Не удалось получить данные релиза');
       }
 
-      const activeVer = app.isPackaged ? (app.getVersion() || '1.0.4') : '1.0.3';
+      const activeVer = app.isPackaged ? (app.getVersion() || '1.0.5') : '1.0.4';
       const hasUpdate = isVersionNewer(relInfo.latestVersion, activeVer);
 
       directDownloadUrl = relInfo.downloadUrl;
