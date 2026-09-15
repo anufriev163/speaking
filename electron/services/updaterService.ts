@@ -67,9 +67,29 @@ async function fetchLatestGitHubRelease(): Promise<{
   const latestVersion = latestTag.replace(/^v/, '');
   const releaseNotes: string = data.body || '';
 
-  const winAsset = (data.assets || []).find((a: any) =>
-    typeof a.name === 'string' && a.name.endsWith('.exe') && !a.name.includes('.blockmap')
-  );
+  const is32Bit = process.arch === 'ia32';
+  const assets: any[] = data.assets || [];
+
+  let winAsset = is32Bit
+    ? assets.find((a: any) =>
+        typeof a.name === 'string' &&
+        a.name.endsWith('.exe') &&
+        !a.name.includes('.blockmap') &&
+        a.name.includes('legacy')
+      )
+    : assets.find((a: any) =>
+        typeof a.name === 'string' &&
+        a.name.endsWith('.exe') &&
+        !a.name.includes('.blockmap') &&
+        !a.name.includes('legacy')
+      );
+
+  // Fallback if preferred asset not found
+  if (!winAsset) {
+    winAsset = assets.find((a: any) =>
+      typeof a.name === 'string' && a.name.endsWith('.exe') && !a.name.includes('.blockmap')
+    );
+  }
 
   if (!winAsset || !winAsset.browser_download_url) {
     throw new Error('Файл установщика Windows (.exe) не найден в последнем релизе');
