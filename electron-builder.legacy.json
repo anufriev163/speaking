@@ -1,5 +1,5 @@
 {
-  "appId": "com.govori.app.legacy",
+  "appId": "com.govori.app",
   "productName": "говори",
   "npmRebuild": false,
   "electronVersion": "22.3.27",
