@@ -1,333 +1,376 @@
 // ==========================================================================
-// «ГОВОРИ» — INTERACTIVE SCRIPTS (Redesign v2)
-// 1. SVG Marquee animation (CSS-driven, JS offset fallback)
-// 2. Interactive Floating Pill HUD with haptic audio
-// 3. Global Hotkey (Ctrl + ~)
-// 4. Context Switcher with before/after highlighting
-// 5. Velocity Calculator
-// 6. OS Detection
-// 7. Scroll Reveal (IntersectionObserver)
+// «ГОВОРИ» — IMMERSIVE PARTICLE ENGINE
+//
+// 1. Particle field (2000 particles, mouse repulsion, sound wave formation)
+// 2. Scroll-driven particle behavior changes per section
+// 3. 3D tilt on feature cards
+// 4. Section visibility triggers
+// 5. OS detection for download buttons
 // ==========================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  initSvgMarquee();
-  initFloatingPill();
-  initGlobalHotkey();
-  initContextSwitcher();
-  initVelocityCalculator();
-  initOSDetection();
-  initScrollReveal();
-});
+(() => {
+  'use strict';
 
-// --------------------------------------------------------------------------
-// 1. SVG MARQUEE — animate textPath offset
-// --------------------------------------------------------------------------
+  // ── CONFIG ──
+  const PARTICLE_COUNT = 1500;
+  const MOUSE_RADIUS = 120;
+  const MOUSE_FORCE = 8;
+  const CHERRY = { r: 154, g: 0, b: 2 };
+  const WHITE = { r: 255, g: 255, b: 255 };
 
-function initSvgMarquee() {
-  const rawTP = document.getElementById('marquee-raw');
-  const cleanTP = document.getElementById('marquee-clean');
+  // ── STATE ──
+  let canvas, ctx;
+  let W = 0, H = 0;
+  let mouseX = -9999, mouseY = -9999;
+  let particles = [];
+  let currentSection = 0; // 0=hero, 1=transform, 2=features, 3=download
+  let scrollProgress = 0; // 0..1 within current section
+  let raf;
 
-  if (!rawTP && !cleanTP) return;
+  // ── INIT ──
+  document.addEventListener('DOMContentLoaded', () => {
+    canvas = document.getElementById('particle-canvas');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
 
-  let t = 0;
+    resize();
+    createParticles();
+    bindEvents();
+    initSectionObservers();
+    init3DTilt();
+    initOSDetection();
+    tick();
+  });
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  // ── PARTICLE CREATION ──
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        baseX: 0, // will be set per-frame based on formation
+        baseY: 0,
+        vx: 0,
+        vy: 0,
+        size: Math.random() * 2 + 0.5,
+        alpha: Math.random() * 0.5 + 0.1,
+        // Wave params
+        waveOffset: Math.random() * Math.PI * 2,
+        waveSpeed: 0.3 + Math.random() * 0.7,
+        waveAmp: 20 + Math.random() * 60,
+        // Color mix (0 = white, 1 = cherry)
+        colorMix: Math.random() < 0.3 ? 1 : 0,
+      });
+    }
+  }
+
+  // ── EVENTS ──
+  function bindEvents() {
+    window.addEventListener('resize', () => {
+      resize();
+      // Redistribute particles on resize
+      particles.forEach(p => {
+        p.x = Math.random() * W;
+        p.y = Math.random() * H;
+      });
+    });
+
+    // Track mouse globally (canvas is pointer-events:none, so track on body)
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      mouseX = -9999;
+      mouseY = -9999;
+    });
+
+    // Mobile touch support
+    document.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches[0]) {
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      mouseX = -9999;
+      mouseY = -9999;
+    });
+
+    // Click pulse / shockwave
+    document.addEventListener('click', (e) => {
+      const clickX = e.clientX;
+      const clickY = e.clientY;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const dx = p.x - clickX;
+        const dy = p.y - clickY;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 260 && dist > 0) {
+          const force = ((260 - dist) / 260) * 16;
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        }
+      }
+    });
+
+    // Track scroll for section detection
+    const sc = document.getElementById('scroll-container');
+    if (sc) {
+      sc.addEventListener('scroll', () => {
+        const scrollTop = sc.scrollTop;
+        const sectionH = window.innerHeight || H || 1;
+        currentSection = Math.min(3, Math.max(0, Math.round(scrollTop / sectionH)));
+        scrollProgress = (scrollTop % sectionH) / sectionH;
+      });
+    }
+  }
+
+  // ── PARTICLE FORMATIONS ──
+
+  function getFormation(p, i, time) {
+    switch (currentSection) {
+      case 0: return formationWave(p, i, time);
+      case 1: return formationSplit(p, i, time);
+      case 2: return formationGrid(p, i, time);
+      case 3: return formationConverge(p, i, time);
+      default: return formationWave(p, i, time);
+    }
+  }
+
+  // Hero: Sound wave formation
+  function formationWave(p, i, time) {
+    const xSpread = W * 0.8;
+    const xStart = W * 0.1;
+    const xPos = xStart + (i / PARTICLE_COUNT) * xSpread;
+    const wave = Math.sin(xPos * 0.008 + time * p.waveSpeed + p.waveOffset) * p.waveAmp;
+    const wave2 = Math.cos(xPos * 0.003 + time * 0.5) * (p.waveAmp * 0.4);
+    return { x: xPos, y: H / 2 + wave + wave2 };
+  }
+
+  // Transform: Split into two groups (left chaotic, right ordered)
+  function formationSplit(p, i, time) {
+    const half = PARTICLE_COUNT / 2;
+    if (i < half) {
+      // Left side — chaotic scatter
+      const spread = 0.35;
+      const cx = W * 0.25;
+      const cy = H * 0.5;
+      const angle = (i / half) * Math.PI * 2 + time * 0.3;
+      const radius = 80 + Math.sin(i * 0.7 + time) * 60 + (i % 7) * 15;
+      return {
+        x: cx + Math.cos(angle + p.waveOffset) * radius * spread * 3,
+        y: cy + Math.sin(angle + p.waveOffset) * radius * spread * 2
+      };
+    } else {
+      // Right side — ordered lines
+      const idx = i - half;
+      const lineCount = 6;
+      const line = idx % lineCount;
+      const posInLine = Math.floor(idx / lineCount);
+      const totalInLine = Math.ceil(half / lineCount);
+      return {
+        x: W * 0.55 + (posInLine / totalInLine) * (W * 0.35),
+        y: H * 0.3 + line * (H * 0.07)
+      };
+    }
+  }
+
+  // Features: Grid / constellation
+  function formationGrid(p, i, time) {
+    const cols = 50;
+    const rows = Math.ceil(PARTICLE_COUNT / cols);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cellW = W / cols;
+    const cellH = H / rows;
+    const wobble = Math.sin(time * 0.8 + i * 0.1) * 3;
+    return {
+      x: col * cellW + cellW / 2 + wobble,
+      y: row * cellH + cellH / 2 + wobble
+    };
+  }
+
+  // Download: Converge to center logo
+  function formationConverge(p, i, time) {
+    const angle = (i / PARTICLE_COUNT) * Math.PI * 8 + time * 0.2;
+    const radius = 60 + (i / PARTICLE_COUNT) * 200 + Math.sin(time + i * 0.05) * 20;
+    return {
+      x: W / 2 + Math.cos(angle) * radius,
+      y: H / 2 + Math.sin(angle) * radius * 0.5
+    };
+  }
+
+  // ── MAIN LOOP ──
+  let time = 0;
 
   function tick() {
-    t += 0.15;
+    time += 0.016;
+    ctx.clearRect(0, 0, W, H);
 
-    if (rawTP) {
-      rawTP.setAttribute('startOffset', (-t * 2) % 3000 + 'px');
-    }
-    if (cleanTP) {
-      cleanTP.setAttribute('startOffset', (-t * 1.4) % 3000 + 'px');
-    }
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
 
-    requestAnimationFrame(tick);
-  }
+      // Get target position from current formation
+      const target = getFormation(p, i, time);
+      p.baseX = target.x;
+      p.baseY = target.y;
 
-  requestAnimationFrame(tick);
-}
+      // Ease toward target
+      const easing = 0.03;
+      p.vx += (p.baseX - p.x) * easing;
+      p.vy += (p.baseY - p.y) * easing;
 
-// --------------------------------------------------------------------------
-// 2. HAPTIC AUDIO (Web Audio click)
-// --------------------------------------------------------------------------
+      // Mouse repulsion
+      const dx = p.x - mouseX;
+      const dy = p.y - mouseY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-function playHapticTone(type = 'start') {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+      if (dist < MOUSE_RADIUS && dist > 0) {
+        const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * MOUSE_FORCE;
+        p.vx += (dx / dist) * force;
+        p.vy += (dy / dist) * force;
+      }
 
-    osc.type = 'sine';
-    if (type === 'start') {
-      osc.frequency.setValueAtTime(520, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(840, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
-    } else {
-      osc.frequency.setValueAtTime(740, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.07);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-    }
+      // Apply velocity with friction
+      p.vx *= 0.88;
+      p.vy *= 0.88;
+      p.x += p.vx;
+      p.y += p.vy;
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.09);
-  } catch {}
-}
+      // Color
+      let r, g, b;
+      if (p.colorMix > 0.5) {
+        r = CHERRY.r;
+        g = CHERRY.g;
+        b = CHERRY.b;
+      } else {
+        r = WHITE.r;
+        g = WHITE.g;
+        b = WHITE.b;
+      }
 
-// --------------------------------------------------------------------------
-// 3. FLOATING PILL HUD — Interactive demo cycle
-// --------------------------------------------------------------------------
+      // Alpha based on section
+      let alpha = p.alpha;
+      if (currentSection === 3) {
+        alpha *= 0.4; // dimmer on download
+      }
 
-const STREAM_SAMPLES = [
-  {
-    rawHtml: '<span class="filler">ну короче</span> привет <span class="filler">эээ</span> давай завтра <span class="filler">часиков</span> в шесть обсудим <span class="filler">ааа</span> новый релиз',
-    clean: 'Привет! Давай завтра в 18:00 обсудим новый релиз 👍',
-    app: 'Telegram'
-  },
-  {
-    rawHtml: '<span class="filler">ну</span> уважаемый александр михайлович направляю <span class="filler">вот</span> вам акт сверки <span class="filler">эээ</span> с уважением',
-    clean: 'Уважаемый Александр Михайлович! Направляю вам акт сверки.\n\nС уважением,',
-    app: 'Outlook'
-  },
-  {
-    rawHtml: 'напиши функцию на тайпскрипте которая <span class="filler">ээ</span> делает запрос с <span class="filler">типа</span> таймаутом пять секунд',
-    clean: 'export async function fetchWithTimeout(\n  url: string,\n  timeoutMs = 5000\n): Promise<Response>',
-    app: 'VS Code'
-  },
-  {
-    rawHtml: 'план на день <span class="filler">ну короче</span> созвон с дизайнером <span class="repetition">потом потом</span> проверка сборки публикация релиза',
-    clean: '• Созвон с дизайнером\n• Проверка сборки v1.0.6\n• Публикация обновления',
-    app: 'Notion'
-  }
-];
+      // Draw
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      ctx.fill();
 
-let currentSampleIdx = 0;
-let isPillActive = false;
-
-function initFloatingPill() {
-  const pill = document.getElementById('floating-pill-hud');
-  pill?.addEventListener('click', triggerPillCycle);
-}
-
-async function triggerPillCycle() {
-  if (isPillActive) return;
-  isPillActive = true;
-
-  const eq = document.getElementById('hud-eq');
-  const micIcon = document.getElementById('hud-mic-icon');
-  const mainLabel = document.getElementById('hud-main-label');
-  const metaLabel = document.getElementById('hud-meta-label');
-  const rawText = document.getElementById('live-raw-text');
-  const cleanText = document.getElementById('live-clean-text');
-  const appTag = document.getElementById('live-stream-app');
-
-  const data = STREAM_SAMPLES[currentSampleIdx];
-  currentSampleIdx = (currentSampleIdx + 1) % STREAM_SAMPLES.length;
-
-  // Start listening
-  playHapticTone('start');
-  eq?.classList.add('active');
-  micIcon?.classList.add('active');
-  if (mainLabel) mainLabel.textContent = 'Слушаю вас...';
-  if (metaLabel) metaLabel.textContent = 'Ctrl + ~';
-
-  // Show raw speech with error highlighting
-  if (rawText) rawText.innerHTML = data.rawHtml;
-  if (cleanText) {
-    cleanText.style.opacity = '0.3';
-    cleanText.textContent = '...';
-  }
-  if (appTag) appTag.textContent = data.app;
-
-  await wait(900);
-
-  // Processing
-  if (mainLabel) mainLabel.textContent = 'Очистка нейросетью...';
-  await wait(400);
-
-  // Show clean result
-  playHapticTone('stop');
-  eq?.classList.remove('active');
-  micIcon?.classList.remove('active');
-  if (mainLabel) mainLabel.textContent = 'Вставлено в окно';
-  if (metaLabel) metaLabel.textContent = '185 мс';
-
-  if (cleanText) {
-    cleanText.textContent = data.clean;
-    cleanText.style.opacity = '1';
-  }
-
-  await wait(1800);
-  if (mainLabel) mainLabel.textContent = 'Готов к записи';
-  if (metaLabel) metaLabel.textContent = 'Нажмите или Ctrl + ~';
-  isPillActive = false;
-}
-
-// --------------------------------------------------------------------------
-// 4. GLOBAL HOTKEY (CTRL + ~)
-// --------------------------------------------------------------------------
-
-function initGlobalHotkey() {
-  window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && (e.key === '`' || e.key === '~' || e.code === 'Backquote' || e.key === 'ё' || e.key === 'Ё')) {
-      e.preventDefault();
-      triggerPillCycle();
-    }
-  });
-}
-
-// --------------------------------------------------------------------------
-// 5. CONTEXT SWITCHER with before/after highlighting
-// --------------------------------------------------------------------------
-
-const CONTEXT_MAP = {
-  telegram: {
-    appName: 'Telegram Desktop',
-    spokenHtml: '<span class="filler">слушай</span> привет <span class="filler">а</span> скинь <span class="filler">пожалуйста</span> правки по сайту до обеда',
-    output: 'Привет! Скинь, пожалуйста, правки по сайту до обеда 👍'
-  },
-  gmail: {
-    appName: 'Gmail / Деловой документ',
-    spokenHtml: '<span class="filler">ну</span> добрый день направляю <span class="filler">вот это</span> коммерческое предложение по разработке <span class="filler">эээ</span> с уважением иван',
-    output: 'Добрый день!\n\nНаправляю вам коммерческое предложение по разработке платформы.\n\nС уважением,\nИван'
-  },
-  vscode: {
-    appName: 'VS Code — httpClient.ts',
-    spokenHtml: 'создай <span class="filler">типа</span> асинхронную функцию получить настройки которая <span class="filler">ну</span> возвращает промис с типом апп сеттингс',
-    output: 'async function getSettings(): Promise<AppSettings> {\n  return storage.getSettings();\n}'
-  },
-  notion: {
-    appName: 'Notion — Спринт 12',
-    spokenHtml: 'задачи на сегодня <span class="filler">ну короче</span> провести созвон с командой <span class="repetition">утвердить утвердить</span> релиз запустить тестирование',
-    output: '• Провести синхронизацию с командой\n• Утвердить релиз версии 1.0.6\n• Запустить автоматизированное тестирование'
-  }
-};
-
-function initContextSwitcher() {
-  const tabs = document.querySelectorAll('.tab-pill[data-tab]');
-  const ctxSpoken = document.getElementById('ctx-spoken');
-  const ctxOutput = document.getElementById('ctx-output');
-  const ctxAppName = document.getElementById('ctx-app-name');
-
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-
-      const key = tab.getAttribute('data-tab');
-      const item = CONTEXT_MAP[key];
-      if (!item) return;
-
-      playHapticTone('start');
-
-      // Use innerHTML for spoken to show filler highlighting
-      if (ctxSpoken) ctxSpoken.innerHTML = item.spokenHtml;
-      // Use textContent for output (plain clean text, preserves newlines via white-space: pre-wrap)
-      if (ctxOutput) ctxOutput.textContent = item.output;
-      if (ctxAppName) ctxAppName.textContent = item.appName;
-    });
-  });
-}
-
-// --------------------------------------------------------------------------
-// 6. VELOCITY CALCULATOR
-// --------------------------------------------------------------------------
-
-function initVelocityCalculator() {
-  const slider = document.getElementById('velocity-slider');
-  const hoursVal = document.getElementById('slider-hours-val');
-  const savedMinBox = document.getElementById('metric-saved-mins');
-  const savedDaysBox = document.getElementById('metric-saved-days');
-
-  function update(hours) {
-    const dailyMins = Math.round(hours * 35);
-    const yearlyDays = Math.round((dailyMins * 240) / (8 * 60));
-
-    if (hoursVal) hoursVal.textContent = `${hours} ч / день`;
-    if (savedMinBox) savedMinBox.textContent = `~${dailyMins}`;
-    if (savedDaysBox) savedDaysBox.textContent = `${yearlyDays}`;
-  }
-
-  slider?.addEventListener('input', (e) => {
-    update(Number(e.target.value) || 3);
-  });
-
-  update(3);
-}
-
-// --------------------------------------------------------------------------
-// 7. OS DETECTION
-// --------------------------------------------------------------------------
-
-const GITHUB_DOWNLOADS = {
-  win64: 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-setup-1.0.6.exe',
-  mac: 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg'
-};
-
-function initOSDetection() {
-  const ua = (navigator.userAgent || '').toLowerCase();
-  const isMac = ua.includes('macintosh') || ua.includes('mac os');
-
-  const mainCta = document.getElementById('hero-primary-cta');
-  const dockWin = document.getElementById('dock-item-win');
-  const dockMac = document.getElementById('dock-item-mac');
-
-  if (isMac) {
-    if (mainCta) {
-      mainCta.href = GITHUB_DOWNLOADS.mac;
-      mainCta.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.36-.56.65-1.06 1.71-.93 2.73 1.01.08 2.04-.49 2.66-1.24z"/></svg>
-        Скачать для macOS
-      `;
-    }
-    if (dockMac) dockMac.classList.add('featured');
-    if (dockWin) dockWin.classList.remove('featured');
-  } else {
-    if (dockWin) dockWin.classList.add('featured');
-    if (dockMac) dockMac.classList.remove('featured');
-  }
-}
-
-// --------------------------------------------------------------------------
-// 8. SCROLL REVEAL (IntersectionObserver)
-// --------------------------------------------------------------------------
-
-function initScrollReveal() {
-  const reveals = document.querySelectorAll('.reveal');
-
-  if (!reveals.length) return;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
+      // Connection lines (only hero section, nearby particles)
+      if (currentSection === 0 && i % 3 === 0) {
+        for (let j = i + 1; j < Math.min(i + 5, particles.length); j++) {
+          const p2 = particles[j];
+          const d = Math.hypot(p.x - p2.x, p.y - p2.y);
+          if (d < 50) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(154, 0, 2, ${0.08 * (1 - d / 50)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
         }
-      });
-    },
-    {
-      threshold: 0.15,
-      rootMargin: '0px 0px -40px 0px'
+      }
     }
-  );
 
-  reveals.forEach((el, i) => {
-    // Stagger animation delay
-    el.style.transitionDelay = `${i * 0.06}s`;
-    observer.observe(el);
-  });
-}
+    raf = requestAnimationFrame(tick);
+  }
 
-// --------------------------------------------------------------------------
-// UTIL
-// --------------------------------------------------------------------------
+  // ── SECTION VISIBILITY OBSERVERS ──
+  function initSectionObservers() {
+    const sc = document.getElementById('scroll-container');
 
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+    // Transform section
+    observeElement('#s-transform .transform-grid', 'visible');
+
+    // Feature cards
+    document.querySelectorAll('.feature-card').forEach(card => {
+      const obs = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          card.classList.add('visible');
+          obs.unobserve(card);
+        }
+      }, { threshold: 0.25, root: sc });
+      obs.observe(card);
+    });
+
+    // Download elements
+    observeElement('#s-download .download-logo', 'visible');
+    observeElement('#s-download .download-sub', 'visible');
+    observeElement('#s-download .download-buttons', 'visible');
+  }
+
+  function observeElement(selector, className) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.classList.add(className);
+        obs.unobserve(el);
+      }
+    }, { threshold: 0.3, root: document.getElementById('scroll-container') });
+    obs.observe(el);
+  }
+
+  // ── 3D TILT ON FEATURE CARDS ──
+  function init3DTilt() {
+    document.querySelectorAll('[data-tilt]').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = ((y - centerY) / centerY) * -12;
+        const rotateY = ((x - centerX) / centerX) * 12;
+
+        card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  // ── OS DETECTION ──
+  function initOSDetection() {
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const isMac = ua.includes('macintosh') || ua.includes('mac os');
+
+    const heroCta = document.getElementById('hero-cta');
+    const dlPrimary = document.getElementById('dl-primary');
+
+    if (isMac) {
+      const macUrl = 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg';
+      if (heroCta) {
+        heroCta.href = macUrl;
+        const textEl = heroCta.querySelector('.btn-glow-text');
+        if (textEl) textEl.textContent = 'Скачать для macOS';
+      }
+      if (dlPrimary) {
+        dlPrimary.href = macUrl;
+        dlPrimary.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8.92-2.85-.9.04-2 .6-2.65 1.36-.56.65-1.06 1.71-.93 2.73 1.01.08 2.04-.49 2.66-1.24z"/></svg>
+          macOS
+        `;
+      }
+    }
+  }
+
+})();
