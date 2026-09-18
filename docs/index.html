@@ -3,195 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>говори — 3D голосовой ввод нового поколения</title>
-  <meta name="description" content="Не печатай, просто говори. Сверхбыстрый голосовой ввод на базе Whisper v3 для Windows и Mac.">
-  <meta property="og:title" content="говори — голос вместо клавиатуры">
-  <meta property="og:description" content="180 мс отклик, 100% offline, нативный C-FFI ввод.">
-  <meta property="og:type" content="website">
-
+  <title>говори — печатайте со скоростью голоса</title>
+  <meta name="description" content="Умный голосовой ввод для Windows. Превращает речь в идеальный текст в 4 раза быстрее печати.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@600;700;800&family=Wix+Madefor+Text:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Fullscreen 3D WebGL Canvas Layer -->
+  <!-- Fixed 3D Canvas Viewport -->
   <div id="canvas-3d-wrapper"></div>
 
-  <!-- Ambient Vignette & Grain -->
+  <!-- Soft Ambient Vignette with Light Blue-White Hue -->
   <div class="screen-vignette"></div>
 
-  <!-- Minimal HUD Header -->
-  <header class="hud-bar">
-    <a href="#hero" class="hud-logo">
-      <span>говори</span><span class="hud-dot"></span>
-    </a>
+  <!-- Storytelling Narrative Callouts Overlay (Pure WIX Bold Black Text & Clean Arrows) -->
+  <div class="narrative-overlay" id="narrative-overlay">
 
-    <div class="hud-center-pill">
-      <span class="hud-pulse-light"></span>
-      <span class="hud-telemetry">WHISPER V3 • 180MS • C-FFI</span>
+    <!-- ── STAGE 0: HERO VOICE WAVE ── -->
+    <div class="spatial-callout stage-0" id="callout-0">
+      <div class="callout-text-group">
+        <h2 class="callout-headline">Вы говорите — как думаете.<br>Свободно, быстро, без пауз.</h2>
+        <p class="callout-sub">Каждая интонация и полутон оцифровываются прямо на лету</p>
+      </div>
+      <!-- Clean organic arrow without dots -->
+      <div class="organic-arrow arrow-0">
+        <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 10 C 20 45, 55 45, 75 66" stroke="#000000" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M63 62 L 76 68 L 78 54" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
     </div>
 
-    <div class="hud-actions">
-      <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noopener" class="hud-link">GitHub</a>
-      <a href="#download" class="hud-btn-cta">Скачать v1.0.6</a>
+    <!-- ── STAGE 1: AI VOICE SPHERE ── -->
+    <div class="spatial-callout stage-1" id="callout-1">
+      <div class="organic-arrow arrow-1">
+        <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100 15 C 75 18, 48 38, 28 66" stroke="#000000" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M40 60 L 26 68 L 28 52" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="callout-text-group">
+        <h2 class="callout-headline">ИИ вычищает всё лишнее:<br>слова-паразиты, эканья и шумы.</h2>
+        <p class="callout-sub">Нейросеть оставляет только чистую, выверенную мысль</p>
+      </div>
     </div>
-  </header>
 
-  <!-- Side Timeline Indicator -->
-  <nav class="side-timeline" aria-label="Разделы">
-    <div class="timeline-track">
-      <div class="timeline-indicator" id="timeline-indicator"></div>
+    <!-- ── STAGE 2: HARMONIC HELIX ── -->
+    <div class="spatial-callout stage-2" id="callout-2">
+      <div class="callout-text-group">
+        <h2 class="callout-headline">И превращает хаос в структуру:<br>абзацы, списки и пунктуацию.</h2>
+        <p class="callout-sub">Текст готов к отправке без единой ручной правки</p>
+      </div>
+      <div class="organic-arrow arrow-2">
+        <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 18 C 45 22, 75 38, 96 66" stroke="#000000" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M84 66 L 98 68 L 94 54" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
     </div>
-    <div class="timeline-labels">
-      <span class="t-label active" data-sec="0">01 ГОЛОС</span>
-      <span class="t-label" data-sec="1">02 СКОРОСТЬ</span>
-      <span class="t-label" data-sec="2">03 ПРИВАТНОСТЬ</span>
-      <span class="t-label" data-sec="3">04 СТАРТ</span>
-    </div>
-  </nav>
 
-  <!-- Interactive Voice Trigger Cue -->
-  <div class="interaction-cue" id="voice-cue">
-    <div class="cue-key">SPACE</div>
-    <span class="cue-text">Зажми пробел или кликни по волне</span>
-  </div>
+    <!-- ── STAGE 3: THE APP REVEAL («СВЯЗЬ С НАШЕЙ ПРОГОЙ») ── -->
+    <div class="spatial-callout stage-3" id="callout-3">
+      <div class="product-reveal-card">
+        <h1 class="product-brand">говори</h1>
+        <p class="product-tagline">Печатайте со скоростью мысли в любом приложении Windows</p>
 
-  <!-- Scroll Snap Container -->
-  <div class="scroll-container" id="scroll-container">
-
-    <!-- ═══════════════ 01: HERO (THE VOICE WAVE) ═══════════════ -->
-    <section class="screen-section sec-hero" id="sec-hero">
-      <div class="content-box text-center">
-        <div class="section-tag">ГОЛОСОВОЙ ИНТЕРФЕЙС НОВОГО ПОКОЛЕНИЯ</div>
-        <h1 class="main-title">говори<span class="title-dot">.</span></h1>
-        <p class="main-subtitle">Голос быстрее клавиатуры. Нажми горячую клавишу в любой программе и говори свободно — ИИ уберёт слова-паразиты и напечатает идеальный результат.</p>
-
-        <div class="hero-mic-box">
-          <button id="hero-mic-btn" class="interactive-mic-pill" aria-label="Проверить голос">
-            <span class="mic-wave-bars">
-              <span></span><span></span><span></span><span></span><span></span>
-            </span>
-            <span class="mic-btn-label" id="mic-btn-label">Удерживай для записи</span>
-            <span class="mic-btn-chip">180мс</span>
-          </button>
-        </div>
-
-        <!-- Live Voice Speech Bubble -->
-        <div class="live-voice-bubble" id="voice-bubble">
-          <span class="bubble-typed-text" id="bubble-text">Слушаю...</span>
-        </div>
-      </div>
-
-      <div class="scroll-down-hint">
-        <div class="scroll-line"></div>
-        <span>СКРОЛЛ</span>
-      </div>
-    </section>
-
-    <!-- ═══════════════ 02: SPEED (CHAOS TO STREAM) ═══════════════ -->
-    <section class="screen-section sec-speed" id="sec-speed">
-      <div class="content-box">
-        <div class="section-tag">МГНОВЕННАЯ ОБРАБОТКА</div>
-        <h2 class="big-metric-title">180<span class="metric-unit">мс</span></h2>
-        <h3 class="section-heading">Хаос речи превращается в чистый текст.</h3>
-        <p class="section-desc">
-          Groq Whisper LPU распознаёт русскую речь быстрее, чем пальцы нажимают на клавиши. Слова-паразиты («ну короче», «эээ», «типа») фильтруются на лету.
-        </p>
-
-        <div class="speed-duo-cards">
-          <div class="duo-card card-raw">
-            <div class="card-tag error-tag">ВЫ СКАЗАЛИ</div>
-            <p class="duo-text-raw">
-              <span class="cross-word">ну короче</span> привет <span class="cross-word">эээ</span> давай завтра в шесть обсудим релиз
-            </p>
+        <!-- Floating Windows App HUD Simulation -->
+        <div class="app-hud-box">
+          <div class="app-pill">
+            <button class="pill-btn pill-btn-close" aria-label="Отмена">✕</button>
+            <div class="pill-audio-bars">
+              <span class="bar b1"></span>
+              <span class="bar b2"></span>
+              <span class="bar b3"></span>
+              <span class="bar b4"></span>
+              <span class="bar b5"></span>
+              <span class="bar b6"></span>
+              <span class="bar b7"></span>
+              <span class="bar b8"></span>
+              <span class="bar b9"></span>
+            </div>
+            <button class="pill-btn pill-btn-confirm" aria-label="Готово">✓</button>
           </div>
-          <div class="duo-arrow">→</div>
-          <div class="duo-card card-clean">
-            <div class="card-tag success-tag">НАПЕЧАТАНО</div>
-            <p class="duo-text-clean">
-              Привет! Давай завтра в 18:00 обсудим релиз 👍
-            </p>
+
+          <!-- Real-Time Typing Output Simulation -->
+          <div class="live-typing-container">
+            <span class="typing-text" id="typing-text"></span>
+            <span class="typing-cursor"></span>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- ═══════════════ 03: PRIVACY (ZERO CLOUD) ═══════════════ -->
-    <section class="screen-section sec-privacy" id="sec-privacy">
-      <div class="content-box">
-        <div class="section-tag">АБСОЛЮТНАЯ АВТОНОМНОСТЬ</div>
-        <h2 class="big-metric-title">100<span class="metric-unit">%</span></h2>
-        <h3 class="section-heading">Полный оффлайн. 0 байт в сеть.</h3>
-        <p class="section-desc">
-          Поддержка полностью автономной локальной модели Whisper. Ваши пароли, документы и мысли никогда не покидают ваш компьютер.
-        </p>
-
-        <div class="privacy-chips-row">
-          <div class="privacy-chip">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span>Локальный Whisper</span>
-          </div>
-          <div class="privacy-chip">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Без телеметрии</span>
-          </div>
-          <div class="privacy-chip">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            <span>Нативный C-FFI ввод</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════ 04: DOWNLOAD (EVENT HORIZON) ═══════════════ -->
-    <section class="screen-section sec-download" id="sec-download">
-      <div class="content-box text-center">
-        <div class="section-tag">НАЧАТЬ РАБОТУ</div>
-        <h2 class="download-title">Не печатай. Говори<span class="title-dot">.</span></h2>
-        <p class="download-sub">Бесплатно. Открытый исходный код. Установка за 10 секунд.</p>
-
-        <div class="download-portal-actions">
-          <a id="main-dl-btn" href="https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-setup-1.0.6.exe" class="btn-warp-download">
-            <span class="warp-btn-glow"></span>
-            <svg class="dl-os-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+        <div class="cta-action-wrap">
+          <button class="cta-download-btn" id="download-btn">
+            <span>Скачать «говори» для Windows</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            <span class="dl-btn-text">
-              <strong id="dl-btn-title">Скачать для Windows</strong>
-              <small>v1.0.6 • Бесплатно • 64-bit Installer</small>
-            </span>
-          </a>
-
-          <div class="download-alt-platforms">
-            <a id="alt-dl-mac" href="https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg" class="alt-dl-link">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8.92-2.85-.9.04-2 .6-2.65 1.36-.56.65-1.06 1.71-.93 2.73 1.01.08 2.04-.49 2.66-1.24z"/></svg>
-              <span>macOS (.dmg)</span>
-            </a>
-            <span class="sep">•</span>
-            <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noopener" class="alt-dl-link">
-              <span>GitHub Репозиторий</span>
-            </a>
-            <span class="sep">•</span>
-            <a href="https://github.com/anufriev163/speaking/issues" target="_blank" rel="noopener" class="alt-dl-link">
-              <span>Баги</span>
-            </a>
-          </div>
+          </button>
+          <div class="cta-shortcut-hint">Горячая клавиша <strong>CapsLock</strong> • Telegram, Notion, Word, VS Code</div>
         </div>
-
-        <footer class="screen-footer">
-          <span>MIT License • 2026 • govoridev</span>
-        </footer>
       </div>
-    </section>
+    </div>
 
   </div>
 
-  <!-- Local Three.js Engine -->
+  <!-- Scroll Height Track for Driving Smooth Scroll Timeline -->
+  <div class="scroll-track"></div>
+
+  <!-- Scripts -->
   <script src="three.min.js"></script>
-  <!-- Main 3D Spatial Audio Ribbon Engine -->
   <script src="app.js"></script>
 </body>
 </html>

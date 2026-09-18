@@ -1,242 +1,373 @@
 // ==========================================================================
-// «ГОВОРИ» — 3D SPATIAL AUDIO RIBBON & SCROLL CAMERA ENGINE (THREE.JS)
+// «ГОВОРИ» — 3D SPATIAL ENGINE & CAMERA FLIGHT (THREE.JS)
+// Features:
+//   - Transparent WebGL over light ice-blue/white gradient
+//   - Rock-solid 3D spatial anchoring for WIX Bold text & clean solid arrows (ZERO jitter)
+//   - Dynamic camera choreography: macro zoom-in / sweep pull-backs / flythrough
+//   - Live simulated audio HUD typing
 // ==========================================================================
 
 (() => {
   'use strict';
 
-  // ── CONSTANTS & PALETTE ──
-  const CHERRY = new THREE.Color('#9A0002');
-  const CHERRY_BRIGHT = new THREE.Color('#FF2244');
-  const ICE_MIST = new THREE.Color('#F5F8FA');
+  const N = 18000;
 
-  // ── THREE.JS STATE ──
   let scene, camera, renderer;
   let wavePoints, waveGeometry, waveMaterial;
-  let positions, colors, originalPositions;
-  const GRID_X = 80;
-  const GRID_Z = 45;
-  const TOTAL_POINTS = GRID_X * GRID_Z;
-
   let W = window.innerWidth;
   let H = window.innerHeight;
+
+  let targetProgress = 0;
+  let smoothProgress = 0;
   let mouseX = 0, mouseY = 0;
   let targetCamX = 0, targetCamY = 0;
-  let scrollNorm = 0; // 0.0 to 1.0
+  let currentCamX = 0, currentCamY = 0;
 
-  let isRecording = false;
-  let speechEnergy = 0;
+  // Gentle Ripple
+  let rippleActive = false;
+  let rippleStartTime = 0;
+  let rippleOriginX = 0;
+  let rippleOriginZ = 0;
 
-  // ── INIT ──
+  // Spatial Callout DOM elements & smoothed screen coords
+  const callouts = [];
+  const smoothedCallouts = [
+    { x: W * 0.5 - 240, y: 80 },
+    { x: W * 0.65, y: 120 },
+    { x: 100, y: 140 },
+    { x: W * 0.5 - 290, y: H * 0.5 - 230 }
+  ];
+  const projVec = new THREE.Vector3();
+
   window.addEventListener('DOMContentLoaded', () => {
-    initThreeScene();
+    initScene();
+    setupGeometry();
+    initCallouts();
+    initTypingSimulation();
     bindEvents();
-    initScrollSync();
-    initVoiceSimulation();
-    initOSDetection();
     animate();
   });
 
-  // ── THREE.JS SCENE SETUP ──
-  function initThreeScene() {
+  function initScene() {
     const container = document.getElementById('canvas-3d-wrapper');
     if (!container) return;
 
-    // 1. Scene & Fog
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x06070B, 0.022);
 
-    // 2. Camera
-    camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 1000);
-    camera.position.set(0, 4, 22);
+    camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 1000);
+    camera.position.set(0, 1.2, 16);
 
-    // 3. Renderer
     renderer = new THREE.WebGLRenderer({
       powerPreference: 'high-performance',
       antialias: true,
-      alpha: true
+      alpha: true // Transparent so CSS light blue-white background shows through
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(W, H);
-    renderer.setClearColor(0x06070B, 0);
+    renderer.setClearColor(0x000000, 0); // Pure transparent clear
     container.appendChild(renderer.domElement);
+  }
 
-    // 4. Circular Soft Glow Sprite
-    const sprite = createGlowTexture();
+  function setupGeometry() {
+    const pos0 = new Float32Array(N * 3);
+    const pos1 = new Float32Array(N * 3);
+    const pos2 = new Float32Array(N * 3);
+    const pos3 = new Float32Array(N * 3);
 
-    // 5. Geometry Grid of Sound Waves
-    waveGeometry = new THREE.BufferGeometry();
-    positions = new Float32Array(TOTAL_POINTS * 3);
-    colors = new Float32Array(TOTAL_POINTS * 3);
-    originalPositions = new Float32Array(TOTAL_POINTS * 3);
+    const cols = 150;
+    const rows = 120;
+    const goldenAngle = 2.399963229728653;
 
-    const sizeX = 36;
-    const sizeZ = 22;
+    for (let i = 0; i < N; i++) {
+      const i3 = i * 3;
 
-    let idx = 0;
-    for (let iz = 0; iz < GRID_Z; iz++) {
-      for (let ix = 0; ix < GRID_X; ix++) {
-        const x = (ix / (GRID_X - 1) - 0.5) * sizeX;
-        const z = (iz / (GRID_Z - 1) - 0.5) * sizeZ;
-        const y = 0;
+      // ====================================================================
+      // STAGE 0: ЖИВАЯ РЕЧЕВАЯ ВОЛНА (SPEECH FREQUENCIES)
+      // ====================================================================
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const u = (col / (cols - 1)) * 2.0 - 1.0;
+      const v = (row / (rows - 1)) * 2.0 - 1.0;
 
-        const i3 = idx * 3;
-        positions[i3] = x;
-        positions[i3 + 1] = y;
-        positions[i3 + 2] = z;
+      const x0 = u * 25.0;
+      const z0 = v * 12.0;
+      const env = Math.exp(-u * u * 2.0 - v * v * 2.4);
+      const y0 = Math.sin(u * 6.5) * Math.cos(v * 4.0) * 3.8 * env;
 
-        originalPositions[i3] = x;
-        originalPositions[i3 + 1] = y;
-        originalPositions[i3 + 2] = z;
+      pos0[i3]     = x0;
+      pos0[i3 + 1] = y0;
+      pos0[i3 + 2] = z0;
 
-        // Color gradient along wave depth
-        const depthRatio = iz / GRID_Z;
-        const col = depthRatio < 0.35 ? ICE_MIST : (depthRatio < 0.75 ? CHERRY_BRIGHT : CHERRY);
-
-        colors[i3] = col.r;
-        colors[i3 + 1] = col.g;
-        colors[i3 + 2] = col.b;
-
-        idx++;
+      // ====================================================================
+      // STAGE 1: СФЕРА ГОЛОСА / ИИ-МОЗГ (AI VOICE SPHERE)
+      // ====================================================================
+      if (i < 13000) {
+        const t = i / 13000;
+        const phi = Math.acos(1.0 - 2.0 * t);
+        const theta = i * goldenAngle;
+        const r = 5.2 + Math.sin(phi * 6.0 + theta * 3.0) * 0.45;
+        pos1[i3]     = Math.sin(phi) * Math.cos(theta) * r;
+        pos1[i3 + 1] = Math.cos(phi) * r;
+        pos1[i3 + 2] = Math.sin(phi) * Math.sin(theta) * r;
+      } else {
+        const t = (i - 13000) / 5000;
+        const theta = t * Math.PI * 2.0;
+        const ringR = 7.5 + (Math.sin(i * 1.7) * 0.5) * 0.6;
+        pos1[i3]     = Math.cos(theta) * ringR;
+        pos1[i3 + 1] = Math.sin(theta * 3.0) * 0.6;
+        pos1[i3 + 2] = Math.sin(theta) * ringR;
       }
+
+      // ====================================================================
+      // STAGE 2: ГАРМОНИЧЕСКАЯ СПИРАЛЬ (HARMONIC SOUND HELIX)
+      // ====================================================================
+      const tHelix = (i / N) * Math.PI * 8.0 - Math.PI * 4.0;
+      const strand = (i % 2 === 0) ? 1.0 : -1.0;
+      const helixRadius = 3.6;
+      const x2 = tHelix * 1.8;
+      const y2 = Math.sin(tHelix + (strand > 0 ? 0 : Math.PI)) * helixRadius + ((i % 16) / 16 - 0.5) * 1.2;
+      const z2 = Math.cos(tHelix + (strand > 0 ? 0 : Math.PI)) * helixRadius + ((i % 16) / 16 - 0.5) * 1.2;
+
+      pos2[i3]     = x2;
+      pos2[i3 + 1] = y2;
+      pos2[i3 + 2] = z2;
+
+      // ====================================================================
+      // STAGE 3: КОНЦЕНТРИЧЕСКИЙ РЕЗОНАНС (ACOUSTIC RIPPLE CORE)
+      // ====================================================================
+      const ringIdx = i % 8;
+      const ringPos = Math.floor(i / 8) / (N / 8);
+      const ringAngle = ringPos * Math.PI * 2.0;
+      const baseRadius = 2.4 + ringIdx * 2.0;
+      const waveHeight = Math.sin(ringAngle * 4.0 + ringIdx * 1.2) * (0.4 + ringIdx * 0.2);
+
+      pos3[i3]     = Math.cos(ringAngle) * baseRadius;
+      pos3[i3 + 1] = waveHeight;
+      pos3[i3 + 2] = Math.sin(ringAngle) * baseRadius * 0.65;
     }
 
-    waveGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    waveGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    waveGeometry = new THREE.BufferGeometry();
+    waveGeometry.setAttribute('position', new THREE.BufferAttribute(pos0, 3));
+    waveGeometry.setAttribute('pos0', new THREE.BufferAttribute(pos0, 3));
+    waveGeometry.setAttribute('pos1', new THREE.BufferAttribute(pos1, 3));
+    waveGeometry.setAttribute('pos2', new THREE.BufferAttribute(pos2, 3));
+    waveGeometry.setAttribute('pos3', new THREE.BufferAttribute(pos3, 3));
 
-    // 6. Points Material
-    waveMaterial = new THREE.PointsMaterial({
-      size: 0.55,
-      map: sprite,
+    // ── GLSL SHADER: CELESTIAL SKY BLUE & ICE MIST ──
+    const vertexShader = `
+      attribute vec3 pos0;
+      attribute vec3 pos1;
+      attribute vec3 pos2;
+      attribute vec3 pos3;
+
+      uniform float uProgress;
+      uniform float uTime;
+      uniform float uRippleTime;
+      uniform vec2 uRipplePos;
+      uniform float uRippleStrength;
+      uniform float uPixelRatio;
+
+      varying vec3 vColor;
+      varying float vAlpha;
+
+      float ease(float a, float b, float x) {
+        float t = clamp((x - a) / (b - a), 0.0, 1.0);
+        return t * t * (3.0 - 2.0 * t);
+      }
+
+      void main() {
+        float pVal = clamp(uProgress, 0.0, 3.0);
+        vec3 p;
+
+        if (pVal < 1.0) {
+          float t = ease(0.0, 1.0, pVal);
+          p = mix(pos0, pos1, t);
+        } else if (pVal < 2.0) {
+          float t = ease(1.0, 2.0, pVal);
+          p = mix(pos1, pos2, t);
+        } else {
+          float t = ease(2.0, 3.0, pVal);
+          p = mix(pos2, pos3, t);
+        }
+
+        // Ambient fluid wave dynamics
+        float waveFactor = max(0.0, 1.0 - pVal * 0.7);
+        float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.5 * waveFactor;
+        float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
+        p.y += wave + pulse;
+
+        // Calm water-ripple on click
+        if (uRippleStrength > 0.001) {
+          float dist = length(p.xz - uRipplePos);
+          float rip = sin(dist * 1.1 - uRippleTime * 4.0) * exp(-dist * 0.3) * uRippleStrength * 0.25;
+          p.y += rip;
+        }
+
+        vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+
+        // Dynamic Point size with attenuation
+        float size = (38.0 / -mvPosition.z) * uPixelRatio;
+        gl_PointSize = clamp(size, 2.5, 52.0);
+
+        // Color Palette:
+        // Deep Azure (#0284C7) -> Sky Cyan (#38BDF8) -> Ice Mist (#F5F8FA)
+        vec3 cDeep = vec3(0.008, 0.518, 0.780); // #0284C7
+        vec3 cSky  = vec3(0.220, 0.741, 0.973); // #38BDF8
+        vec3 cMist = vec3(0.961, 0.973, 0.980); // #F5F8FA
+
+        float h = clamp((p.y + 4.0) / 8.0, 0.0, 1.0);
+        if (h < 0.5) {
+          vColor = mix(cDeep, cSky, h * 2.0);
+        } else {
+          vColor = mix(cSky, cMist, (h - 0.5) * 2.0);
+        }
+
+        float distFog = clamp((-mvPosition.z - 10.0) / 38.0, 0.0, 1.0);
+        vAlpha = 1.0 - distFog * 0.65;
+      }
+    `;
+
+    const fragmentShader = `
+      varying vec3 vColor;
+      varying float vAlpha;
+
+      void main() {
+        vec2 coord = gl_PointCoord - vec2(0.5);
+        float dist = length(coord);
+        if (dist > 0.5) discard;
+
+        float alphaEdge = smoothstep(0.5, 0.06, dist);
+        gl_FragColor = vec4(vColor, alphaEdge * vAlpha * 0.95);
+      }
+    `;
+
+    waveMaterial = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      uniforms: {
+        uProgress:       { value: 0.0 },
+        uTime:           { value: 0.0 },
+        uRippleTime:     { value: 0.0 },
+        uRipplePos:      { value: new THREE.Vector2(0, 0) },
+        uRippleStrength: { value: 0.0 },
+        uPixelRatio:     { value: Math.min(window.devicePixelRatio || 1, 2) }
+      },
       transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      vertexColors: true
+      blending: THREE.NormalBlending,
+      depthWrite: false
     });
 
     wavePoints = new THREE.Points(waveGeometry, waveMaterial);
-    wavePoints.position.set(0, -2.5, 0);
     scene.add(wavePoints);
   }
 
-  function createGlowTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-
-    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.25, 'rgba(255, 34, 68, 0.85)');
-    grad.addColorStop(0.6, 'rgba(154, 0, 2, 0.35)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 64, 64);
-
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
+  function initCallouts() {
+    for (let i = 0; i <= 3; i++) {
+      const el = document.getElementById(`callout-${i}`);
+      if (el) callouts.push(el);
+    }
   }
 
-  // ── SCROLL CAMERA FLIGHT & TIMELINE SYNC ──
-  function initScrollSync() {
-    const sc = document.getElementById('scroll-container');
-    const indicator = document.getElementById('timeline-indicator');
-    const labels = document.querySelectorAll('.t-label');
-    if (!sc) return;
+  // ── ROCK-SOLID 3D SPATIAL ANCHORING (ZERO JITTER) ──
+  function toScreenPosition(worldPos) {
+    projVec.copy(worldPos);
+    projVec.project(camera);
+    return {
+      x: (projVec.x * 0.5 + 0.5) * W,
+      y: (-(projVec.y * 0.5) + 0.5) * H,
+      visible: projVec.z < 1.0
+    };
+  }
 
-    sc.addEventListener('scroll', () => {
-      const max = sc.scrollHeight - sc.clientHeight;
-      scrollNorm = max > 0 ? sc.scrollTop / max : 0;
+  function updateSpatialCallouts(p) {
+    const activeIdx = p < 0.65 ? 0 :
+                      p < 1.65 ? 1 :
+                      p < 2.45 ? 2 : 3;
 
-      // Active section index 0..3
-      const activeIdx = Math.min(3, Math.floor(scrollNorm * 4 + 0.1));
-      labels.forEach((lbl, i) => {
-        lbl.classList.toggle('active', i === activeIdx);
-      });
+    callouts.forEach((el, idx) => {
+      if (idx === activeIdx) {
+        if (!el.classList.contains('active')) el.classList.add('active');
 
-      if (indicator) {
-        indicator.style.top = `${activeIdx * 25}%`;
-      }
-    });
+        let targetX, targetY;
 
-    labels.forEach(lbl => {
-      lbl.addEventListener('click', () => {
-        const secIdx = parseInt(lbl.dataset.sec, 10);
-        const sections = document.querySelectorAll('.screen-section');
-        if (sections[secIdx]) {
-          sections[secIdx].scrollIntoView({ behavior: 'smooth' });
+        if (idx === 0) {
+          // Stage 0: Anchored stably to center wave crest
+          const pos = toScreenPosition(new THREE.Vector3(0, 1.2, 0));
+          targetX = pos.x - 240;
+          targetY = Math.max(40, pos.y - 180);
+        } else if (idx === 1) {
+          // Stage 1: Anchored stably to Voice Sphere
+          const pos = toScreenPosition(new THREE.Vector3(3.2, 1.6, 0));
+          targetX = Math.min(W - 480, pos.x + 20);
+          targetY = Math.max(50, pos.y - 100);
+        } else if (idx === 2) {
+          // Stage 2: Anchored stably to Helix
+          const pos = toScreenPosition(new THREE.Vector3(-3.0, 1.0, 0));
+          targetX = Math.max(40, pos.x - 440);
+          targetY = Math.max(50, pos.y - 90);
+        } else {
+          // Stage 3: Centered product reveal card
+          targetX = (W * 0.5) - 290;
+          targetY = Math.max(30, (H * 0.5) - 240);
         }
-      });
-    });
-  }
 
-  // ── VOICE DEMO SIMULATION ──
-  function initVoiceSimulation() {
-    const micBtn = document.getElementById('hero-mic-btn');
-    const micLabel = document.getElementById('mic-btn-label');
-    const bubble = document.getElementById('voice-bubble');
-    const bubbleText = document.getElementById('bubble-text');
+        // Smooth position lerping to eliminate all subpixel vibration
+        const smooth = smoothedCallouts[idx];
+        smooth.x += (targetX - smooth.x) * 0.12;
+        smooth.y += (targetY - smooth.y) * 0.12;
 
-    function startListening() {
-      if (isRecording) return;
-      isRecording = true;
-      if (micBtn) micBtn.classList.add('is-recording');
-      if (micLabel) micLabel.textContent = 'Говорите...';
-      if (bubble) {
-        bubble.classList.add('visible');
-        bubbleText.textContent = 'Распознаю поток речи...';
-      }
-    }
-
-    function stopListening() {
-      if (!isRecording) return;
-      isRecording = false;
-      if (micBtn) micBtn.classList.remove('is-recording');
-      if (micLabel) micLabel.textContent = 'Удерживай для записи';
-
-      if (bubbleText) {
-        const phrase = '«Привет! Давай завтра в 18:00 обсудим релиз.»';
-        let charI = 0;
-        bubbleText.textContent = '';
-        const t = setInterval(() => {
-          if (charI < phrase.length) {
-            bubbleText.textContent += phrase[charI];
-            charI++;
-          } else {
-            clearInterval(t);
-            setTimeout(() => {
-              if (!isRecording && bubble) bubble.classList.remove('visible');
-            }, 3200);
-          }
-        }, 28);
-      }
-    }
-
-    if (micBtn) {
-      micBtn.addEventListener('mousedown', startListening);
-      window.addEventListener('mouseup', stopListening);
-      micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startListening(); });
-      window.addEventListener('touchend', stopListening);
-    }
-
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !e.repeat && document.activeElement.tagName !== 'INPUT') {
-        e.preventDefault();
-        startListening();
-      }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        stopListening();
+        el.style.transform = `translate3d(${Math.round(smooth.x)}px, ${Math.round(smooth.y)}px, 0)`;
+      } else {
+        if (el.classList.contains('active')) el.classList.remove('active');
       }
     });
   }
 
-  // ── GLOBAL EVENTS ──
+  // ── LIVE REAL-TIME TYPING SIMULATION FOR STAGE 3 ──
+  function initTypingSimulation() {
+    const textEl = document.getElementById('typing-text');
+    if (!textEl) return;
+
+    const phrases = [
+      'Отправь отчет по спринту в Telegram и назначь созвон на 15:00.',
+      'Напиши функцию на TypeScript для мгновенного захвата аудио с микрофона.',
+      'Согласовано. Запускаем релиз говори в продакшн без задержек.',
+      'Заполни таблицу аналитики и пришли ссылку в командный чат.'
+    ];
+
+    let phraseIdx = 0;
+    let charIdx = 0;
+    let isDeleting = false;
+
+    function typeLoop() {
+      const current = phrases[phraseIdx];
+
+      if (isDeleting) {
+        textEl.textContent = current.substring(0, charIdx - 1);
+        charIdx--;
+      } else {
+        textEl.textContent = current.substring(0, charIdx + 1);
+        charIdx++;
+      }
+
+      let speed = isDeleting ? 22 : 50 + Math.random() * 25;
+
+      if (!isDeleting && charIdx === current.length) {
+        speed = 2200;
+        isDeleting = true;
+      } else if (isDeleting && charIdx === 0) {
+        isDeleting = false;
+        phraseIdx = (phraseIdx + 1) % phrases.length;
+        speed = 500;
+      }
+
+      setTimeout(typeLoop, speed);
+    }
+
+    typeLoop();
+  }
+
   function bindEvents() {
     window.addEventListener('resize', () => {
       W = window.innerWidth;
@@ -244,129 +375,144 @@
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
       renderer.setSize(W, H);
-    });
+      if (waveMaterial && waveMaterial.uniforms) {
+        waveMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 2);
+      }
+    }, { passive: true });
+
+    window.addEventListener('scroll', () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const p = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+      targetProgress = p * 3.0;
+    }, { passive: true });
 
     window.addEventListener('mousemove', (e) => {
-      mouseX = (e.clientX / W) * 2 - 1;
-      mouseY = -(e.clientY / H) * 2 + 1;
-      targetCamX = mouseX * 2.5;
+      mouseX = (e.clientX / W) * 2.0 - 1.0;
+      mouseY = -(e.clientY / H) * 2.0 + 1.0;
+      targetCamX = mouseX * 2.2;
       targetCamY = mouseY * 1.5;
+    }, { passive: true });
+
+    window.addEventListener('pointerdown', (e) => {
+      triggerCalmRipple(e.clientX, e.clientY);
     });
-  }
 
-  // ── OS DETECTION ──
-  function initOSDetection() {
-    const ua = (navigator.userAgent || '').toLowerCase();
-    const isMac = ua.includes('macintosh') || ua.includes('mac os');
-
-    const heroDl = document.getElementById('hero-download-btn');
-    const heroTitle = document.getElementById('btn-hero-label');
-    const mainDl = document.getElementById('main-dl-btn');
-    const dlTitle = document.getElementById('dl-btn-title');
-    const altLink = document.getElementById('alt-platform-link');
-
-    if (isMac && heroDl && heroTitle && mainDl) {
-      const macUrl = 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg';
-      const winUrl = 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-setup-1.0.6.exe';
-
-      heroDl.href = macUrl;
-      heroTitle.textContent = 'Скачать для macOS';
-      mainDl.href = macUrl;
-      if (dlTitle) dlTitle.textContent = 'Скачать для macOS';
-
-      if (altLink) {
-        altLink.href = winUrl;
-        altLink.textContent = 'Версия для Windows (.exe)';
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        triggerCalmRipple(W * 0.5, H * 0.5);
       }
+    });
+
+    const dlBtn = document.getElementById('download-btn');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        alert('Загрузка «говори» для Windows начнется через секунду.');
+      });
     }
   }
 
-  // ── MAIN 60FPS ANIMATION LOOP ──
-  let clock = new THREE.Clock();
+  function triggerCalmRipple(screenX, screenY) {
+    const vector = new THREE.Vector3(
+      (screenX / W) * 2.0 - 1.0,
+      -(screenY / H) * 2.0 + 1.0,
+      0.5
+    );
+    vector.unproject(camera);
+    const dir = vector.sub(camera.position).normalize();
+    const dist = -camera.position.y / (dir.y || 0.001);
+    const hitPoint = camera.position.clone().add(dir.multiplyScalar(dist));
+
+    rippleOriginX = isFinite(hitPoint.x) ? hitPoint.x : 0;
+    rippleOriginZ = isFinite(hitPoint.z) ? hitPoint.z : 0;
+    rippleStartTime = performance.now();
+    rippleActive = true;
+  }
+
+  const clock = new THREE.Clock();
 
   function animate() {
     requestAnimationFrame(animate);
 
-    const delta = clock.getDelta();
-    const time = clock.getElapsedTime();
+    const elapsedTime = clock.getElapsedTime();
 
-    // 1. Voice Energy Lerp
-    if (isRecording) {
-      speechEnergy += (1.0 - speechEnergy) * 0.12;
+    smoothProgress += (targetProgress - smoothProgress) * 0.065;
+    currentCamX += (targetCamX - currentCamX) * 0.05;
+    currentCamY += (targetCamY - currentCamY) * 0.05;
+
+    const p = Math.max(0.0, Math.min(3.0, smoothProgress));
+
+    // ── DYNAMIC CAMERA CHOREOGRAPHY: ZOOM IN / ZOOM OUT / 3D BANKING ──
+    let targetZ = 16.0;
+    let targetY = 1.0;
+    let targetX = 0.0;
+    let lookY = 0.0;
+
+    if (p < 1.0) {
+      // Stage 0 -> Stage 1:
+      // Macro close wave (Z=16) -> Zoom out pull-back (Z=26) -> Zoom in to Sphere (Z=16)
+      const t = p;
+      const zoomArch = Math.sin(t * Math.PI) * 9.5;
+      targetZ = 16.0 + zoomArch;
+      targetY = 1.0 + Math.sin(t * Math.PI * 0.5) * 1.5;
+      targetX = Math.sin(t * Math.PI * 0.5) * 2.5;
+      lookY = t * 0.5;
+    } else if (p < 2.0) {
+      // Stage 1 -> Stage 2:
+      // Orbiting Sphere (Z=16) -> Pull-back sweep (Z=25) -> Dive into Helix (Z=13.5)
+      const t = p - 1.0;
+      const zoomArch = Math.sin(t * Math.PI) * 9.0;
+      targetZ = 16.0 + zoomArch - t * 2.5;
+      targetY = 2.5 - t * 1.5;
+      targetX = 2.5 * (1.0 - t) - t * 2.0;
+      lookY = 0.5 - t * 0.5;
     } else {
-      speechEnergy += (0.0 - speechEnergy) * 0.08;
+      // Stage 2 -> Stage 3 (App Reveal):
+      // Fly out of helix (Z=13.5) -> Grand zoom-out reveal of full portal & App HUD (Z=26.0)
+      const t = p - 2.0;
+      targetZ = 13.5 + t * 12.5;
+      targetY = 1.0 - t * 0.8;
+      targetX = -2.0 * (1.0 - t);
+      lookY = 0.0;
     }
 
-    // 2. Camera Flight Driven by Scroll
-    // Section 0 (Hero): cam.pos (0, 3, 22), cam.rot (0, 0, 0)
-    // Section 1 (Speed): cam.pos (0, 1, 17), cam.rot (-0.15, 0, 0)
-    // Section 2 (Privacy): cam.pos (3, 6, 18), cam.rot (-0.25, 0.15, 0)
-    // Section 3 (Download): cam.pos (0, -0.5, 12), cam.rot (0, 0, 0)
-    const p = Math.max(0, Math.min(1, scrollNorm));
+    camera.position.x = targetX + currentCamX;
+    camera.position.y = targetY + currentCamY;
+    camera.position.z = targetZ;
+    camera.lookAt(0, lookY, 0);
 
-    let camBaseY = 3.5 - p * 4.0;
-    let camBaseZ = 22.0 - p * 10.0;
-    let camBaseX = Math.sin(p * Math.PI) * 2.5;
+    // Subtle 3D rotation of points
+    if (wavePoints) {
+      wavePoints.rotation.y = elapsedTime * 0.12 + currentCamX * 0.04;
+      wavePoints.rotation.x = currentCamY * 0.025;
+    }
 
-    camera.position.x += (camBaseX + targetCamX - camera.position.x) * 0.05;
-    camera.position.y += (camBaseY + targetCamY - camera.position.y) * 0.05;
-    camera.position.z += (camBaseZ - camera.position.z) * 0.05;
-    camera.lookAt(0, -0.5, 0);
-
-    // 3. Update Audio Ribbon Wave Points
-    const pos = waveGeometry.attributes.position.array;
-    const col = waveGeometry.attributes.color.array;
-
-    const baseAmp = 1.6 + speechEnergy * 3.5;
-    const waveSpeed = 1.8 + speechEnergy * 2.0;
-
-    let idx = 0;
-    for (let iz = 0; iz < GRID_Z; iz++) {
-      for (let ix = 0; ix < GRID_X; ix++) {
-        const i3 = idx * 3;
-        const ox = originalPositions[i3];
-        const oz = originalPositions[i3 + 2];
-
-        // Harmonic fluid wave
-        const wave1 = Math.sin(ox * 0.22 + time * waveSpeed + oz * 0.15);
-        const wave2 = Math.cos(ox * 0.45 - time * 1.2) * 0.45;
-        const voiceRipple = speechEnergy > 0.01 ? Math.sin(ox * 1.5 + time * 6.0) * speechEnergy * 0.8 : 0;
-
-        // On scroll section 1 (Speed), split into chaos vs smooth beam
-        let chaos = 0;
-        if (p > 0.2 && p < 0.6) {
-          const splitFactor = (p - 0.2) / 0.4;
-          if (ox < 0) {
-            chaos = (Math.sin(ox * 4.0 + time * 5.0) * Math.cos(oz * 3.0)) * splitFactor * 1.2;
-          }
-        }
-
-        // On scroll section 3 (Download), curve into an intake vortex
-        let vortex = 0;
-        if (p > 0.7) {
-          const vortexFactor = (p - 0.7) / 0.3;
-          vortex = Math.sin(time * 2.0 + (ox * ox + oz * oz) * 0.02) * vortexFactor * 1.8;
-        }
-
-        pos[i3 + 1] = (wave1 + wave2 + voiceRipple + chaos + vortex) * baseAmp;
-
-        // Dynamic Color Shift when speaking
-        if (speechEnergy > 0.01) {
-          col[i3] = col[i3] + (CHERRY_BRIGHT.r - col[i3]) * speechEnergy * 0.7;
-          col[i3 + 1] = col[i3 + 1] + (CHERRY_BRIGHT.g - col[i3 + 1]) * speechEnergy * 0.7;
-          col[i3 + 2] = col[i3 + 2] + (CHERRY_BRIGHT.b - col[i3 + 2]) * speechEnergy * 0.7;
-        }
-
-        idx++;
+    // Ripple
+    let rippleStrength = 0.0;
+    let rippleTimeSec = 0.0;
+    if (rippleActive) {
+      const elapsedRipple = (performance.now() - rippleStartTime) / 1000.0;
+      if (elapsedRipple < 1.6) {
+        rippleTimeSec = elapsedRipple;
+        rippleStrength = Math.exp(-elapsedRipple * 2.5);
+      } else {
+        rippleActive = false;
       }
     }
 
-    waveGeometry.attributes.position.needsUpdate = true;
-    if (speechEnergy > 0.01) {
-      waveGeometry.attributes.color.needsUpdate = true;
+    // Update Uniforms
+    if (waveMaterial && waveMaterial.uniforms) {
+      waveMaterial.uniforms.uProgress.value = p;
+      waveMaterial.uniforms.uTime.value = elapsedTime;
+      waveMaterial.uniforms.uRippleTime.value = rippleTimeSec;
+      waveMaterial.uniforms.uRipplePos.value.set(rippleOriginX, rippleOriginZ);
+      waveMaterial.uniforms.uRippleStrength.value = rippleStrength;
     }
 
-    // 4. Render
+    // Update 3D-projected UI Callouts
+    updateSpatialCallouts(p);
+
     renderer.render(scene, camera);
   }
 
