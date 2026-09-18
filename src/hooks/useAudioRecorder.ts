@@ -155,26 +155,33 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
             return;
           }
 
-          const arrayBuffer = await rawBlob.arrayBuffer();
-          const audioCtx = audioContextRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
-          const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-          // Resample to clean 16kHz mono PCM WAV
-          const samples16k = await resampleTo16kHz(decodedBuffer);
-          const wavBlob = encodeWAV(samples16k, 16000);
-
-          if (audioContextRef.current) {
-            audioContextRef.current.close().catch(() => {});
-            audioContextRef.current = null;
+          let audioCtx = audioContextRef.current;
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
           }
 
+          try {
+            const arrayBuffer = await rawBlob.arrayBuffer();
+            const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            const samples16k = await resampleTo16kHz(decodedBuffer);
+            const wavBlob = encodeWAV(samples16k, 16000);
+            setIsRecording(false);
+            resolve(wavBlob);
+          } catch (err) {
+            console.warn('[Audio] Error processing audio to 16kHz WAV, falling back to raw blob:', err);
+            const rawBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            setIsRecording(false);
+            resolve(rawBlob);
+          } finally {
+            if (audioCtx) {
+              audioCtx.close().catch(() => {});
+            }
+            audioContextRef.current = null;
+          }
+        } catch (outerErr) {
+          console.error('[Audio] Unexpected recorder onstop error:', outerErr);
           setIsRecording(false);
-          resolve(wavBlob);
-        } catch (err) {
-          console.error('[Audio] Error processing audio to 16kHz WAV, falling back to raw blob:', err);
-          const rawBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          setIsRecording(false);
-          resolve(rawBlob);
+          resolve(null);
         }
       };
 

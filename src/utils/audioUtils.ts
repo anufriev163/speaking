@@ -54,7 +54,8 @@ function writeString(view: DataView, offset: number, string: string) {
  * Resamples an AudioBuffer to 16kHz mono Float32Array.
  */
 export async function resampleTo16kHz(audioBuffer: AudioBuffer): Promise<Float32Array> {
-  const offlineCtx = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * 16000), 16000);
+  const frameCount = Math.max(1, Math.ceil((audioBuffer.duration || 0) * 16000));
+  const offlineCtx = new OfflineAudioContext(1, frameCount, 16000);
   const source = offlineCtx.createBufferSource();
   source.buffer = audioBuffer;
   source.connect(offlineCtx.destination);

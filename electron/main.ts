@@ -696,13 +696,18 @@ function setupIpcHandlers() {
   ipcMain.on('window:open-settings', () => createSettingsWindow());
   ipcMain.on('window:close-settings', () => settingsWindow?.close());
   ipcMain.on('window:minimize-settings', () => settingsWindow?.minimize());
+  let hudPosDebounceTimer: NodeJS.Timeout | null = null;
   ipcMain.on('window:move-hud', (_event, { deltaX, deltaY }) => {
     if (!hudWindow || hudWindow.isDestroyed()) return;
     const [currentX, currentY] = hudWindow.getPosition();
     const newX = Math.round(currentX + deltaX);
     const newY = Math.round(currentY + deltaY);
     hudWindow.setPosition(newX, newY);
-    storage.updateSettings({ hudPosition: { x: newX, y: newY } });
+
+    if (hudPosDebounceTimer) clearTimeout(hudPosDebounceTimer);
+    hudPosDebounceTimer = setTimeout(() => {
+      storage.updateSettings({ hudPosition: { x: newX, y: newY } });
+    }, 400);
   });
   ipcMain.on('window:save-hud-position', (_event, pos: { x: number; y: number }) => {
     storage.updateSettings({ hudPosition: pos });

@@ -2,7 +2,10 @@ import { autoUpdater } from 'electron-updater';
 import { BrowserWindow, ipcMain, app } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
+import https from 'https';
 import { spawn } from 'child_process';
+import { getJson } from './httpClient';
 
 export type UpdateStatus =
   | 'idle'
@@ -30,7 +33,6 @@ let updateState: UpdateInfoState = {
 let downloadedInstallerPath: string | null = null;
 let directDownloadUrl: string | null = null;
 let directDownloadFileName: string | null = null;
-let downloadAbortController: AbortController | null = null;
 
 function isVersionNewer(remoteVer: string, currentVer: string): boolean {
   const r = remoteVer.replace(/^v/, '').split('.').map(x => parseInt(x, 10) || 0);
@@ -51,11 +53,9 @@ async function fetchLatestGitHubRelease(): Promise<{
   fileName: string;
   fileSize: number;
 } | null> {
-  const res = await fetch('https://api.github.com/repos/anufriev163/speaking/releases/latest', {
-    headers: {
-      'User-Agent': 'govori-desktop',
-      'Accept': 'application/vnd.github.v3+json'
-    }
+  const res = await getJson('https://api.github.com/repos/anufriev163/speaking/releases/latest', {
+    'User-Agent': 'govori-desktop',
+    'Accept': 'application/vnd.github.v3+json'
   });
 
   if (!res.ok) {
@@ -104,8 +104,8 @@ async function fetchLatestGitHubRelease(): Promise<{
   };
 }
 
-async function streamDownload(
-  url: string,
+function streamDownload(
+  urlStr: string,
   fileName: string,
   onProgress: (percent: number) => void
 ): Promise<string> {
@@ -116,55 +116,59 @@ async function streamDownload(
 
   const destPath = path.join(updateDir, fileName);
 
-  downloadAbortController = new AbortController();
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'govori-desktop' },
-    redirect: 'follow',
-    signal: downloadAbortController.signal
-  });
+  return new Promise((resolve, reject) => {
+    function downloadStep(currentUrl: string, redirectCount = 0) {
+      if (redirectCount > 6) {
+        return reject(new Error('Слишком много перенаправлений'));
+      }
+      try {
+        const u = new URL(currentUrl);
+        const transport = u.protocol === 'http:' ? http : https;
+        const req = transport.get(
+          currentUrl,
+          { headers: { 'User-Agent': 'govori-desktop' } },
+          (res) => {
+            if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              return downloadStep(res.headers.location, redirectCount + 1);
+            }
+            if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+              return reject(new Error(`Ошибка загрузки: HTTP ${res.statusCode}`));
+            }
 
-  if (!res.ok) {
-    throw new Error(`Ошибка загрузки: HTTP ${res.status}`);
-  }
+            const totalBytes = Number(res.headers['content-length']) || 88000000;
+            let receivedBytes = 0;
+            const fileStream = fs.createWriteStream(destPath);
 
-  const totalBytes = Number(res.headers.get('content-length')) || 88624260;
-  let receivedBytes = 0;
+            res.on('data', (chunk: Buffer) => {
+              receivedBytes += chunk.length;
+              if (totalBytes > 0) {
+                const percent = Math.min(99, Math.round((receivedBytes / totalBytes) * 100));
+                onProgress(percent);
+              }
+            });
 
-  const fileStream = fs.createWriteStream(destPath);
-
-  if (!res.body) {
-    throw new Error('Пустой ответ сервера');
-  }
-
-  const reader = res.body.getReader();
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      fileStream.write(Buffer.from(value));
-      receivedBytes += value.length;
-      if (totalBytes > 0) {
-        const percent = Math.min(99, Math.round((receivedBytes / totalBytes) * 100));
-        onProgress(percent);
+            fileStream.on('finish', () => {
+              onProgress(100);
+              resolve(destPath);
+            });
+            fileStream.on('error', (err) => reject(err));
+            res.on('error', (err) => reject(err));
+            res.pipe(fileStream);
+          }
+        );
+        req.on('error', reject);
+      } catch (err) {
+        reject(err);
       }
     }
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      fileStream.on('finish', () => resolve());
-      fileStream.on('error', (err) => reject(err));
-      fileStream.end();
-    });
-  }
-
-  onProgress(100);
-  return destPath;
+    downloadStep(urlStr);
+  });
 }
 
 export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
-  // In dev / unpackaged mode, display '1.0.4' so user can test the live in-app update flow to 1.0.5.
+  // In dev / unpackaged mode, display '1.0.5' so user can test live updates.
   // In production packaged mode, use official app.getVersion().
-  const currentVer = app.isPackaged ? (app.getVersion() || '1.0.5') : '1.0.4';
+  const currentVer = app.isPackaged ? (app.getVersion() || '1.0.6') : '1.0.5';
   updateState.version = currentVer;
 
   autoUpdater.logger = console;
@@ -263,7 +267,7 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
         throw new Error('Не удалось получить данные релиза');
       }
 
-      const activeVer = app.isPackaged ? (app.getVersion() || '1.0.5') : '1.0.4';
+      const activeVer = app.isPackaged ? (app.getVersion() || '1.0.6') : '1.0.5';
       const hasUpdate = isVersionNewer(relInfo.latestVersion, activeVer);
 
       directDownloadUrl = relInfo.downloadUrl;
