@@ -30,6 +30,14 @@
   let rippleOriginX = 0;
   let rippleOriginZ = 0;
 
+  // Microphone & Live Audio Reactivity
+  let micStream = null;
+  let audioCtx = null;
+  let analyser = null;
+  let micTimeData = null;
+  let isMicActive = false;
+  let micEnergy = 0.0;
+
   // Spatial Callout DOM elements & smoothed screen coords
   const callouts = [];
   const smoothedCallouts = [
@@ -166,6 +174,7 @@
       uniform vec2 uRipplePos;
       uniform float uRippleStrength;
       uniform float uPixelRatio;
+      uniform float uMicEnergy;
 
       varying vec3 vColor;
       varying float vAlpha;
@@ -193,7 +202,10 @@
         float waveFactor = max(0.0, 1.0 - pVal * 0.7);
         float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
-        p.y += wave + pulse;
+
+        // Waves stay in the exact same position; voice energy only adds gentle organic amplitude pulsation
+        float voicePulse = 1.0 + uMicEnergy * 0.55;
+        p.y += (wave * voicePulse) + pulse;
 
         if (uRippleStrength > 0.001) {
           float dist = length(p.xz - uRipplePos);
@@ -207,9 +219,9 @@
         float size = (38.0 / -mvPosition.z) * uPixelRatio;
         gl_PointSize = clamp(size, 2.5, 52.0);
 
-        vec3 cDeep = vec3(0.008, 0.518, 0.780); // #0284C7
-        vec3 cSky  = vec3(0.220, 0.741, 0.973); // #38BDF8
-        vec3 cMist = vec3(0.961, 0.973, 0.980); // #F5F8FA
+        vec3 cDeep  = vec3(0.008, 0.518, 0.780); // #0284C7
+        vec3 cSky   = vec3(0.220, 0.741, 0.973); // #38BDF8
+        vec3 cMist  = vec3(0.961, 0.973, 0.980); // #F5F8FA
 
         float h = clamp((p.y + 4.0) / 8.0, 0.0, 1.0);
         if (h < 0.5) {
@@ -246,7 +258,8 @@
         uRippleTime:     { value: 0.0 },
         uRipplePos:      { value: new THREE.Vector2(0, 0) },
         uRippleStrength: { value: 0.0 },
-        uPixelRatio:     { value: Math.min(window.devicePixelRatio || 1, 2) }
+        uPixelRatio:     { value: Math.min(window.devicePixelRatio || 1, 2) },
+        uMicEnergy:      { value: 0.0 }
       },
       transparent: true,
       blending: THREE.NormalBlending,
@@ -416,11 +429,25 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !e.repeat) {
+      // Ctrl + ~ / Ctrl + ` / Ctrl + ё / Ctrl + Ё
+      if (e.ctrlKey && (e.code === 'Backquote' || e.key === '`' || e.key === '~' || e.key === 'ё' || e.key === 'Ё' || e.keyCode === 192)) {
+        e.preventDefault();
+        toggleMicrophone();
+        return;
+      }
+
+      if (e.code === 'Space' && !e.repeat && e.target.tagName !== 'INPUT') {
         e.preventDefault();
         triggerCalmRipple(W * 0.5, H * 0.5);
       }
     });
+
+    const micHint = document.getElementById('mic-hint');
+    if (micHint) {
+      micHint.addEventListener('click', () => {
+        toggleMicrophone();
+      });
+    }
 
     const dlBtn = document.getElementById('download-btn');
     if (dlBtn) {
@@ -429,6 +456,57 @@
         e.stopPropagation();
         alert('загрузка «говори» для windows начнется через секунду.');
       });
+    }
+  }
+
+  // ── LIVE MICROPHONE AUDIO ANALYSIS ──
+  async function toggleMicrophone() {
+    const hintEl = document.getElementById('mic-hint');
+    if (isMicActive) {
+      if (micStream) {
+        try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        micStream = null;
+      }
+      if (audioCtx && audioCtx.state !== 'closed') {
+        try { audioCtx.close(); } catch (e) {}
+        audioCtx = null;
+      }
+      isMicActive = false;
+      micEnergy = 0.0;
+      if (hintEl) {
+        hintEl.classList.remove('is-listening');
+      }
+      return;
+    }
+
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('микрофон не поддерживается в этом браузере.');
+        return;
+      }
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+      const source = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.6;
+      source.connect(analyser);
+
+      micTimeData = new Uint8Array(analyser.fftSize);
+      isMicActive = true;
+
+      if (hintEl) {
+        hintEl.classList.add('is-listening');
+      }
+    } catch (err) {
+      console.warn('mic access error:', err);
+      if (hintEl) {
+        hintEl.classList.add('mic-error');
+        setTimeout(() => hintEl.classList.remove('mic-error'), 1800);
+      }
     }
   }
 
@@ -512,12 +590,37 @@
       }
     }
 
+    // Smooth, zero-latency voice volume tracking via time-domain RMS
+    if (isMicActive && analyser && micTimeData) {
+      analyser.getByteTimeDomainData(micTimeData);
+      let sumSq = 0;
+      for (let i = 0; i < micTimeData.length; i++) {
+        const norm = (micTimeData[i] - 128) / 128;
+        sumSq += norm * norm;
+      }
+      const rms = Math.sqrt(sumSq / micTimeData.length);
+
+      // Noise gate: filters out background room noise and mic hiss
+      const gate = 0.018;
+      let target = 0.0;
+      if (rms > gate) {
+        target = Math.min(1.0, (rms - gate) * 5.2);
+      }
+
+      // Smooth attack and decay envelope prevents sudden jumps
+      const speed = target > micEnergy ? 0.28 : 0.09;
+      micEnergy += (target - micEnergy) * speed;
+    } else {
+      micEnergy += (0.0 - micEnergy) * 0.1;
+    }
+
     if (waveMaterial && waveMaterial.uniforms) {
       waveMaterial.uniforms.uProgress.value = p;
       waveMaterial.uniforms.uTime.value = elapsedTime;
       waveMaterial.uniforms.uRippleTime.value = rippleTimeSec;
       waveMaterial.uniforms.uRipplePos.value.set(rippleOriginX, rippleOriginZ);
       waveMaterial.uniforms.uRippleStrength.value = rippleStrength;
+      waveMaterial.uniforms.uMicEnergy.value = micEnergy;
     }
 
     // Update Wave-Dissolving Callouts

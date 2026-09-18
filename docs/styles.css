@@ -17,6 +17,7 @@
   --color-accent-sky: #0EA5E9;
   --font-display: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-text: 'Wix Madefor Text', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-handwritten: 'Caveat', cursive, sans-serif;
 }
 
 html {
@@ -62,6 +63,59 @@ body {
   z-index: 2;
   pointer-events: none;
   background: radial-gradient(circle at 50% 40%, rgba(224, 242, 254, 0.3) 0%, rgba(240, 246, 252, 0.1) 60%, rgba(220, 235, 248, 0.35) 100%);
+}
+
+/* Handwritten Cursive Mic Shortcut Note pinned to right edge */
+.mic-hint-note {
+  position: fixed;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-3deg);
+  z-index: 50;
+  font-family: var(--font-handwritten);
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.02em;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.3s ease, text-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.mic-hint-note:hover {
+  color: #0F172A;
+  transform: translateY(-50%) rotate(-1deg) scale(1.04);
+}
+
+.mic-hint-note.is-listening {
+  color: #0284C7;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+  transform: translateY(-50%) rotate(0deg) scale(1.06);
+}
+
+.mic-hint-note.is-listening::after {
+  content: '• слушаю...';
+  font-family: var(--font-handwritten);
+  font-size: 1.35rem;
+  color: #0EA5E9;
+  animation: pulseListen 1.5s infinite ease-in-out;
+}
+
+.mic-hint-note.mic-error {
+  color: #DC2626;
+  text-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+}
+
+@keyframes pulseListen {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.92); }
 }
 
 /* Scrollable Track that drives the 3D timeline */
@@ -351,5 +405,12 @@ body {
   }
   .end-title {
     font-size: 3.2rem;
+  }
+  .mic-hint-note {
+    right: 18px;
+    bottom: 22px;
+    top: auto;
+    transform: rotate(-2deg);
+    font-size: 1.3rem;
   }
 }
