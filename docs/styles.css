@@ -1,6 +1,6 @@
 /* ==========================================================================
    «ГОВОРИ» — 3D AUDIO SCROLL JOURNEY & WIX BOLD MINIMALIST NARRATIVE
-   All text strictly lowercase, wave-dissolving exit, ultra-clean finale
+   High-contrast, razor-sharp typography on light ice-blue/white background
    ========================================================================== */
 
 *, *::before, *::after {
@@ -13,7 +13,7 @@
 :root {
   --bg-gradient: radial-gradient(circle at 50% 35%, #F0F6FC 0%, #F8FAFD 50%, #EBF3FA 100%);
   --color-black: #000000;
-  --color-text-sub: #475569;
+  --color-text-sub: #334155;
   --color-accent-sky: #0EA5E9;
   --font-display: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-text: 'Wix Madefor Text', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -61,7 +61,7 @@ body {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 40%, rgba(224, 242, 254, 0.35) 0%, rgba(240, 246, 252, 0.15) 60%, rgba(220, 235, 248, 0.4) 100%);
+  background: radial-gradient(circle at 50% 40%, rgba(224, 242, 254, 0.3) 0%, rgba(240, 246, 252, 0.1) 60%, rgba(220, 235, 248, 0.35) 100%);
 }
 
 /* Scrollable Track that drives the 3D timeline */
@@ -73,7 +73,7 @@ body {
 }
 
 /* ==========================================================================
-   STORYTELLING CALLOUTS (PURE LOWERCASE WIX BOLD & UNIQUE WAVE-DISSOLVE EXIT)
+   STORYTELLING CALLOUTS (HIGH CONTRAST WIX BOLD & WAVE-DISSOLVE EXIT)
    ========================================================================== */
 .narrative-overlay {
   position: fixed;
@@ -97,7 +97,7 @@ body {
   flex-direction: column;
 }
 
-/* Active State: Crisp, solid, sitting proudly in space */
+/* Active State: Razor-sharp high-contrast */
 .spatial-callout.active {
   opacity: 1;
   pointer-events: auto;
@@ -105,7 +105,7 @@ body {
   letter-spacing: -0.03em;
 }
 
-/* Wave-Dissolving Exit State: Text evaporates into vertical frequency ripples */
+/* Wave-Dissolving Exit State */
 .spatial-callout.dissolving {
   opacity: 0;
   filter: blur(14px);
@@ -113,72 +113,118 @@ body {
   pointer-events: none;
 }
 
-/* Pure Floating Text (No Cards, No Boxes) */
+/* Pure Floating Text with Ambient Readability Halo */
 .callout-text-group {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  max-width: 480px;
+  max-width: 580px;
 }
 
 .callout-headline {
   font-family: var(--font-display);
-  font-size: 1.85rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.18;
   color: var(--color-black);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.95), 0 2px 8px rgba(255, 255, 255, 0.9);
 }
 
 .callout-sub {
   font-family: var(--font-text);
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.12rem;
+  font-weight: 600;
   color: var(--color-text-sub);
   line-height: 1.45;
-  margin-top: 8px;
+  margin-top: 10px;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
 }
 
 /* ==========================================================================
-   CLEAN SOLID ARROWS
+   CLEAN SOLID ARROWS WITH GENTLE ORGANIC SWAYING (ПОКАЧИВАНИЕ СТРЕЛОК)
    ========================================================================== */
 .organic-arrow {
   position: relative;
-  width: 100px;
-  height: 80px;
+  width: 110px;
+  height: 85px;
   pointer-events: none;
-  transition: opacity 0.35s ease;
 }
 
 .organic-arrow svg {
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.12));
+  filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.9)) drop-shadow(0 2px 6px rgba(15, 23, 42, 0.15));
+}
+
+@keyframes arrowSway0 {
+  0% {
+    transform: rotate(-3.5deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(3.5deg) translateY(6px);
+  }
+  100% {
+    transform: rotate(-3.5deg) translateY(0px);
+  }
+}
+
+@keyframes arrowSway1 {
+  0% {
+    transform: rotate(-2.5deg) translateX(0px);
+  }
+  50% {
+    transform: rotate(3deg) translateX(-4px) translateY(4px);
+  }
+  100% {
+    transform: rotate(-2.5deg) translateX(0px);
+  }
+}
+
+@keyframes arrowSway2 {
+  0% {
+    transform: rotate(-3deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(2.5deg) translateX(4px) translateY(5px);
+  }
+  100% {
+    transform: rotate(-3deg) translateY(0px);
+  }
 }
 
 .stage-0 .organic-arrow {
-  margin-top: 12px;
+  margin-top: 14px;
   align-self: center;
+  transform-origin: 20% 10%;
+  animation: arrowSway0 3.8s ease-in-out infinite;
+  will-change: transform;
 }
 
 .stage-1 {
   flex-direction: row-reverse;
   align-items: flex-start;
-  gap: 16px;
+  gap: 20px;
 }
 .stage-1 .organic-arrow {
-  margin-top: 10px;
+  margin-top: 14px;
+  transform-origin: 85% 15%;
+  animation: arrowSway1 4.2s ease-in-out infinite;
+  will-change: transform;
 }
 
 .stage-2 {
   flex-direction: row;
   align-items: flex-start;
-  gap: 16px;
+  gap: 20px;
 }
 .stage-2 .organic-arrow {
-  margin-top: 10px;
+  margin-top: 14px;
+  transform-origin: 15% 15%;
+  animation: arrowSway2 4.0s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* ==========================================================================
@@ -186,7 +232,7 @@ body {
    ========================================================================== */
 .spatial-callout.stage-3 {
   width: 90%;
-  max-width: 520px;
+  max-width: 540px;
 }
 
 .end-clean-box {
@@ -198,22 +244,24 @@ body {
 
 .end-title {
   font-family: var(--font-display);
-  font-size: 4.2rem;
+  font-size: 4.4rem;
   font-weight: 800;
   letter-spacing: -0.05em;
   color: var(--color-black);
   line-height: 1;
   margin-bottom: 8px;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.95);
 }
 
 .end-desc {
   font-family: var(--font-text);
-  font-size: 1.15rem;
-  font-weight: 500;
+  font-size: 1.2rem;
+  font-weight: 600;
   color: var(--color-text-sub);
-  max-width: 420px;
+  max-width: 440px;
   line-height: 1.45;
-  margin-bottom: 24px;
+  margin-bottom: 26px;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
 }
 
 /* Sleek Single Action Pill */
@@ -224,9 +272,9 @@ body {
   background: var(--color-black);
   color: #FFFFFF;
   text-decoration: none;
-  padding: 15px 30px;
+  padding: 16px 34px;
   border-radius: 9999px;
-  box-shadow: 0 14px 32px -6px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 14px 34px -6px rgba(15, 23, 42, 0.35);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   pointer-events: auto;
 }
@@ -234,7 +282,7 @@ body {
 .end-action-pill:hover {
   background: #18181B;
   transform: translateY(-2px);
-  box-shadow: 0 20px 40px -6px rgba(15, 23, 42, 0.4);
+  box-shadow: 0 22px 42px -6px rgba(15, 23, 42, 0.45);
 }
 
 .end-action-pill:active {
@@ -257,16 +305,17 @@ body {
 
 .pill-label {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 700;
   color: #FFFFFF;
 }
 
 .end-hint {
   font-family: var(--font-text);
-  font-size: 0.85rem;
-  color: #94A3B8;
+  font-size: 0.9rem;
+  color: #64748B;
   margin-top: 14px;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
 }
 
 .end-hint strong {
@@ -295,10 +344,10 @@ body {
 /* Responsive */
 @media (max-width: 900px) {
   .callout-text-group {
-    max-width: 320px;
+    max-width: 340px;
   }
   .callout-headline {
-    font-size: 1.4rem;
+    font-size: 1.7rem;
   }
   .end-title {
     font-size: 3.2rem;

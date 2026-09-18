@@ -1,10 +1,11 @@
 // ==========================================================================
 // «ГОВОРИ» — 3D SPATIAL ENGINE & WAVE-DISSOLVING TEXT (THREE.JS)
 // Features:
-//   - All text lowercase
-//   - Unique wave-dissolving exit animation: text evaporates into sound wave
-//   - Ultra-clean minimal finale with single action pill, stays active at bottom
-//   - Dynamic camera zoom in/out flight
+//   - Hero stage 100% visible from p = 0.0 (high contrast WIX Bold 800)
+//   - All text lowercase, razor-sharp contrast
+//   - Lowered wave baseline in hero for generous negative space and clear reading
+//   - Unique wave-dissolving exit animation
+//   - Ultra-clean minimal finale with single action pill
 // ==========================================================================
 
 (() => {
@@ -32,19 +33,12 @@
   // Spatial Callout DOM elements & smoothed screen coords
   const callouts = [];
   const smoothedCallouts = [
-    { x: W * 0.5 - 240, y: 80 },
+    { x: W * 0.5 - 290, y: 70 },
     { x: W * 0.65, y: 120 },
     { x: 100, y: 140 },
-    { x: W * 0.5 - 260, y: H * 0.5 - 130 }
+    { x: W * 0.5 - 270, y: H * 0.5 - 130 }
   ];
   const projVec = new THREE.Vector3();
-
-  // Progress ranges for stages 0, 1, 2
-  const stageRanges = [
-    { start: 0.0,  peak: 0.20, end: 0.60 },
-    { start: 0.65, peak: 1.15, end: 1.65 },
-    { start: 1.70, peak: 2.05, end: 2.45 }
-  ];
 
   window.addEventListener('DOMContentLoaded', () => {
     initScene();
@@ -61,7 +55,7 @@
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 1000);
-    camera.position.set(0, 1.2, 16);
+    camera.position.set(0, 0.5, 17.5);
 
     renderer = new THREE.WebGLRenderer({
       powerPreference: 'high-performance',
@@ -88,7 +82,7 @@
       const i3 = i * 3;
 
       // ====================================================================
-      // STAGE 0: ЖИВАЯ РЕЧЕВАЯ ВОЛНА (SPEECH FREQUENCIES)
+      // STAGE 0: ЖИВАЯ РЕЧЕВАЯ ВОЛНА (СМЕЩЕНА ВНИЗ ДЛЯ ЧИТАЕМОСТИ ТЕКСТА)
       // ====================================================================
       const col = i % cols;
       const row = Math.floor(i / cols);
@@ -98,7 +92,7 @@
       const x0 = u * 25.0;
       const z0 = v * 12.0;
       const env = Math.exp(-u * u * 2.0 - v * v * 2.4);
-      const y0 = Math.sin(u * 6.5) * Math.cos(v * 4.0) * 3.8 * env;
+      const y0 = -1.5 + Math.sin(u * 6.5) * Math.cos(v * 4.0) * 3.2 * env;
 
       pos0[i3]     = x0;
       pos0[i3 + 1] = y0;
@@ -197,7 +191,7 @@
         }
 
         float waveFactor = max(0.0, 1.0 - pVal * 0.7);
-        float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.5 * waveFactor;
+        float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
         p.y += wave + pulse;
 
@@ -280,34 +274,69 @@
     };
   }
 
-  // ── UNIQUE WAVE-DISSOLVING TEXT EXIT ENGINE ──
+  // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
   function updateSpatialCallouts(p) {
     callouts.forEach((el, idx) => {
       let opacity = 0;
-      let exitFraction = 0; // 0 = solid, 1 = dissolved into sound wave
+      let exitFraction = 0;
 
-      if (idx === 3) {
-        // Stage 3 finale: emerges at p > 2.35 and stays firmly active all the way to 3.0!
-        if (p >= 2.35) {
-          const t = Math.min(1.0, (p - 2.35) / 0.35);
-          opacity = t;
-          exitFraction = 1.0 - t;
+      if (idx === 0) {
+        // Hero stage: 100% visible right from p = 0.0!
+        if (p <= 0.35) {
+          opacity = 1.0;
+          exitFraction = 0.0;
+        } else if (p <= 0.65) {
+          const t = (p - 0.35) / 0.30;
+          exitFraction = t;
+          opacity = Math.max(0.0, 1.0 - t * 1.5);
+        } else {
+          opacity = 0;
+          exitFraction = 1.0;
+        }
+      } else if (idx === 1) {
+        // Stage 1 (Sphere): enters 0.65..0.95, stays 0.95..1.35, exits 1.35..1.65
+        if (p >= 0.65 && p <= 1.65) {
+          if (p < 0.95) {
+            const t = (p - 0.65) / 0.30;
+            opacity = t;
+            exitFraction = 1.0 - t;
+          } else if (p <= 1.35) {
+            opacity = 1.0;
+            exitFraction = 0.0;
+          } else {
+            const t = (p - 1.35) / 0.30;
+            exitFraction = t;
+            opacity = Math.max(0.0, 1.0 - t * 1.5);
+          }
+        } else {
+          opacity = 0;
+          exitFraction = 1.0;
+        }
+      } else if (idx === 2) {
+        // Stage 2 (Helix): enters 1.65..1.95, stays 1.95..2.25, exits 2.25..2.55
+        if (p >= 1.65 && p <= 2.55) {
+          if (p < 1.95) {
+            const t = (p - 1.65) / 0.30;
+            opacity = t;
+            exitFraction = 1.0 - t;
+          } else if (p <= 2.25) {
+            opacity = 1.0;
+            exitFraction = 0.0;
+          } else {
+            const t = (p - 2.25) / 0.30;
+            exitFraction = t;
+            opacity = Math.max(0.0, 1.0 - t * 1.5);
+          }
         } else {
           opacity = 0;
           exitFraction = 1.0;
         }
       } else {
-        const r = stageRanges[idx];
-        if (p >= r.start && p <= r.end) {
-          if (p <= r.peak) {
-            const t = (p - r.start) / Math.max(0.01, r.peak - r.start);
-            opacity = Math.min(1.0, t * 1.4);
-            exitFraction = Math.max(0.0, 1.0 - t);
-          } else {
-            const t = (p - r.peak) / Math.max(0.01, r.end - r.peak);
-            exitFraction = t;
-            opacity = Math.max(0.0, 1.0 - t * 1.5);
-          }
+        // Stage 3 (Finale): enters from 2.30, fully solid at 2.65, stays 100% to end
+        if (p >= 2.30) {
+          const t = Math.min(1.0, (p - 2.30) / 0.35);
+          opacity = t;
+          exitFraction = 1.0 - t;
         } else {
           opacity = 0;
           exitFraction = 1.0;
@@ -317,20 +346,20 @@
       // Base 3D target coordinates
       let targetX, targetY;
       if (idx === 0) {
-        const pos = toScreenPosition(new THREE.Vector3(0, 1.2, 0));
-        targetX = pos.x - 240;
-        targetY = Math.max(40, pos.y - 180);
+        // Centered hero text above lowered wave
+        targetX = (W * 0.5) - 290;
+        targetY = Math.max(45, Math.min(110, H * 0.12));
       } else if (idx === 1) {
         const pos = toScreenPosition(new THREE.Vector3(3.2, 1.6, 0));
-        targetX = Math.min(W - 480, pos.x + 20);
-        targetY = Math.max(50, pos.y - 100);
+        targetX = Math.min(W - 520, pos.x + 20);
+        targetY = Math.max(60, pos.y - 100);
       } else if (idx === 2) {
         const pos = toScreenPosition(new THREE.Vector3(-3.0, 1.0, 0));
-        targetX = Math.max(40, pos.x - 440);
-        targetY = Math.max(50, pos.y - 90);
+        targetX = Math.max(50, pos.x - 480);
+        targetY = Math.max(60, pos.y - 90);
       } else {
         // Centered finale
-        targetX = (W * 0.5) - 260;
+        targetX = (W * 0.5) - 270;
         targetY = Math.max(40, (H * 0.5) - 130);
       }
 
@@ -346,7 +375,7 @@
 
       el.style.opacity = opacity.toFixed(3);
       el.style.filter = blurPx > 0.2 ? `blur(${blurPx}px)` : 'none';
-      el.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '-0.03em';
+      el.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '-0.035em';
       el.style.transform = `translate3d(${Math.round(smooth.x)}px, ${Math.round(smooth.y + waveSinkY)}px, 0)`;
 
       if (opacity > 0.05) {
@@ -434,22 +463,22 @@
     const p = Math.max(0.0, Math.min(3.0, smoothProgress));
 
     // Dynamic Camera Zoom-in / Zoom-out
-    let targetZ = 16.0;
-    let targetY = 1.0;
+    let targetZ = 17.5;
+    let targetY = 0.5;
     let targetX = 0.0;
-    let lookY = 0.0;
+    let lookY = -0.4;
 
     if (p < 1.0) {
       const t = p;
-      const zoomArch = Math.sin(t * Math.PI) * 9.5;
-      targetZ = 16.0 + zoomArch;
-      targetY = 1.0 + Math.sin(t * Math.PI * 0.5) * 1.5;
+      const zoomArch = Math.sin(t * Math.PI) * 9.0;
+      targetZ = 17.5 + zoomArch;
+      targetY = 0.5 + Math.sin(t * Math.PI * 0.5) * 2.0;
       targetX = Math.sin(t * Math.PI * 0.5) * 2.5;
-      lookY = t * 0.5;
+      lookY = -0.4 + t * 0.9;
     } else if (p < 2.0) {
       const t = p - 1.0;
       const zoomArch = Math.sin(t * Math.PI) * 9.0;
-      targetZ = 16.0 + zoomArch - t * 2.5;
+      targetZ = 17.5 + zoomArch - t * 4.0;
       targetY = 2.5 - t * 1.5;
       targetX = 2.5 * (1.0 - t) - t * 2.0;
       lookY = 0.5 - t * 0.5;
