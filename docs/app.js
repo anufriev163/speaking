@@ -49,6 +49,8 @@
     { x: 100, y: 140 },
     { x: W * 0.5 - 270, y: H * 0.5 - 130 }
   ];
+  let micHintEl = null;
+  const smoothMicHint = { x: W * 0.75, y: H * 0.55 };
   const projVec = new THREE.Vector3();
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -284,6 +286,7 @@
       const el = document.getElementById(`callout-${i}`);
       if (el) callouts.push(el);
     }
+    micHintEl = document.getElementById('mic-hint');
   }
 
   function toScreenPosition(worldPos) {
@@ -406,6 +409,42 @@
         el.style.pointerEvents = 'none';
       }
     });
+
+    // ── 3D ANCHORED MIC HINT NOTE (ACTIVE ONLY IN STAGE 0) ──
+    if (micHintEl) {
+      let micOpacity = 0;
+      let micExitFraction = 0;
+
+      if (p <= 0.35) {
+        micOpacity = 1.0;
+        micExitFraction = 0.0;
+      } else if (p <= 0.65) {
+        const t = (p - 0.35) / 0.30;
+        micExitFraction = t;
+        micOpacity = Math.max(0.0, 1.0 - t * 1.5);
+      } else {
+        micOpacity = 0;
+        micExitFraction = 1.0;
+      }
+
+      // 3D Anchor projected from the right slope of the Stage 0 voice wave
+      const pos = toScreenPosition(new THREE.Vector3(7.2, -1.0, 0.5));
+      const targetX = Math.min(W - 210, Math.max(W * 0.60, pos.x));
+      const targetY = Math.max(90, Math.min(H - 120, pos.y));
+
+      smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
+      smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
+
+      const waveSinkY = micExitFraction * 35.0;
+      const blurPx = (micExitFraction * 12.0).toFixed(1);
+      const letterSpacePx = (micExitFraction * 6.0).toFixed(1);
+
+      micHintEl.style.opacity = micOpacity.toFixed(3);
+      micHintEl.style.filter = blurPx > 0.2 ? `blur(${blurPx}px)` : 'none';
+      micHintEl.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '0.02em';
+      micHintEl.style.transform = `translate3d(${Math.round(smoothMicHint.x)}px, ${Math.round(smoothMicHint.y + waveSinkY)}px, 0) rotate(-3deg)`;
+      micHintEl.style.pointerEvents = micOpacity > 0.08 ? 'auto' : 'none';
+    }
   }
 
   function bindEvents() {

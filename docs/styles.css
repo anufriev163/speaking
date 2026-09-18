@@ -65,13 +65,12 @@ body {
   background: radial-gradient(circle at 50% 40%, rgba(224, 242, 254, 0.3) 0%, rgba(240, 246, 252, 0.1) 60%, rgba(220, 235, 248, 0.35) 100%);
 }
 
-/* Handwritten Cursive Mic Shortcut Note pinned with comfortable inset from right edge */
+/* Handwritten Cursive Mic Shortcut Note (3D Anchored to Stage 0 Wave) */
 .mic-hint-note {
-  position: fixed;
-  right: 80px;
-  top: 50%;
-  transform: translateY(-50%) rotate(-3deg);
-  z-index: 50;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 15;
   font-family: var(--font-handwritten);
   font-size: 1.55rem;
   font-weight: 600;
@@ -81,7 +80,13 @@ body {
   -webkit-user-select: none;
   cursor: pointer;
   pointer-events: auto;
-  transition: color 0.3s ease, text-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  transform: translate3d(0, 0, 0) rotate(-3deg);
+  will-change: transform, opacity, filter, letter-spacing;
+  transition: color 0.3s ease, text-shadow 0.3s ease,
+              opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              letter-spacing 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
   display: inline-flex;
   align-items: center;
@@ -91,13 +96,11 @@ body {
 
 .mic-hint-note:hover {
   color: #0F172A;
-  transform: translateY(-50%) rotate(-1deg) scale(1.04);
 }
 
 .mic-hint-note.is-listening {
   color: #0284C7;
   text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
-  transform: translateY(-50%) rotate(0deg) scale(1.05);
 }
 
 .mic-hint-note.is-listening::after {
