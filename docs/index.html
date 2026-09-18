@@ -2,248 +2,161 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>говори — 3D голосовой интерфейс нового поколения</title>
-  <meta name="description" content="Не печатай, просто говори. Сверхбыстрый нативный голосовой ввод с искусственным интеллектом для Windows и Mac.">
-  <meta property="og:title" content="говори — голос быстрее клавиатуры">
-  <meta property="og:description" content="180мс отклик. 100% нативный C-FFI. Чистый текст без слов-паразитов.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>говори — Не печатай. Говори.</title>
+  <meta name="description" content="Голосовой ввод нового поколения для Windows и macOS. Убирает слова-паразиты, печатает за 180 мс в любом приложении.">
+  <meta property="og:title" content="говори — Не печатай. Говори.">
+  <meta property="og:description" content="180 мс отклик, 100% приватность, нативный ввод без задержек.">
   <meta property="og:type" content="website">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="is-loading">
+<body>
 
-  <!-- 3D WebGL Canvas Layer -->
-  <div id="webgl-container"></div>
-
-  <!-- Ambient Cinematic Overlay Vignette -->
-  <div class="cinematic-vignette"></div>
-
-  <!-- Header HUD -->
-  <header class="hud-header">
-    <a href="#hero" class="brand">
-      <span class="brand-text">говори</span>
-      <span class="brand-dot"></span>
-    </a>
-
-    <div class="hud-center-telemetry">
-      <span class="telemetry-pill">
-        <span class="pulse-dot"></span>
-        <span class="telemetry-label">CORE 180MS</span>
-      </span>
-      <span class="telemetry-divider">/</span>
-      <span class="telemetry-text">WHISPER V3 + C-FFI</span>
-    </div>
-
-    <div class="hud-actions">
-      <button id="sound-toggle" class="hud-btn" aria-label="Звук">
-        <svg id="icon-sound-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-        <svg id="icon-sound-off" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-      </button>
-      <a href="#download" class="hud-btn hud-btn-cta">Скачать v1.0.6</a>
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand">говори<span class="dot">.</span></a>
+      <div class="nav-right">
+        <span class="nav-badge">v1.0.6 • Open Source</span>
+        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noopener" class="nav-github" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          GitHub
+        </a>
+      </div>
     </div>
   </header>
 
-  <!-- Right Side Section Timeline -->
-  <aside class="timeline-nav" aria-label="Навигация по разделам">
-    <div class="timeline-bar">
-      <div class="timeline-progress" id="timeline-progress"></div>
-    </div>
-    <div class="timeline-steps">
-      <button class="t-step active" data-index="0"><span>01</span><label>Ядро</label></button>
-      <button class="t-step" data-index="1"><span>02</span><label>Синтез</label></button>
-      <button class="t-step" data-index="2"><span>03</span><label>Метрики</label></button>
-      <button class="t-step" data-index="3"><span>04</span><label>Старт</label></button>
-    </div>
-  </aside>
-
-  <!-- Interactive Voice Sphere Trigger Instruction (Hero) -->
-  <div class="voice-hint-badge" id="voice-hint">
-    <div class="key-hint">SPACE</div>
-    <span>Зажми пробел или нажми на сферу для теста</span>
-  </div>
-
-  <!-- Main Full-page Scroll Journey -->
-  <main class="scroll-wrapper" id="scroll-wrapper">
-
-    <!-- ═══════════════ 01: HERO / CORE ═══════════════ -->
-    <section class="section section-hero" id="sec-hero">
-      <div class="hero-centerpiece">
-        <div class="hero-label-glitch">НЕЙРОННЫЙ ГОЛОСОВОЙ ИНТЕРФЕЙС</div>
-        <h1 class="hero-glitch-title">говори<span class="hero-dot">.</span></h1>
-        <p class="hero-manifesto">
-          Мышление быстрее пальцев. Нажми горячую клавишу в любой программе и говори свободно — ИИ уберёт слова-паразиты и напечатает идеальный результат.
+  <!-- Hero Section -->
+  <main class="main-content">
+    <section class="hero-section">
+      <div class="hero-header">
+        <div class="hero-tag">
+          <span class="tag-pulse"></span>
+          Голосовой ввод нового поколения
+        </div>
+        <h1 class="hero-title">Не печатай.<br>Говори<span class="dot">.</span></h1>
+        <p class="hero-subtitle">
+          Нажми горячую клавишу в любой программе. ИИ мгновенно очистит речь от слов-паразитов и напечатает идеальный результат за 180&nbsp;мс.
         </p>
 
-        <div class="hero-interactive-controls">
-          <button id="mic-test-trigger" class="mic-sphere-trigger" aria-label="Активировать микрофон">
-            <span class="mic-wave-ring"></span>
-            <span class="mic-icon-box">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-            </span>
-            <span class="mic-status-label" id="mic-label">Удерживай для записи</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Live Voice Response Pill -->
-      <div class="live-transcription-pill" id="live-transcription">
-        <div class="pill-waveform-anim">
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="pill-typed-text" id="pill-text">Слушаю ваш голос...</div>
-      </div>
-
-      <div class="scroll-cue">
-        <span class="scroll-cue-txt">КРУТИ ВНИЗ</span>
-        <div class="scroll-cue-arrow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════ 02: TRANSFORM / STREAM ═══════════════ -->
-    <section class="section section-transform" id="sec-transform">
-      <div class="section-badge">02 // МГНОВЕННАЯ ТРАНСФОРМАЦИЯ</div>
-      <h2 class="section-title">Хаос превращается в точность</h2>
-
-      <div class="transform-cards-container">
-        <!-- Raw Voice Stream -->
-        <div class="spatial-card raw-card" data-tilt>
-          <div class="card-glass-glow"></div>
-          <div class="card-header">
-            <span class="status-indicator error-pulse"></span>
-            <span class="card-sub">СЫРОЙ ПОТОК РЕЧИ</span>
-            <span class="latency-tag">НЕОБРАБОТАНО</span>
-          </div>
-          <div class="card-content-body">
-            <p class="voice-raw-text">
-              <span class="tag-filler">ну короче</span> слушай <span class="tag-filler">эээ</span> давай завтра <span class="tag-filler">часиков</span> в шесть вечера созвонимся и <span class="tag-filler">типа</span> всё утвердим
-            </p>
-          </div>
-          <div class="card-footer-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>4 слова-паразита удалено</span>
-          </div>
-        </div>
-
-        <!-- 3D Energy Conduit / Connector -->
-        <div class="stream-conduit">
-          <div class="conduit-line">
-            <div class="conduit-spark"></div>
-          </div>
-          <div class="conduit-badge">180ms</div>
-        </div>
-
-        <!-- Synthesized Clean Stream -->
-        <div class="spatial-card clean-card" data-tilt>
-          <div class="card-glass-glow"></div>
-          <div class="card-header">
-            <span class="status-indicator success-pulse"></span>
-            <span class="card-sub">ФИНАЛЬНЫЙ ТЕКСТ В ПРИЛОЖЕНИЕ</span>
-            <span class="latency-tag success-tag">НАПЕЧАТАНО</span>
-          </div>
-          <div class="card-content-body">
-            <p class="voice-clean-text">
-              Привет! Давай завтра в 18:00 созвонимся и всё утвердим 👍
-            </p>
-          </div>
-          <div class="card-footer-info success-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>Вставлено через нативный Win32 SendInput</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════ 03: SPECS / 3D CARDS ═══════════════ -->
-    <section class="section section-specs" id="sec-specs">
-      <div class="section-badge">03 // АРХИТЕКТУРА И МЕТРИКИ</div>
-      <h2 class="section-title">Бескомпромиссная инженерия</h2>
-
-      <div class="specs-triptych">
-        <div class="spatial-spec-card" data-tilt>
-          <div class="spec-glow"></div>
-          <div class="spec-top">
-            <div class="spec-number">180<span class="spec-unit">мс</span></div>
-            <div class="spec-chip">GROQ LPU</div>
-          </div>
-          <h3 class="spec-label">Молниеносный отклик</h3>
-          <p class="spec-desc">Специализированные тензорные процессоры расшифровывают аудиопоток быстрее, чем вы успеваете сделать вдох.</p>
-        </div>
-
-        <div class="spatial-spec-card highlight-card" data-tilt>
-          <div class="spec-glow"></div>
-          <div class="spec-top">
-            <div class="spec-number">0<span class="spec-unit">бит</span></div>
-            <div class="spec-chip cherry-chip">PRIVACY</div>
-          </div>
-          <h3 class="spec-label">100% Приватность</h3>
-          <p class="spec-desc">Поддержка полностью автономной локальной модели Whisper. Ваши слова и конфиденциальные данные не покидают компьютер.</p>
-        </div>
-
-        <div class="spatial-spec-card" data-tilt>
-          <div class="spec-glow"></div>
-          <div class="spec-top">
-            <div class="spec-number">C<span class="spec-unit">-FFI</span></div>
-            <div class="spec-chip">KERNEL LEVEL</div>
-          </div>
-          <h3 class="spec-label">Нативная скорость ввода</h3>
-          <p class="spec-desc">Прямой доступ к системным API Windows и macOS. Мгновенная эмуляция нажатий клавиш в любом редакторе и мессенджере.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════ 04: DOWNLOAD / PORTAL ═══════════════ -->
-    <section class="section section-download" id="sec-download">
-      <div class="download-portal-box">
-        <div class="portal-badge">ПОЛНЫЙ КОНТРОЛЬ НАД РЕЧЬЮ</div>
-        <h2 class="portal-title">Начни говорить прямо сейчас</h2>
-        <p class="portal-subtitle">Бесплатно. Без подписок. Установка за 15 секунд.</p>
-
-        <div class="portal-actions">
-          <a id="btn-dl-win" href="https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-setup-1.0.6.exe" class="btn-portal-primary">
-            <span class="portal-btn-glow"></span>
-            <svg class="os-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
-            <span class="btn-portal-text">
-              <strong>Скачать для Windows</strong>
-              <small>v1.0.6 • x64 Installer (100% Free)</small>
-            </span>
+        <!-- Main Single CTA Button -->
+        <div class="cta-wrapper">
+          <a id="download-btn" href="https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-setup-1.0.6.exe" class="btn-primary">
+            <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+            </svg>
+            <span class="btn-text" id="btn-text">Скачать для Windows</span>
+            <span class="btn-version">v1.0.6</span>
           </a>
+          <div class="cta-meta">
+            Бесплатно • Без подписок • <a href="https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg" id="alt-os-link">Версия для macOS</a>
+          </div>
+        </div>
+      </div>
 
-          <div class="portal-secondary-links">
-            <a id="btn-dl-mac" href="https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg" class="portal-link">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8.92-2.85-.9.04-2 .6-2.65 1.36-.56.65-1.06 1.71-.93 2.73 1.01.08 2.04-.49 2.66-1.24z"/></svg>
-              macOS (.dmg)
-            </a>
-            <span class="portal-sep">•</span>
-            <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noopener" class="portal-link">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-              GitHub Репозиторий
-            </a>
-            <span class="portal-sep">•</span>
-            <a href="https://github.com/anufriev163/speaking/issues" target="_blank" rel="noopener" class="portal-link">
-              Сообщить о баге
-            </a>
+      <!-- Center Showcase: The Floating HUD Demonstration -->
+      <div class="showcase-container">
+        <!-- Window Mockup -->
+        <div class="window-mockup">
+          <div class="window-bar">
+            <div class="window-dots">
+              <span class="w-dot red"></span>
+              <span class="w-dot yellow"></span>
+              <span class="w-dot green"></span>
+            </div>
+            <div class="window-tabs">
+              <button class="w-tab active" data-app="telegram">Telegram</button>
+              <button class="w-tab" data-app="vscode">VS Code</button>
+              <button class="w-tab" data-app="notion">Notion</button>
+            </div>
+            <div class="window-hotkey">Хоткей: <kbd>Ctrl</kbd> + <kbd>~</kbd></div>
+          </div>
+
+          <div class="window-body">
+            <!-- Floating HUD Pill Overlay -->
+            <div class="floating-hud-capsule" id="demo-hud">
+              <div class="hud-capsule-glow"></div>
+              <div class="hud-capsule-inner">
+                <div class="hud-mic-indicator">
+                  <canvas id="hud-wave-canvas" width="64" height="24"></canvas>
+                </div>
+                <div class="hud-status" id="hud-status">Говорите...</div>
+                <div class="hud-timer">180ms</div>
+              </div>
+            </div>
+
+            <!-- Editor / Chat View -->
+            <div class="editor-view">
+              <div class="editor-context" id="editor-context">
+                <span class="context-label">Чат с командой:</span>
+              </div>
+
+              <!-- Animated Speech Stage -->
+              <div class="speech-stage">
+                <!-- Live Stage Text -->
+                <div class="stage-text-block" id="stage-text">
+                  <!-- Populated by JavaScript demo loop -->
+                </div>
+              </div>
+
+              <!-- Progress bar of the cycle -->
+              <div class="cycle-timeline">
+                <div class="cycle-progress" id="cycle-progress"></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <footer class="portal-footer">
-          <span>Сделано с уважением к вашей приватности и скорости</span>
-          <span>Open Source under MIT License</span>
-        </footer>
+        <div class="showcase-hint">
+          <span>Нажмите <kbd>Пробел</kbd> или кликните по окну, чтобы запустить запись снова</span>
+        </div>
       </div>
     </section>
 
+    <!-- Metrics Row -->
+    <section class="metrics-section">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-num">180<span class="metric-unit">мс</span></div>
+          <div class="metric-title">Молниеносный отклик</div>
+          <div class="metric-desc">Сверхбыстрая расшифровка через Groq Whisper v3 LPU. Быстрее, чем вы успеете нажать Enter.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-num">100<span class="metric-unit">%</span></div>
+          <div class="metric-title">Полная приватность</div>
+          <div class="metric-desc">Поддержка автономной локальной модели Whisper. Ни одного байта вашего голоса не уходит в сеть.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-num">C<span class="metric-unit">-FFI</span></div>
+          <div class="metric-title">Нативная скорость ввода</div>
+          <div class="metric-desc">Прямой вызов Win32 SendInput без медленного буфера обмена. Мгновенная печать в любое поле ввода.</div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- Local Offline-ready Three.js Core -->
-  <script src="three.min.js"></script>
-  <!-- Main 3D Engine & Logic -->
+  <!-- Minimal Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        говори<span class="dot">.</span>
+        <span class="footer-copy">© 2026 • С открытым исходным кодом (MIT)</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/anufriev163/speaking/releases" target="_blank" rel="noopener">Все релизы</a>
+        <a href="https://github.com/anufriev163/speaking/issues" target="_blank" rel="noopener">Сообщить о баге</a>
+      </div>
+    </div>
+  </footer>
+
   <script src="app.js"></script>
 </body>
 </html>
