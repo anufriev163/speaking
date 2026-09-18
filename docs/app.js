@@ -388,8 +388,10 @@
         targetY = Math.max(60, pos.y - 90);
       } else {
         // Centered finale
-        targetX = (W * 0.5) - 220;
-        targetY = Math.max(30, (H * 0.5) - 170);
+        const cw = el.offsetWidth || 280;
+        const ch = el.offsetHeight || 160;
+        targetX = (W * 0.5) - (cw * 0.5);
+        targetY = Math.max(30, (H * 0.5) - (ch * 0.5));
       }
 
       // Smooth coordinate damping
@@ -501,45 +503,27 @@
       });
     }
 
-    const dlModern = document.getElementById('dl-modern');
-    if (dlModern) {
-      dlModern.addEventListener('click', (e) => {
+    const dlWin = document.getElementById('dl-win');
+    if (dlWin) {
+      dlWin.addEventListener('click', (e) => {
         e.preventDefault();
-        alert('загрузка «говори» для новых пк (avx2) начнется через секунду.');
+        alert('загрузка «говори» для windows начнется через секунду.');
       });
     }
 
-    const dlLegacy = document.getElementById('dl-legacy');
-    if (dlLegacy) {
-      dlLegacy.addEventListener('click', (e) => {
+    const dlMac = document.getElementById('dl-mac');
+    if (dlMac) {
+      dlMac.addEventListener('click', (e) => {
         e.preventDefault();
-        alert('загрузка «говори» для старых пк (базовая совместимая версия) начнется через секунду.');
+        alert('загрузка «говори» для macos начнется через секунду.');
       });
     }
 
-    const btnWin = document.getElementById('btn-os-windows');
-    const winPanel = document.getElementById('windows-panel');
-    if (btnWin && winPanel) {
-      btnWin.addEventListener('click', (e) => {
+    const dlLinux = document.getElementById('dl-linux');
+    if (dlLinux) {
+      dlLinux.addEventListener('click', (e) => {
         e.preventDefault();
-        btnWin.classList.add('active');
-        winPanel.style.display = 'flex';
-      });
-    }
-
-    const btnMac = document.getElementById('btn-os-mac');
-    if (btnMac) {
-      btnMac.addEventListener('click', (e) => {
-        e.preventDefault();
-        alert('версия для macos находится в разработке.');
-      });
-    }
-
-    const btnLinux = document.getElementById('btn-os-linux');
-    if (btnLinux) {
-      btnLinux.addEventListener('click', (e) => {
-        e.preventDefault();
-        alert('версия для linux находится в разработке.');
+        alert('загрузка «говори» для linux начнется через секунду.');
       });
     }
   }

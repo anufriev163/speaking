@@ -288,8 +288,11 @@ body {
    STAGE 3: ULTRA-CLEAN MINIMAL FINALE («ГОВОРИ»)
    ========================================================================== */
 .spatial-callout.stage-3 {
-  width: 90%;
-  max-width: 540px;
+  width: -moz-fit-content;
+  width: fit-content;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .end-clean-box {
@@ -297,7 +300,7 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  width: 100%;
+  width: fit-content;
 }
 
 .end-brand-lockup {
@@ -305,7 +308,7 @@ body {
   flex-direction: column;
   align-items: stretch;
   width: fit-content;
-  margin: 0 auto 28px auto;
+  margin: 0 auto;
 }
 
 .end-title {
@@ -337,163 +340,45 @@ body {
   letter-spacing: normal;
 }
 
-/* OS Icons Row */
-.os-selector-row {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.os-icon-btn {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1.5px solid rgba(203, 213, 225, 0.7);
-  border-radius: 16px;
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #0F172A;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: var(--font-text);
-  font-size: 0.95rem;
-  font-weight: 600;
-  pointer-events: auto;
-}
-
-.os-icon-btn:hover:not(.disabled) {
-  border-color: #0F172A;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
-}
-
-.os-icon-btn.active {
-  background: #000000;
-  border-color: #000000;
-  color: #FFFFFF;
-  box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.35);
-}
-
-.os-icon-btn.disabled {
-  opacity: 0.52;
-  cursor: default;
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.os-badge {
-  font-size: 0.7rem;
-  padding: 2px 7px;
-  border-radius: 9999px;
-  background: #E2E8F0;
-  color: #475569;
-  font-weight: 600;
-}
-
-/* Windows Version Choices */
-.windows-versions-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  max-width: 440px;
-  margin: 0 auto 16px auto;
-  pointer-events: auto;
-}
-
-.win-choice-pill {
+/* 3 Compact Minimalist OS Logos fitting right under 'говори' */
+.os-icons-trio {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 18px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1.5px solid #E2E8F0;
-  border-radius: 16px;
-  cursor: pointer;
-  text-align: left;
+  width: 100%;
+  margin-top: 24px;
+  padding: 0 8px;
+}
+
+.os-logo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  color: #1E293B;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(203, 213, 225, 0.7);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  text-decoration: none;
+  cursor: pointer;
+  pointer-events: auto;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
 
-.win-choice-pill:hover {
-  border-color: #0284C7;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px -4px rgba(2, 132, 199, 0.18);
+.os-logo-btn:hover {
+  color: #000000;
   background: #FFFFFF;
+  border-color: #0F172A;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
 }
 
-.win-choice-pill:active {
+.os-logo-btn:active {
   transform: translateY(0);
-}
-
-.win-choice-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.win-choice-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.choice-title {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #0F172A;
-}
-
-.choice-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  background: rgba(14, 165, 233, 0.12);
-  color: #0284C7;
-}
-
-.choice-badge.legacy {
-  background: rgba(100, 116, 139, 0.12);
-  color: #475569;
-}
-
-.choice-desc {
-  font-family: var(--font-text);
-  font-size: 0.82rem;
-  color: #64748B;
-  font-weight: 500;
-}
-
-.choice-dl-arrow {
-  color: #0F172A;
-  transition: transform 0.2s ease, color 0.2s ease;
-  flex-shrink: 0;
-}
-
-.win-choice-pill:hover .choice-dl-arrow {
-  color: #0284C7;
-  transform: translateY(2px);
-}
-
-.end-hint {
-  font-family: var(--font-text);
-  font-size: 0.9rem;
-  color: #64748B;
-  margin-top: 14px;
-  text-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
-}
-
-.end-hint strong {
-  color: var(--color-black);
-  font-weight: 700;
 }
 
 /* Custom Sleek Scrollbar */
@@ -524,6 +409,22 @@ body {
   }
   .end-title {
     font-size: 3.2rem;
+  }
+  .end-desc {
+    font-size: 0.72rem;
+  }
+  .os-icons-trio {
+    margin-top: 20px;
+    padding: 0 4px;
+  }
+  .os-logo-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+  .os-logo-btn svg {
+    width: 17px;
+    height: 17px;
   }
   .mic-hint-note {
     right: 18px;
