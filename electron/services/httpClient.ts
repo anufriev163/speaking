@@ -1,3 +1,4 @@
+import http from 'http';
 import https from 'https';
 
 export interface HttpResponse {
@@ -15,11 +16,15 @@ export function postBuffer(
   return new Promise((resolve, reject) => {
     try {
       const url = new URL(urlStr);
-      const req = https.request(
+      const transport = url.protocol === 'http:' ? http : https;
+      const defaultPort = url.protocol === 'http:' ? 80 : 443;
+      const port = url.port ? Number(url.port) : defaultPort;
+
+      const req = transport.request(
         {
           protocol: url.protocol,
           hostname: url.hostname,
-          port: url.port || 443,
+          port,
           path: url.pathname + url.search,
           method: 'POST',
           headers
@@ -34,7 +39,13 @@ export function postBuffer(
               status,
               ok: status >= 200 && status < 300,
               text: async () => text,
-              json: async () => JSON.parse(text)
+              json: async () => {
+                try {
+                  return JSON.parse(text);
+                } catch {
+                  return { error: text };
+                }
+              }
             });
           });
         }
