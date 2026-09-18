@@ -384,8 +384,8 @@
         targetY = Math.max(60, pos.y - 90);
       } else {
         // Centered finale
-        targetX = (W * 0.5) - 270;
-        targetY = Math.max(40, (H * 0.5) - 130);
+        targetX = (W * 0.5) - 220;
+        targetY = Math.max(30, (H * 0.5) - 170);
       }
 
       // Smooth coordinate damping
@@ -497,12 +497,45 @@
       });
     }
 
-    const dlBtn = document.getElementById('download-btn');
-    if (dlBtn) {
-      dlBtn.addEventListener('click', (e) => {
+    const dlModern = document.getElementById('dl-modern');
+    if (dlModern) {
+      dlModern.addEventListener('click', (e) => {
         e.preventDefault();
-        e.stopPropagation();
-        alert('загрузка «говори» для windows начнется через секунду.');
+        alert('загрузка «говори» для новых пк (avx2) начнется через секунду.');
+      });
+    }
+
+    const dlLegacy = document.getElementById('dl-legacy');
+    if (dlLegacy) {
+      dlLegacy.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert('загрузка «говори» для старых пк (базовая совместимая версия) начнется через секунду.');
+      });
+    }
+
+    const btnWin = document.getElementById('btn-os-windows');
+    const winPanel = document.getElementById('windows-panel');
+    if (btnWin && winPanel) {
+      btnWin.addEventListener('click', (e) => {
+        e.preventDefault();
+        btnWin.classList.add('active');
+        winPanel.style.display = 'flex';
+      });
+    }
+
+    const btnMac = document.getElementById('btn-os-mac');
+    if (btnMac) {
+      btnMac.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert('версия для macos находится в разработке.');
+      });
+    }
+
+    const btnLinux = document.getElementById('btn-os-linux');
+    if (btnLinux) {
+      btnLinux.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert('версия для linux находится в разработке.');
       });
     }
   }
