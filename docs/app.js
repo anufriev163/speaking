@@ -1,351 +1,407 @@
 // ==========================================================================
-// «ГОВОРИ» — IMMERSIVE PARTICLE ENGINE
-//
-// 1. Particle field (2000 particles, mouse repulsion, sound wave formation)
-// 2. Scroll-driven particle behavior changes per section
-// 3. 3D tilt on feature cards
-// 4. Section visibility triggers
-// 5. OS detection for download buttons
+// «ГОВОРИ» — 3D SPATIAL NEURAL PARTICLE ENGINE (THREE.JS WEBGL)
 // ==========================================================================
 
 (() => {
   'use strict';
 
-  // ── CONFIG ──
-  const PARTICLE_COUNT = 1500;
-  const MOUSE_RADIUS = 120;
-  const MOUSE_FORCE = 8;
-  const CHERRY = { r: 154, g: 0, b: 2 };
-  const WHITE = { r: 255, g: 255, b: 255 };
+  // ── CONSTANTS & PALETTE ──
+  const PARTICLE_COUNT = 4800;
+  const CHERRY_COLA = new THREE.Color('#9A0002');
+  const CHERRY_BRIGHT = new THREE.Color('#FF2A45');
+  const ICE_MIST = new THREE.Color('#F5F8FA');
+  const DARK_ACCENT = new THREE.Color('#3A050B');
 
   // ── STATE ──
-  let canvas, ctx;
-  let W = 0, H = 0;
-  let mouseX = -9999, mouseY = -9999;
-  let particles = [];
-  let currentSection = 0; // 0=hero, 1=transform, 2=features, 3=download
-  let scrollProgress = 0; // 0..1 within current section
-  let raf;
+  let scene, camera, renderer;
+  let particlesGeometry, particlesMaterial, particleSystem;
+  let posCurrent, posTarget, velocities, baseColors, colorsCurrent;
+  let f0, f1, f2, f3; // Formations
+
+  let W = window.innerWidth;
+  let H = window.innerHeight;
+  let mouseX = 0, mouseY = 0;
+  let targetCamX = 0, targetCamY = 0;
+  let scrollProgress = 0; // 0.0 to 3.0 (continuous across 4 sections)
+  let isVoiceActive = false;
+  let voicePulse = 0;
+  let shockwaveRadius = 0;
+  let shockwaveCenter = new THREE.Vector3();
+  let shockwaveActive = false;
+
+  // Audio Context (Synthesized Native FX)
+  let audioCtx = null;
+  let soundEnabled = true;
 
   // ── INIT ──
-  document.addEventListener('DOMContentLoaded', () => {
-    canvas = document.getElementById('particle-canvas');
-    if (!canvas) return;
-    ctx = canvas.getContext('2d');
-
-    resize();
-    createParticles();
+  window.addEventListener('DOMContentLoaded', () => {
+    initWebGL();
+    generateFormations();
     bindEvents();
-    initSectionObservers();
+    initScrollTracking();
     init3DTilt();
+    initVoiceInteraction();
     initOSDetection();
-    tick();
+    document.body.classList.remove('is-loading');
+    animate();
   });
 
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
+  // ── WEBGL INITIALIZATION ──
+  function initWebGL() {
+    const container = document.getElementById('webgl-container');
+    if (!container) return;
 
-  // ── PARTICLE CREATION ──
-  function createParticles() {
-    particles = [];
+    // 1. Scene
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x050508, 0.018);
+
+    // 2. Camera
+    camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 1000);
+    camera.position.set(0, 0, 26);
+
+    // 3. Renderer
+    renderer = new THREE.WebGLRenderer({
+      powerPreference: 'high-performance',
+      antialias: true,
+      alpha: true
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(W, H);
+    renderer.setClearColor(0x050508, 0);
+    container.appendChild(renderer.domElement);
+
+    // 4. Particle Texture (Circular Soft Radial Glow)
+    const particleTexture = createGlowTexture();
+
+    // 5. Geometry & Attributes
+    particlesGeometry = new THREE.BufferGeometry();
+    posCurrent = new Float32Array(PARTICLE_COUNT * 3);
+    posTarget = new Float32Array(PARTICLE_COUNT * 3);
+    velocities = new Float32Array(PARTICLE_COUNT * 3);
+    baseColors = new Float32Array(PARTICLE_COUNT * 3);
+    colorsCurrent = new Float32Array(PARTICLE_COUNT * 3);
+
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        baseX: 0, // will be set per-frame based on formation
-        baseY: 0,
-        vx: 0,
-        vy: 0,
-        size: Math.random() * 2 + 0.5,
-        alpha: Math.random() * 0.5 + 0.1,
-        // Wave params
-        waveOffset: Math.random() * Math.PI * 2,
-        waveSpeed: 0.3 + Math.random() * 0.7,
-        waveAmp: 20 + Math.random() * 60,
-        // Color mix (0 = white, 1 = cherry)
-        colorMix: Math.random() < 0.3 ? 1 : 0,
-      });
-    }
-  }
+      const i3 = i * 3;
+      posCurrent[i3] = (Math.random() - 0.5) * 50;
+      posCurrent[i3 + 1] = (Math.random() - 0.5) * 50;
+      posCurrent[i3 + 2] = (Math.random() - 0.5) * 50;
 
-  // ── EVENTS ──
-  function bindEvents() {
-    window.addEventListener('resize', () => {
-      resize();
-      // Redistribute particles on resize
-      particles.forEach(p => {
-        p.x = Math.random() * W;
-        p.y = Math.random() * H;
-      });
-    });
-
-    // Track mouse globally (canvas is pointer-events:none, so track on body)
-    document.addEventListener('mousemove', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-    });
-
-    document.addEventListener('mouseleave', () => {
-      mouseX = -9999;
-      mouseY = -9999;
-    });
-
-    // Mobile touch support
-    document.addEventListener('touchmove', (e) => {
-      if (e.touches && e.touches[0]) {
-        mouseX = e.touches[0].clientX;
-        mouseY = e.touches[0].clientY;
-      }
-    }, { passive: true });
-
-    document.addEventListener('touchend', () => {
-      mouseX = -9999;
-      mouseY = -9999;
-    });
-
-    // Click pulse / shockwave
-    document.addEventListener('click', (e) => {
-      const clickX = e.clientX;
-      const clickY = e.clientY;
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        const dx = p.x - clickX;
-        const dy = p.y - clickY;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 260 && dist > 0) {
-          const force = ((260 - dist) / 260) * 16;
-          p.vx += (dx / dist) * force;
-          p.vy += (dy / dist) * force;
-        }
-      }
-    });
-
-    // Track scroll for section detection
-    const sc = document.getElementById('scroll-container');
-    if (sc) {
-      sc.addEventListener('scroll', () => {
-        const scrollTop = sc.scrollTop;
-        const sectionH = window.innerHeight || H || 1;
-        currentSection = Math.min(3, Math.max(0, Math.round(scrollTop / sectionH)));
-        scrollProgress = (scrollTop % sectionH) / sectionH;
-      });
-    }
-  }
-
-  // ── PARTICLE FORMATIONS ──
-
-  function getFormation(p, i, time) {
-    switch (currentSection) {
-      case 0: return formationWave(p, i, time);
-      case 1: return formationSplit(p, i, time);
-      case 2: return formationGrid(p, i, time);
-      case 3: return formationConverge(p, i, time);
-      default: return formationWave(p, i, time);
-    }
-  }
-
-  // Hero: Sound wave formation
-  function formationWave(p, i, time) {
-    const xSpread = W * 0.8;
-    const xStart = W * 0.1;
-    const xPos = xStart + (i / PARTICLE_COUNT) * xSpread;
-    const wave = Math.sin(xPos * 0.008 + time * p.waveSpeed + p.waveOffset) * p.waveAmp;
-    const wave2 = Math.cos(xPos * 0.003 + time * 0.5) * (p.waveAmp * 0.4);
-    return { x: xPos, y: H / 2 + wave + wave2 };
-  }
-
-  // Transform: Split into two groups (left chaotic, right ordered)
-  function formationSplit(p, i, time) {
-    const half = PARTICLE_COUNT / 2;
-    if (i < half) {
-      // Left side — chaotic scatter
-      const spread = 0.35;
-      const cx = W * 0.25;
-      const cy = H * 0.5;
-      const angle = (i / half) * Math.PI * 2 + time * 0.3;
-      const radius = 80 + Math.sin(i * 0.7 + time) * 60 + (i % 7) * 15;
-      return {
-        x: cx + Math.cos(angle + p.waveOffset) * radius * spread * 3,
-        y: cy + Math.sin(angle + p.waveOffset) * radius * spread * 2
-      };
-    } else {
-      // Right side — ordered lines
-      const idx = i - half;
-      const lineCount = 6;
-      const line = idx % lineCount;
-      const posInLine = Math.floor(idx / lineCount);
-      const totalInLine = Math.ceil(half / lineCount);
-      return {
-        x: W * 0.55 + (posInLine / totalInLine) * (W * 0.35),
-        y: H * 0.3 + line * (H * 0.07)
-      };
-    }
-  }
-
-  // Features: Grid / constellation
-  function formationGrid(p, i, time) {
-    const cols = 50;
-    const rows = Math.ceil(PARTICLE_COUNT / cols);
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const cellW = W / cols;
-    const cellH = H / rows;
-    const wobble = Math.sin(time * 0.8 + i * 0.1) * 3;
-    return {
-      x: col * cellW + cellW / 2 + wobble,
-      y: row * cellH + cellH / 2 + wobble
-    };
-  }
-
-  // Download: Converge to center logo
-  function formationConverge(p, i, time) {
-    const angle = (i / PARTICLE_COUNT) * Math.PI * 8 + time * 0.2;
-    const radius = 60 + (i / PARTICLE_COUNT) * 200 + Math.sin(time + i * 0.05) * 20;
-    return {
-      x: W / 2 + Math.cos(angle) * radius,
-      y: H / 2 + Math.sin(angle) * radius * 0.5
-    };
-  }
-
-  // ── MAIN LOOP ──
-  let time = 0;
-
-  function tick() {
-    time += 0.016;
-    ctx.clearRect(0, 0, W, H);
-
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-
-      // Get target position from current formation
-      const target = getFormation(p, i, time);
-      p.baseX = target.x;
-      p.baseY = target.y;
-
-      // Ease toward target
-      const easing = 0.03;
-      p.vx += (p.baseX - p.x) * easing;
-      p.vy += (p.baseY - p.y) * easing;
-
-      // Mouse repulsion
-      const dx = p.x - mouseX;
-      const dy = p.y - mouseY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < MOUSE_RADIUS && dist > 0) {
-        const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * MOUSE_FORCE;
-        p.vx += (dx / dist) * force;
-        p.vy += (dy / dist) * force;
-      }
-
-      // Apply velocity with friction
-      p.vx *= 0.88;
-      p.vy *= 0.88;
-      p.x += p.vx;
-      p.y += p.vy;
-
-      // Color
-      let r, g, b;
-      if (p.colorMix > 0.5) {
-        r = CHERRY.r;
-        g = CHERRY.g;
-        b = CHERRY.b;
+      // Color distribution: 65% Ice Mist, 25% Cherry Bright, 10% Cherry Cola
+      const rand = Math.random();
+      let color;
+      if (rand < 0.60) {
+        color = ICE_MIST;
+      } else if (rand < 0.88) {
+        color = CHERRY_BRIGHT;
       } else {
-        r = WHITE.r;
-        g = WHITE.g;
-        b = WHITE.b;
+        color = CHERRY_COLA;
       }
 
-      // Alpha based on section
-      let alpha = p.alpha;
-      if (currentSection === 3) {
-        alpha *= 0.4; // dimmer on download
-      }
+      baseColors[i3] = color.r;
+      baseColors[i3 + 1] = color.g;
+      baseColors[i3 + 2] = color.b;
 
-      // Draw
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-      ctx.fill();
-
-      // Connection lines (only hero section, nearby particles)
-      if (currentSection === 0 && i % 3 === 0) {
-        for (let j = i + 1; j < Math.min(i + 5, particles.length); j++) {
-          const p2 = particles[j];
-          const d = Math.hypot(p.x - p2.x, p.y - p2.y);
-          if (d < 50) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(154, 0, 2, ${0.08 * (1 - d / 50)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
+      colorsCurrent[i3] = color.r;
+      colorsCurrent[i3 + 1] = color.g;
+      colorsCurrent[i3 + 2] = color.b;
     }
 
-    raf = requestAnimationFrame(tick);
-  }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posCurrent, 3));
+    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsCurrent, 3));
 
-  // ── SECTION VISIBILITY OBSERVERS ──
-  function initSectionObservers() {
-    const sc = document.getElementById('scroll-container');
-
-    // Transform section
-    observeElement('#s-transform .transform-grid', 'visible');
-
-    // Feature cards
-    document.querySelectorAll('.feature-card').forEach(card => {
-      const obs = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) {
-          card.classList.add('visible');
-          obs.unobserve(card);
-        }
-      }, { threshold: 0.25, root: sc });
-      obs.observe(card);
+    // 6. Material
+    particlesMaterial = new THREE.PointsMaterial({
+      size: 0.65,
+      map: particleTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      vertexColors: true
     });
 
-    // Download elements
-    observeElement('#s-download .download-logo', 'visible');
-    observeElement('#s-download .download-sub', 'visible');
-    observeElement('#s-download .download-buttons', 'visible');
+    // 7. Points Mesh
+    particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particleSystem);
   }
 
-  function observeElement(selector, className) {
-    const el = document.querySelector(selector);
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        el.classList.add(className);
-        obs.unobserve(el);
+  // Create smooth radial glow sprite in-memory
+  function createGlowTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.2, 'rgba(255, 60, 80, 0.85)');
+    gradient.addColorStop(0.5, 'rgba(154, 0, 2, 0.4)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  // ── GENERATE 4 DISTINCT 3D FORMATIONS ──
+  function generateFormations() {
+    f0 = new Float32Array(PARTICLE_COUNT * 3); // Hero: Neural Voice Sphere
+    f1 = new Float32Array(PARTICLE_COUNT * 3); // Transform: Chaos -> Conduit -> Stream
+    f2 = new Float32Array(PARTICLE_COUNT * 3); // Specs: Orbiting Galaxy & Constellations
+    f3 = new Float32Array(PARTICLE_COUNT * 3); // Download: Event Horizon Wormhole
+
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+
+      // 1. Formation 0: Neural Voice Sphere (Fibonacci sphere distribution)
+      const theta0 = 2 * Math.PI * i / goldenRatio;
+      const phi0 = Math.acos(1 - 2 * (i + 0.5) / PARTICLE_COUNT);
+      const radius0 = 7.5 + (i % 7 === 0 ? 1.5 : 0);
+      f0[i3] = radius0 * Math.sin(phi0) * Math.cos(theta0);
+      f0[i3 + 1] = radius0 * Math.sin(phi0) * Math.sin(theta0);
+      f0[i3 + 2] = radius0 * Math.cos(phi0);
+
+      // 2. Formation 1: Split Chaos (left) into Parallel Structured Streams (right)
+      if (i < PARTICLE_COUNT * 0.42) {
+        // Left side chaotic nebula
+        const u = Math.random();
+        const v = Math.random();
+        const rad = 5.5 * Math.sqrt(u);
+        const ang = 2 * Math.PI * v;
+        f1[i3] = -9.0 + rad * Math.cos(ang);
+        f1[i3 + 1] = rad * Math.sin(ang) * 0.8;
+        f1[i3 + 2] = (Math.random() - 0.5) * 6;
+      } else if (i < PARTICLE_COUNT * 0.54) {
+        // Center laser bridge / conduit
+        const progress = (i - PARTICLE_COUNT * 0.42) / (PARTICLE_COUNT * 0.12);
+        f1[i3] = -4.0 + progress * 8.0;
+        f1[i3 + 1] = (Math.random() - 0.5) * 0.4;
+        f1[i3 + 2] = (Math.random() - 0.5) * 1.5;
+      } else {
+        // Right side: 6 parallel neat text streams
+        const lineIdx = (i % 6);
+        const linePos = Math.floor((i - PARTICLE_COUNT * 0.54) / 6) / ((PARTICLE_COUNT * 0.46) / 6);
+        f1[i3] = 4.5 + linePos * 9.5;
+        f1[i3 + 1] = 2.5 - lineIdx * 1.0 + (Math.random() - 0.5) * 0.08;
+        f1[i3 + 2] = (Math.random() - 0.5) * 1.0;
       }
-    }, { threshold: 0.3, root: document.getElementById('scroll-container') });
-    obs.observe(el);
+
+      // 3. Formation 2: Spatial Galaxy & Constellation Rings
+      const angle2 = i * 0.04;
+      const ringRadius = 4.0 + (i / PARTICLE_COUNT) * 15.0;
+      f2[i3] = Math.cos(angle2) * ringRadius;
+      f2[i3 + 1] = Math.sin(angle2 * 2.0) * 2.5 + (Math.random() - 0.5) * 1.5;
+      f2[i3 + 2] = Math.sin(angle2) * ringRadius * 0.6;
+
+      // 4. Formation 3: Event Horizon Wormhole Vortex
+      const zPos = -18.0 + (i / PARTICLE_COUNT) * 36.0;
+      const vortexRadius = 2.0 + Math.pow((zPos + 18) / 36, 1.6) * 12.0;
+      const spin = zPos * 0.6 + i * 0.08;
+      f3[i3] = Math.cos(spin) * vortexRadius;
+      f3[i3 + 1] = Math.sin(spin) * vortexRadius;
+      f3[i3 + 2] = zPos;
+    }
   }
 
-  // ── 3D TILT ON FEATURE CARDS ──
+  // ── SCROLL & TIMELINE SYNCHRONIZATION ──
+  function initScrollTracking() {
+    const scrollWrapper = document.getElementById('scroll-wrapper');
+    const timelineProgress = document.getElementById('timeline-progress');
+    const timelineSteps = document.querySelectorAll('.t-step');
+
+    if (!scrollWrapper) return;
+
+    scrollWrapper.addEventListener('scroll', () => {
+      const maxScroll = scrollWrapper.scrollHeight - scrollWrapper.clientHeight;
+      const progressNorm = maxScroll > 0 ? scrollWrapper.scrollTop / maxScroll : 0;
+      scrollProgress = progressNorm * 3.0; // 0 to 3
+
+      // Update vertical timeline UI
+      const activeIdx = Math.min(3, Math.floor(progressNorm * 4 + 0.1));
+      timelineSteps.forEach((step, idx) => {
+        if (idx === activeIdx) {
+          step.classList.add('active');
+        } else {
+          step.classList.remove('active');
+        }
+      });
+
+      if (timelineProgress) {
+        timelineProgress.style.top = `${activeIdx * 25}%`;
+      }
+    });
+
+    // Timeline Click navigation
+    timelineSteps.forEach(step => {
+      step.addEventListener('click', () => {
+        const idx = parseInt(step.dataset.index, 10);
+        const sections = document.querySelectorAll('.section');
+        if (sections[idx]) {
+          sections[idx].scrollIntoView({ behavior: 'smooth' });
+          playChime(320 + idx * 80);
+        }
+      });
+    });
+  }
+
+  // ── 3D CARD PERSPECTIVE TILT ──
   function init3DTilt() {
-    document.querySelectorAll('[data-tilt]').forEach(card => {
+    const cards = document.querySelectorAll('[data-tilt]');
+    cards.forEach(card => {
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
 
-        const rotateX = ((y - centerY) / centerY) * -12;
-        const rotateY = ((x - centerX) / centerX) * 12;
+        const rotX = ((y - cy) / cy) * -12;
+        const rotY = ((x - cx) / cx) * 12;
 
-        card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+        card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(8px) scale(1.02)`;
+
+        // Dynamic specular sheen reflection
+        const glow = card.querySelector('.card-glass-glow, .spec-glow');
+        if (glow) {
+          glow.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255, 60, 80, 0.18), transparent 60%)`;
+        }
       });
 
       card.addEventListener('mouseleave', () => {
         card.style.transform = '';
+        const glow = card.querySelector('.card-glass-glow, .spec-glow');
+        if (glow) {
+          glow.style.background = '';
+        }
       });
     });
+  }
+
+  // ── VOICE DEMO & INTERACTION ──
+  function initVoiceInteraction() {
+    const micTrigger = document.getElementById('mic-test-trigger');
+    const micLabel = document.getElementById('mic-label');
+    const pill = document.getElementById('live-transcription');
+    const pillText = document.getElementById('pill-text');
+
+    function startVoice() {
+      if (isVoiceActive) return;
+      isVoiceActive = true;
+      if (micTrigger) micTrigger.classList.add('is-active');
+      if (micLabel) micLabel.textContent = 'Говорите...';
+      if (pill) {
+        pill.classList.add('visible');
+        pillText.textContent = 'Распознавание речи...';
+      }
+      playHum();
+    }
+
+    function stopVoice() {
+      if (!isVoiceActive) return;
+      isVoiceActive = false;
+      if (micTrigger) micTrigger.classList.remove('is-active');
+      if (micLabel) micLabel.textContent = 'Удерживай для записи';
+
+      // Typewriter simulation of crisp result
+      if (pillText) {
+        const finalPhrase = '«Привет! Давай завтра в 18:00 всё обсудим.»';
+        let charIdx = 0;
+        pillText.textContent = '';
+        const typeInterval = setInterval(() => {
+          if (charIdx < finalPhrase.length) {
+            pillText.textContent += finalPhrase[charIdx];
+            charIdx++;
+          } else {
+            clearInterval(typeInterval);
+            setTimeout(() => {
+              if (!isVoiceActive && pill) pill.classList.remove('visible');
+            }, 3000);
+          }
+        }, 32);
+      }
+      playSuccessChime();
+    }
+
+    if (micTrigger) {
+      micTrigger.addEventListener('mousedown', startVoice);
+      window.addEventListener('mouseup', stopVoice);
+      micTrigger.addEventListener('touchstart', (e) => { e.preventDefault(); startVoice(); });
+      window.addEventListener('touchend', stopVoice);
+    }
+
+    // Spacebar to trigger voice test
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !e.repeat && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        startVoice();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        stopVoice();
+      }
+    });
+  }
+
+  // ── GLOBAL EVENTS ──
+  function bindEvents() {
+    window.addEventListener('resize', onResize);
+
+    // Mouse / Parallax
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / W) * 2 - 1;
+      mouseY = -(e.clientY / H) * 2 + 1;
+      targetCamX = mouseX * 2.8;
+      targetCamY = mouseY * 2.0;
+    });
+
+    // Click Shockwave
+    window.addEventListener('click', (e) => {
+      // Don't trigger if clicked on an anchor or button
+      if (e.target.closest('a, button')) return;
+
+      const vector = new THREE.Vector3(
+        (e.clientX / W) * 2 - 1,
+        -(e.clientY / H) * 2 + 1,
+        0.5
+      );
+      vector.unproject(camera);
+      const dir = vector.sub(camera.position).normalize();
+      const distance = -camera.position.z / dir.z;
+      shockwaveCenter.copy(camera.position).add(dir.multiplyScalar(distance));
+      shockwaveRadius = 0.1;
+      shockwaveActive = true;
+      playClickPlink();
+    });
+
+    // Sound Mute Toggle
+    const soundToggle = document.getElementById('sound-toggle');
+    const iconOn = document.getElementById('icon-sound-on');
+    const iconOff = document.getElementById('icon-sound-off');
+    if (soundToggle) {
+      soundToggle.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        if (iconOn && iconOff) {
+          iconOn.classList.toggle('hidden', !soundEnabled);
+          iconOff.classList.toggle('hidden', soundEnabled);
+        }
+      });
+    }
+  }
+
+  function onResize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W, H);
   }
 
   // ── OS DETECTION ──
@@ -353,24 +409,225 @@
     const ua = (navigator.userAgent || '').toLowerCase();
     const isMac = ua.includes('macintosh') || ua.includes('mac os');
 
-    const heroCta = document.getElementById('hero-cta');
-    const dlPrimary = document.getElementById('dl-primary');
+    const winBtn = document.getElementById('btn-dl-win');
+    const macBtn = document.getElementById('btn-dl-mac');
 
-    if (isMac) {
-      const macUrl = 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg';
-      if (heroCta) {
-        heroCta.href = macUrl;
-        const textEl = heroCta.querySelector('.btn-glow-text');
-        if (textEl) textEl.textContent = 'Скачать для macOS';
+    if (isMac && winBtn && macBtn) {
+      winBtn.href = 'https://github.com/anufriev163/speaking/releases/download/v1.0.6/govori-1.0.6.dmg';
+      const textStrong = winBtn.querySelector('strong');
+      const textSmall = winBtn.querySelector('small');
+      if (textStrong) textStrong.textContent = 'Скачать для macOS';
+      if (textSmall) textSmall.textContent = 'v1.0.6 • Apple Silicon & Intel DMG';
+    }
+  }
+
+  // ── NATIVE SYNTHESIZED SOUND EFFECTS ──
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) audioCtx = new AudioCtxClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function playHum() {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(95, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+  }
+
+  function playSuccessChime() {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(520, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  }
+
+  function playChime(freq) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.03, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  }
+
+  function playClickPlink() {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(240, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.02, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  // ── ANIMATION LOOP ──
+  let clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const delta = clock.getDelta();
+    const time = clock.getElapsedTime();
+
+    // 1. Smooth Camera Parallax
+    camera.position.x += (targetCamX - camera.position.x) * 0.05;
+    camera.position.y += (targetCamY - camera.position.y) * 0.05;
+    camera.lookAt(0, 0, 0);
+
+    // 2. Continuous Scroll Interpolation between Formations
+    // Section 0 = f0, Section 1 = f1, Section 2 = f2, Section 3 = f3
+    const p = Math.max(0, Math.min(3, scrollProgress));
+    let startF, endF, alpha;
+
+    if (p < 1.0) {
+      startF = f0; endF = f1; alpha = p;
+    } else if (p < 2.0) {
+      startF = f1; endF = f2; alpha = p - 1.0;
+    } else {
+      startF = f2; endF = f3; alpha = p - 2.0;
+    }
+
+    // Smooth ease on alpha
+    const easeAlpha = alpha * alpha * (3 - 2 * alpha);
+
+    // Voice reaction energy
+    if (isVoiceActive) {
+      voicePulse += (1.0 - voicePulse) * 0.1;
+    } else {
+      voicePulse += (0.0 - voicePulse) * 0.08;
+    }
+
+    // Shockwave expansion
+    if (shockwaveActive) {
+      shockwaveRadius += delta * 35.0;
+      if (shockwaveRadius > 45.0) shockwaveActive = false;
+    }
+
+    // 3. Update Particle Positions
+    const pos = particlesGeometry.attributes.position.array;
+    const col = particlesGeometry.attributes.color.array;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+
+      // Base blended coordinates
+      const tx = startF[i3] + (endF[i3] - startF[i3]) * easeAlpha;
+      const ty = startF[i3 + 1] + (endF[i3 + 1] - startF[i3 + 1]) * easeAlpha;
+      const tz = startF[i3 + 2] + (endF[i3 + 2] - startF[i3 + 2]) * easeAlpha;
+
+      // Dynamic harmonic waviness
+      const noise = Math.sin(time * 2.0 + i * 0.2) * (0.15 + voicePulse * 1.8);
+      const waveY = Math.cos(time * 1.5 + tx * 0.4) * (0.2 + voicePulse * 1.2);
+
+      let targetX = tx;
+      let targetY = ty + waveY;
+      let targetZ = tz + noise;
+
+      // Rotation around Y axis for hero sphere & download vortex
+      if (p < 0.6) {
+        const rotAngle = time * 0.18;
+        const cosR = Math.cos(rotAngle);
+        const sinR = Math.sin(rotAngle);
+        const nx = targetX * cosR - targetZ * sinR;
+        const nz = targetX * sinR + targetZ * cosR;
+        targetX = nx;
+        targetZ = nz;
+      } else if (p > 2.2) {
+        // Fast swirl in download section
+        const rotAngle = time * 0.8;
+        const cosR = Math.cos(rotAngle);
+        const sinR = Math.sin(rotAngle);
+        const nx = targetX * cosR - targetY * sinR;
+        const ny = targetX * sinR + targetY * cosR;
+        targetX = nx;
+        targetY = ny;
       }
-      if (dlPrimary) {
-        dlPrimary.href = macUrl;
-        dlPrimary.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8.92-2.85-.9.04-2 .6-2.65 1.36-.56.65-1.06 1.71-.93 2.73 1.01.08 2.04-.49 2.66-1.24z"/></svg>
-          macOS
-        `;
+
+      // Smooth Euler integration
+      pos[i3] += (targetX - pos[i3]) * 0.08;
+      pos[i3 + 1] += (targetY - pos[i3 + 1]) * 0.08;
+      pos[i3 + 2] += (targetZ - pos[i3 + 2]) * 0.08;
+
+      // Interactive Shockwave displacement
+      if (shockwaveActive) {
+        const dx = pos[i3] - shockwaveCenter.x;
+        const dy = pos[i3 + 1] - shockwaveCenter.y;
+        const dz = pos[i3 + 2] - shockwaveCenter.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const diff = Math.abs(dist - shockwaveRadius);
+        if (diff < 3.0 && dist > 0.01) {
+          const force = (3.0 - diff) * 0.6;
+          pos[i3] += (dx / dist) * force;
+          pos[i3 + 1] += (dy / dist) * force;
+          pos[i3 + 2] += (dz / dist) * force;
+        }
+      }
+
+      // Dynamic Color Pulse when Voice active
+      if (voicePulse > 0.01) {
+        col[i3] = baseColors[i3] + (CHERRY_BRIGHT.r - baseColors[i3]) * voicePulse * 0.8;
+        col[i3 + 1] = baseColors[i3 + 1] + (CHERRY_BRIGHT.g - baseColors[i3 + 1]) * voicePulse * 0.8;
+        col[i3 + 2] = baseColors[i3 + 2] + (CHERRY_BRIGHT.b - baseColors[i3 + 2]) * voicePulse * 0.8;
+      } else {
+        col[i3] = baseColors[i3];
+        col[i3 + 1] = baseColors[i3 + 1];
+        col[i3 + 2] = baseColors[i3 + 2];
       }
     }
+
+    particlesGeometry.attributes.position.needsUpdate = true;
+    particlesGeometry.attributes.color.needsUpdate = true;
+
+    // 4. Render
+    renderer.render(scene, camera);
   }
 
 })();
