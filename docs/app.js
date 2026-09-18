@@ -427,10 +427,10 @@
         micExitFraction = 1.0;
       }
 
-      // 3D Anchor projected from the right slope of the Stage 0 voice wave
-      const pos = toScreenPosition(new THREE.Vector3(7.2, -1.0, 0.5));
-      const targetX = Math.min(W - 210, Math.max(W * 0.60, pos.x));
-      const targetY = Math.max(90, Math.min(H - 120, pos.y));
+      // 3D Anchor projected cleanly above the right slope of the Stage 0 voice wave
+      const pos = toScreenPosition(new THREE.Vector3(7.0, -0.35, 0.5));
+      const targetX = Math.min(W - 220, Math.max(W * 0.60, pos.x));
+      const targetY = Math.max(80, Math.min(H - 140, pos.y - 45));
 
       smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
       smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
