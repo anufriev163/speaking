@@ -1,10 +1,10 @@
 // ==========================================================================
-// «ГОВОРИ» — 3D SPATIAL ENGINE & CAMERA FLIGHT (THREE.JS)
+// «ГОВОРИ» — 3D SPATIAL ENGINE & WAVE-DISSOLVING TEXT (THREE.JS)
 // Features:
-//   - Transparent WebGL over light ice-blue/white gradient
-//   - Rock-solid 3D spatial anchoring for WIX Bold text & clean solid arrows (ZERO jitter)
-//   - Dynamic camera choreography: macro zoom-in / sweep pull-backs / flythrough
-//   - Live simulated audio HUD typing
+//   - All text lowercase
+//   - Unique wave-dissolving exit animation: text evaporates into sound wave
+//   - Ultra-clean minimal finale with single action pill, stays active at bottom
+//   - Dynamic camera zoom in/out flight
 // ==========================================================================
 
 (() => {
@@ -35,15 +35,21 @@
     { x: W * 0.5 - 240, y: 80 },
     { x: W * 0.65, y: 120 },
     { x: 100, y: 140 },
-    { x: W * 0.5 - 290, y: H * 0.5 - 230 }
+    { x: W * 0.5 - 260, y: H * 0.5 - 130 }
   ];
   const projVec = new THREE.Vector3();
+
+  // Progress ranges for stages 0, 1, 2
+  const stageRanges = [
+    { start: 0.0,  peak: 0.20, end: 0.60 },
+    { start: 0.65, peak: 1.15, end: 1.65 },
+    { start: 1.70, peak: 2.05, end: 2.45 }
+  ];
 
   window.addEventListener('DOMContentLoaded', () => {
     initScene();
     setupGeometry();
     initCallouts();
-    initTypingSimulation();
     bindEvents();
     animate();
   });
@@ -60,11 +66,11 @@
     renderer = new THREE.WebGLRenderer({
       powerPreference: 'high-performance',
       antialias: true,
-      alpha: true // Transparent so CSS light blue-white background shows through
+      alpha: true
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(W, H);
-    renderer.setClearColor(0x000000, 0); // Pure transparent clear
+    renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
   }
 
@@ -190,13 +196,11 @@
           p = mix(pos2, pos3, t);
         }
 
-        // Ambient fluid wave dynamics
         float waveFactor = max(0.0, 1.0 - pVal * 0.7);
         float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.5 * waveFactor;
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
         p.y += wave + pulse;
 
-        // Calm water-ripple on click
         if (uRippleStrength > 0.001) {
           float dist = length(p.xz - uRipplePos);
           float rip = sin(dist * 1.1 - uRippleTime * 4.0) * exp(-dist * 0.3) * uRippleStrength * 0.25;
@@ -206,12 +210,9 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        // Dynamic Point size with attenuation
         float size = (38.0 / -mvPosition.z) * uPixelRatio;
         gl_PointSize = clamp(size, 2.5, 52.0);
 
-        // Color Palette:
-        // Deep Azure (#0284C7) -> Sky Cyan (#38BDF8) -> Ice Mist (#F5F8FA)
         vec3 cDeep = vec3(0.008, 0.518, 0.780); // #0284C7
         vec3 cSky  = vec3(0.220, 0.741, 0.973); // #38BDF8
         vec3 cMist = vec3(0.961, 0.973, 0.980); // #F5F8FA
@@ -269,7 +270,6 @@
     }
   }
 
-  // ── ROCK-SOLID 3D SPATIAL ANCHORING (ZERO JITTER) ──
   function toScreenPosition(worldPos) {
     projVec.copy(worldPos);
     projVec.project(camera);
@@ -280,92 +280,81 @@
     };
   }
 
+  // ── UNIQUE WAVE-DISSOLVING TEXT EXIT ENGINE ──
   function updateSpatialCallouts(p) {
-    const activeIdx = p < 0.65 ? 0 :
-                      p < 1.65 ? 1 :
-                      p < 2.45 ? 2 : 3;
-
     callouts.forEach((el, idx) => {
-      if (idx === activeIdx) {
-        if (!el.classList.contains('active')) el.classList.add('active');
+      let opacity = 0;
+      let exitFraction = 0; // 0 = solid, 1 = dissolved into sound wave
 
-        let targetX, targetY;
-
-        if (idx === 0) {
-          // Stage 0: Anchored stably to center wave crest
-          const pos = toScreenPosition(new THREE.Vector3(0, 1.2, 0));
-          targetX = pos.x - 240;
-          targetY = Math.max(40, pos.y - 180);
-        } else if (idx === 1) {
-          // Stage 1: Anchored stably to Voice Sphere
-          const pos = toScreenPosition(new THREE.Vector3(3.2, 1.6, 0));
-          targetX = Math.min(W - 480, pos.x + 20);
-          targetY = Math.max(50, pos.y - 100);
-        } else if (idx === 2) {
-          // Stage 2: Anchored stably to Helix
-          const pos = toScreenPosition(new THREE.Vector3(-3.0, 1.0, 0));
-          targetX = Math.max(40, pos.x - 440);
-          targetY = Math.max(50, pos.y - 90);
+      if (idx === 3) {
+        // Stage 3 finale: emerges at p > 2.35 and stays firmly active all the way to 3.0!
+        if (p >= 2.35) {
+          const t = Math.min(1.0, (p - 2.35) / 0.35);
+          opacity = t;
+          exitFraction = 1.0 - t;
         } else {
-          // Stage 3: Centered product reveal card
-          targetX = (W * 0.5) - 290;
-          targetY = Math.max(30, (H * 0.5) - 240);
+          opacity = 0;
+          exitFraction = 1.0;
         }
-
-        // Smooth position lerping to eliminate all subpixel vibration
-        const smooth = smoothedCallouts[idx];
-        smooth.x += (targetX - smooth.x) * 0.12;
-        smooth.y += (targetY - smooth.y) * 0.12;
-
-        el.style.transform = `translate3d(${Math.round(smooth.x)}px, ${Math.round(smooth.y)}px, 0)`;
       } else {
-        if (el.classList.contains('active')) el.classList.remove('active');
+        const r = stageRanges[idx];
+        if (p >= r.start && p <= r.end) {
+          if (p <= r.peak) {
+            const t = (p - r.start) / Math.max(0.01, r.peak - r.start);
+            opacity = Math.min(1.0, t * 1.4);
+            exitFraction = Math.max(0.0, 1.0 - t);
+          } else {
+            const t = (p - r.peak) / Math.max(0.01, r.end - r.peak);
+            exitFraction = t;
+            opacity = Math.max(0.0, 1.0 - t * 1.5);
+          }
+        } else {
+          opacity = 0;
+          exitFraction = 1.0;
+        }
+      }
+
+      // Base 3D target coordinates
+      let targetX, targetY;
+      if (idx === 0) {
+        const pos = toScreenPosition(new THREE.Vector3(0, 1.2, 0));
+        targetX = pos.x - 240;
+        targetY = Math.max(40, pos.y - 180);
+      } else if (idx === 1) {
+        const pos = toScreenPosition(new THREE.Vector3(3.2, 1.6, 0));
+        targetX = Math.min(W - 480, pos.x + 20);
+        targetY = Math.max(50, pos.y - 100);
+      } else if (idx === 2) {
+        const pos = toScreenPosition(new THREE.Vector3(-3.0, 1.0, 0));
+        targetX = Math.max(40, pos.x - 440);
+        targetY = Math.max(50, pos.y - 90);
+      } else {
+        // Centered finale
+        targetX = (W * 0.5) - 260;
+        targetY = Math.max(40, (H * 0.5) - 130);
+      }
+
+      // Smooth coordinate damping
+      const smooth = smoothedCallouts[idx];
+      smooth.x += (targetX - smooth.x) * 0.12;
+      smooth.y += (targetY - smooth.y) * 0.12;
+
+      // Wave-dissolution: text sinks down into the audio wave + frequency blur & letter dispersion
+      const waveSinkY = exitFraction * 35.0;
+      const blurPx = (exitFraction * 12.0).toFixed(1);
+      const letterSpacePx = (exitFraction * 6.0).toFixed(1);
+
+      el.style.opacity = opacity.toFixed(3);
+      el.style.filter = blurPx > 0.2 ? `blur(${blurPx}px)` : 'none';
+      el.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '-0.03em';
+      el.style.transform = `translate3d(${Math.round(smooth.x)}px, ${Math.round(smooth.y + waveSinkY)}px, 0)`;
+
+      if (opacity > 0.05) {
+        el.style.pointerEvents = idx === 3 ? 'auto' : 'none';
+      } else {
+        el.style.pointerEvents = 'none';
       }
     });
-  }
-
-  // ── LIVE REAL-TIME TYPING SIMULATION FOR STAGE 3 ──
-  function initTypingSimulation() {
-    const textEl = document.getElementById('typing-text');
-    if (!textEl) return;
-
-    const phrases = [
-      'Отправь отчет по спринту в Telegram и назначь созвон на 15:00.',
-      'Напиши функцию на TypeScript для мгновенного захвата аудио с микрофона.',
-      'Согласовано. Запускаем релиз говори в продакшн без задержек.',
-      'Заполни таблицу аналитики и пришли ссылку в командный чат.'
-    ];
-
-    let phraseIdx = 0;
-    let charIdx = 0;
-    let isDeleting = false;
-
-    function typeLoop() {
-      const current = phrases[phraseIdx];
-
-      if (isDeleting) {
-        textEl.textContent = current.substring(0, charIdx - 1);
-        charIdx--;
-      } else {
-        textEl.textContent = current.substring(0, charIdx + 1);
-        charIdx++;
-      }
-
-      let speed = isDeleting ? 22 : 50 + Math.random() * 25;
-
-      if (!isDeleting && charIdx === current.length) {
-        speed = 2200;
-        isDeleting = true;
-      } else if (isDeleting && charIdx === 0) {
-        isDeleting = false;
-        phraseIdx = (phraseIdx + 1) % phrases.length;
-        speed = 500;
-      }
-
-      setTimeout(typeLoop, speed);
-    }
-
-    typeLoop();
   }
 
   function bindEvents() {
@@ -407,8 +396,9 @@
     const dlBtn = document.getElementById('download-btn');
     if (dlBtn) {
       dlBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        alert('Загрузка «говори» для Windows начнется через секунду.');
+        alert('загрузка «говори» для windows начнется через секунду.');
       });
     }
   }
@@ -443,15 +433,13 @@
 
     const p = Math.max(0.0, Math.min(3.0, smoothProgress));
 
-    // ── DYNAMIC CAMERA CHOREOGRAPHY: ZOOM IN / ZOOM OUT / 3D BANKING ──
+    // Dynamic Camera Zoom-in / Zoom-out
     let targetZ = 16.0;
     let targetY = 1.0;
     let targetX = 0.0;
     let lookY = 0.0;
 
     if (p < 1.0) {
-      // Stage 0 -> Stage 1:
-      // Macro close wave (Z=16) -> Zoom out pull-back (Z=26) -> Zoom in to Sphere (Z=16)
       const t = p;
       const zoomArch = Math.sin(t * Math.PI) * 9.5;
       targetZ = 16.0 + zoomArch;
@@ -459,8 +447,6 @@
       targetX = Math.sin(t * Math.PI * 0.5) * 2.5;
       lookY = t * 0.5;
     } else if (p < 2.0) {
-      // Stage 1 -> Stage 2:
-      // Orbiting Sphere (Z=16) -> Pull-back sweep (Z=25) -> Dive into Helix (Z=13.5)
       const t = p - 1.0;
       const zoomArch = Math.sin(t * Math.PI) * 9.0;
       targetZ = 16.0 + zoomArch - t * 2.5;
@@ -468,8 +454,6 @@
       targetX = 2.5 * (1.0 - t) - t * 2.0;
       lookY = 0.5 - t * 0.5;
     } else {
-      // Stage 2 -> Stage 3 (App Reveal):
-      // Fly out of helix (Z=13.5) -> Grand zoom-out reveal of full portal & App HUD (Z=26.0)
       const t = p - 2.0;
       targetZ = 13.5 + t * 12.5;
       targetY = 1.0 - t * 0.8;
@@ -482,13 +466,11 @@
     camera.position.z = targetZ;
     camera.lookAt(0, lookY, 0);
 
-    // Subtle 3D rotation of points
     if (wavePoints) {
       wavePoints.rotation.y = elapsedTime * 0.12 + currentCamX * 0.04;
       wavePoints.rotation.x = currentCamY * 0.025;
     }
 
-    // Ripple
     let rippleStrength = 0.0;
     let rippleTimeSec = 0.0;
     if (rippleActive) {
@@ -501,7 +483,6 @@
       }
     }
 
-    // Update Uniforms
     if (waveMaterial && waveMaterial.uniforms) {
       waveMaterial.uniforms.uProgress.value = p;
       waveMaterial.uniforms.uTime.value = elapsedTime;
@@ -510,7 +491,7 @@
       waveMaterial.uniforms.uRippleStrength.value = rippleStrength;
     }
 
-    // Update 3D-projected UI Callouts
+    // Update Wave-Dissolving Callouts
     updateSpatialCallouts(p);
 
     renderer.render(scene, camera);
