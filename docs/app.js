@@ -38,6 +38,8 @@
   let isMicActive = false;
   let micClosing = false;
   let micEnergy = 0.0;
+  let ambientNoiseFloor = 0.0;
+  let noiseFloorCalibrated = false;
 
   // Spatial Callout DOM elements & smoothed screen coords
   const callouts = [];
@@ -206,13 +208,12 @@
         float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
 
-        // Bold, beautiful voice deformation:
-        // Stays 100% still in silence, surges and ripples dynamically with speech
+        // In silence, wave stays 100% still in original form.
+        // During speech, waves gently pulse in place along their natural shape.
         if (uMicEnergy > 0.001) {
-          float speechWave = wave * (1.0 + uMicEnergy * 3.5);
-          float speechSwell = sin(p.x * 0.32 + uTime * 2.4 + p.z * 0.22) * (uMicEnergy * 2.2);
-          float speechHarmonic = sin(p.x * 0.65 - uTime * 3.0) * cos(p.z * 0.55 + uTime * 2.0) * (uMicEnergy * 1.2);
-          p.y += speechWave + pulse + speechSwell + speechHarmonic;
+          float voicePulse = wave * (uMicEnergy * 0.9);
+          float voiceBreath = sin(uTime * 1.8 + length(p.xz) * 0.3) * (uMicEnergy * 0.15 * waveFactor);
+          p.y += wave + pulse + voicePulse + voiceBreath;
         } else {
           p.y += wave + pulse;
         }
@@ -551,10 +552,13 @@
       micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
-          noiseSuppression: false,
-          autoGainControl: true // Auto Gain Control guarantees strong audio level on all microphones
+          noiseSuppression: true,
+          autoGainControl: true
         }
       });
+
+      ambientNoiseFloor = 0.0;
+      noiseFloorCalibrated = false;
 
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') {
@@ -678,33 +682,48 @@
       }
     }
 
-    // Robust, zero-lag voice volume tracking via vocal frequency bins
+    // Speech detection with adaptive ambient noise rejection
     if (isMicActive && analyser && micDataArray) {
       analyser.getByteFrequencyData(micDataArray);
 
       let vocalSum = 0;
-      const bStart = 2;
-      const bEnd = 36;
+      const bStart = 3;
+      const bEnd = 32;
       for (let i = bStart; i < bEnd; i++) {
         vocalSum += micDataArray[i];
       }
       const avg = vocalSum / (bEnd - bStart); // 0..255
 
-      // Room silence is ~0-14. Human speech is 45-180!
-      const gate = 15.0;
-      let target = 0.0;
-      if (avg > gate) {
-        const raw = Math.min(1.0, (avg - gate) / 60.0);
-        target = Math.pow(raw, 0.75); // Bold, immediate response on speech
+      // Calibrate ambient noise floor continuously
+      if (!noiseFloorCalibrated) {
+        ambientNoiseFloor = avg;
+        noiseFloorCalibrated = true;
+      } else {
+        if (avg < ambientNoiseFloor) {
+          ambientNoiseFloor = ambientNoiseFloor * 0.88 + avg * 0.12;
+        } else {
+          ambientNoiseFloor = ambientNoiseFloor * 0.996 + avg * 0.004;
+        }
       }
 
-      // Snappy attack on syllables (0.30) + smooth decay on pauses (0.075)
-      const speed = target > micEnergy ? 0.30 : 0.075;
+      // Voice delta: speech must distinctly exceed the ambient room noise
+      const threshold = ambientNoiseFloor + 20.0;
+      let target = 0.0;
+      if (avg > threshold) {
+        const raw = Math.min(1.0, (avg - threshold) / 50.0);
+        target = Math.pow(raw, 0.85);
+      }
+
+      // Snappy attack on voice (0.22) + clean decay back to absolute zero on silence (0.14)
+      const speed = target > micEnergy ? 0.22 : 0.14;
       micEnergy += (target - micEnergy) * speed;
+      if (micEnergy < 0.003) {
+        micEnergy = 0.0;
+      }
     } else {
-      // Smooth graceful glide back to 0.0 on toggle off (zero abrupt snaps)
-      micEnergy += (0.0 - micEnergy) * 0.06;
-      if (micEnergy < 0.001) {
+      // Smooth graceful glide back to 0.0 on toggle off
+      micEnergy += (0.0 - micEnergy) * 0.08;
+      if (micEnergy < 0.002) {
         micEnergy = 0.0;
         if (micClosing) {
           cleanupMic();
