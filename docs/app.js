@@ -206,15 +206,11 @@
         float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
 
-        // Expressive voice deformation: exactly still in silence, boldly animated when speaking
-        if (uMicEnergy > 0.0005) {
-          float speechSurge = wave * (uMicEnergy * 4.5);
-          float speechRipple = sin(p.x * 0.72 + uTime * 4.2) * cos(p.z * 0.62 + uTime * 3.4) * (uMicEnergy * 1.6);
-          float speechDetail = sin(p.x * 1.8 + p.z * 1.3 + uTime * 7.5) * (uMicEnergy * 0.65);
-          p.y += wave + pulse + speechSurge + speechRipple + speechDetail;
-        } else {
-          p.y += wave + pulse;
-        }
+        // Silky, organic voice deformation:
+        // Amplifies the existing smooth wave hills with zero high-frequency noise or spikes
+        float voiceWaveAmp = 1.0 + uMicEnergy * 1.85;
+        float voiceSwell = sin(p.x * 0.24 + uTime * 1.8 + p.z * 0.16) * (uMicEnergy * 1.05);
+        p.y += wave * voiceWaveAmp + pulse + voiceSwell;
 
         if (uRippleStrength > 0.001) {
           float dist = length(p.xz - uRipplePos);
@@ -225,13 +221,12 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25);
-        gl_PointSize = clamp(size, 2.5, 54.0);
+        float size = (38.0 / -mvPosition.z) * uPixelRatio;
+        gl_PointSize = clamp(size, 2.5, 52.0);
 
         vec3 cDeep  = vec3(0.008, 0.518, 0.780); // #0284C7
         vec3 cSky   = vec3(0.220, 0.741, 0.973); // #38BDF8
         vec3 cMist  = vec3(0.961, 0.973, 0.980); // #F5F8FA
-        vec3 cGlow  = vec3(0.140, 0.840, 1.000); // Electric voice cyan
 
         float h = clamp((p.y + 4.0) / 8.0, 0.0, 1.0);
         if (h < 0.5) {
@@ -241,7 +236,7 @@
         }
 
         if (uMicEnergy > 0.01) {
-          vColor = mix(vColor, cGlow, clamp(uMicEnergy * 0.45, 0.0, 0.6));
+          vColor = mix(vColor, vec3(0.06, 0.78, 0.98), clamp(uMicEnergy * 0.25, 0.0, 0.35));
         }
 
         float distFog = clamp((-mvPosition.z - 10.0) / 38.0, 0.0, 1.0);
@@ -645,19 +640,19 @@
       if (micWarmupFrames > 0) {
         micWarmupFrames--;
         ambientNoiseFloor = Math.max(ambientNoiseFloor, rms * 1.2);
-        micEnergy += (0.0 - micEnergy) * 0.1;
+        micEnergy += (0.0 - micEnergy) * 0.08;
       } else {
         // Precise noise gate: stays 100% still in room silence
         const gate = Math.max(0.012, ambientNoiseFloor * 1.15);
         let target = 0.0;
         if (rms > gate) {
-          // Logarithmic/power curve for human voice: soft speech activates clearly, full voice hits 1.0
-          const raw = (rms - gate) / 0.06;
-          target = Math.min(1.0, Math.pow(Math.min(1.0, raw), 0.72) * 1.35);
+          // Smoothstep S-curve for silky voice dynamics (zero bottom kick, smooth upper saturation)
+          const raw = Math.min(1.0, (rms - gate) / 0.065);
+          target = raw * raw * (3.0 - 2.0 * raw);
         }
 
-        // Snappy attack on syllables (0.42) + silky smooth decay on pauses (0.075)
-        const speed = target > micEnergy ? 0.42 : 0.075;
+        // Soft, elastic fluid smoothing: 0.16 attack, 0.065 decay (pure liquid motion, zero sudden kicks)
+        const speed = target > micEnergy ? 0.16 : 0.065;
         micEnergy += (target - micEnergy) * speed;
       }
     } else {
