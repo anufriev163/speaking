@@ -36,6 +36,9 @@
   let analyser = null;
   let micTimeData = null;
   let isMicActive = false;
+  let micClosing = false;
+  let micWarmupFrames = 0;
+  let ambientNoiseFloor = 0.015;
   let micEnergy = 0.0;
 
   // Spatial Callout DOM elements & smoothed screen coords
@@ -462,17 +465,11 @@
   // ── LIVE MICROPHONE AUDIO ANALYSIS ──
   async function toggleMicrophone() {
     const hintEl = document.getElementById('mic-hint');
+
     if (isMicActive) {
-      if (micStream) {
-        try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
-        micStream = null;
-      }
-      if (audioCtx && audioCtx.state !== 'closed') {
-        try { audioCtx.close(); } catch (e) {}
-        audioCtx = null;
-      }
+      // Smooth shutdown: turn off listening flag and let energy glide gracefully back to 0
       isMicActive = false;
-      micEnergy = 0.0;
+      micClosing = true;
       if (hintEl) {
         hintEl.classList.remove('is-listening');
       }
@@ -484,7 +481,18 @@
         alert('микрофон не поддерживается в этом браузере.');
         return;
       }
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micClosing = false;
+      micWarmupFrames = 25; // Warmup frames: prevent connection pop from moving wave
+      ambientNoiseFloor = 0.015;
+
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: false
+        }
+      });
+
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') {
         await audioCtx.resume();
@@ -492,7 +500,7 @@
       const source = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.6;
+      analyser.smoothingTimeConstant = 0.5;
       source.connect(analyser);
 
       micTimeData = new Uint8Array(analyser.fftSize);
@@ -508,6 +516,20 @@
         setTimeout(() => hintEl.classList.remove('mic-error'), 1800);
       }
     }
+  }
+
+  function cleanupMic() {
+    if (micStream) {
+      try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      micStream = null;
+    }
+    if (audioCtx && audioCtx.state !== 'closed') {
+      try { audioCtx.close(); } catch (e) {}
+      audioCtx = null;
+    }
+    analyser = null;
+    micTimeData = null;
+    micClosing = false;
   }
 
   function triggerCalmRipple(screenX, screenY) {
@@ -593,25 +615,48 @@
     // Smooth, zero-latency voice volume tracking via time-domain RMS
     if (isMicActive && analyser && micTimeData) {
       analyser.getByteTimeDomainData(micTimeData);
+
+      // DC-free RMS computation
+      let sum = 0;
+      const len = micTimeData.length;
+      for (let i = 0; i < len; i++) {
+        sum += micTimeData[i];
+      }
+      const mean = sum / len;
+
       let sumSq = 0;
-      for (let i = 0; i < micTimeData.length; i++) {
-        const norm = (micTimeData[i] - 128) / 128;
-        sumSq += norm * norm;
+      for (let i = 0; i < len; i++) {
+        const diff = (micTimeData[i] - mean) / 128;
+        sumSq += diff * diff;
       }
-      const rms = Math.sqrt(sumSq / micTimeData.length);
+      const rms = Math.sqrt(sumSq / len);
 
-      // Noise gate: filters out background room noise and mic hiss
-      const gate = 0.018;
-      let target = 0.0;
-      if (rms > gate) {
-        target = Math.min(1.0, (rms - gate) * 5.2);
+      if (micWarmupFrames > 0) {
+        micWarmupFrames--;
+        ambientNoiseFloor = Math.max(ambientNoiseFloor, rms * 1.3);
+        // Guarantee energy stays 0 during connection warmup
+        micEnergy += (0.0 - micEnergy) * 0.1;
+      } else {
+        // Robust noise threshold: wave NEVER changes form in silence!
+        const gate = Math.max(0.026, ambientNoiseFloor * 1.35);
+        let target = 0.0;
+        if (rms > gate) {
+          target = Math.min(1.0, (rms - gate) * 4.6);
+        }
+
+        // Fast responsive attack (0.28) + gentle decay (0.08)
+        const speed = target > micEnergy ? 0.28 : 0.08;
+        micEnergy += (target - micEnergy) * speed;
       }
-
-      // Smooth attack and decay envelope prevents sudden jumps
-      const speed = target > micEnergy ? 0.28 : 0.09;
-      micEnergy += (target - micEnergy) * speed;
     } else {
-      micEnergy += (0.0 - micEnergy) * 0.1;
+      // Smooth graceful glide back to 0.0 on toggle off (zero abrupt snaps)
+      micEnergy += (0.0 - micEnergy) * 0.055;
+      if (micEnergy < 0.001) {
+        micEnergy = 0.0;
+        if (micClosing) {
+          cleanupMic();
+        }
+      }
     }
 
     if (waveMaterial && waveMaterial.uniforms) {

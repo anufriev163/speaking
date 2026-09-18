@@ -65,10 +65,10 @@ body {
   background: radial-gradient(circle at 50% 40%, rgba(224, 242, 254, 0.3) 0%, rgba(240, 246, 252, 0.1) 60%, rgba(220, 235, 248, 0.35) 100%);
 }
 
-/* Handwritten Cursive Mic Shortcut Note pinned to right edge */
+/* Handwritten Cursive Mic Shortcut Note pinned with comfortable inset from right edge */
 .mic-hint-note {
   position: fixed;
-  right: 28px;
+  right: 80px;
   top: 50%;
   transform: translateY(-50%) rotate(-3deg);
   z-index: 50;
@@ -97,11 +97,11 @@ body {
 .mic-hint-note.is-listening {
   color: #0284C7;
   text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
-  transform: translateY(-50%) rotate(0deg) scale(1.06);
+  transform: translateY(-50%) rotate(0deg) scale(1.05);
 }
 
 .mic-hint-note.is-listening::after {
-  content: '• слушаю...';
+  content: '• слушаю';
   font-family: var(--font-handwritten);
   font-size: 1.35rem;
   color: #0EA5E9;
