@@ -38,8 +38,7 @@
   let isMicActive = false;
   let micClosing = false;
   let micEnergy = 0.0;
-  let ambientNoiseFloor = 0.0;
-  let noiseFloorCalibrated = false;
+  let ambientRms = 0.003;
 
   // Spatial Callout DOM elements & smoothed screen coords
   const callouts = [];
@@ -209,14 +208,9 @@
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
 
         // In silence, wave stays 100% still in original form.
-        // During speech, waves gently pulse in place along their natural shape.
-        if (uMicEnergy > 0.001) {
-          float voicePulse = wave * (uMicEnergy * 0.9);
-          float voiceBreath = sin(uTime * 1.8 + length(p.xz) * 0.3) * (uMicEnergy * 0.15 * waveFactor);
-          p.y += wave + pulse + voicePulse + voiceBreath;
-        } else {
-          p.y += wave + pulse;
-        }
+        // During speech, wave gently pulses in place along its natural shape.
+        float voicePulse = wave * (uMicEnergy * 0.9);
+        p.y += wave + pulse + voicePulse;
 
         if (uRippleStrength > 0.001) {
           float dist = length(p.xz - uRipplePos);
@@ -557,8 +551,7 @@
         }
       });
 
-      ambientNoiseFloor = 0.0;
-      noiseFloorCalibrated = false;
+      ambientRms = 0.003;
 
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') {
@@ -566,11 +559,11 @@
       }
       const source = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.35;
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.3;
       source.connect(analyser);
 
-      micDataArray = new Uint8Array(analyser.frequencyBinCount);
+      micDataArray = new Float32Array(analyser.fftSize);
       isMicActive = true;
 
       if (hintEl) {
@@ -682,48 +675,43 @@
       }
     }
 
-    // Speech detection with adaptive ambient noise rejection
+    // Speech detection via float time-domain RMS with ambient thresholding
     if (isMicActive && analyser && micDataArray) {
-      analyser.getByteFrequencyData(micDataArray);
+      analyser.getFloatTimeDomainData(micDataArray);
 
-      let vocalSum = 0;
-      const bStart = 3;
-      const bEnd = 32;
-      for (let i = bStart; i < bEnd; i++) {
-        vocalSum += micDataArray[i];
+      let sumSq = 0;
+      for (let i = 0; i < micDataArray.length; i++) {
+        const val = micDataArray[i];
+        sumSq += val * val;
       }
-      const avg = vocalSum / (bEnd - bStart); // 0..255
+      const rms = Math.sqrt(sumSq / micDataArray.length);
 
-      // Calibrate ambient noise floor continuously
-      if (!noiseFloorCalibrated) {
-        ambientNoiseFloor = avg;
-        noiseFloorCalibrated = true;
-      } else {
-        if (avg < ambientNoiseFloor) {
-          ambientNoiseFloor = ambientNoiseFloor * 0.88 + avg * 0.12;
-        } else {
-          ambientNoiseFloor = ambientNoiseFloor * 0.996 + avg * 0.004;
-        }
+      // Track ambient background noise in quiet periods
+      if (rms < 0.015) {
+        ambientRms = ambientRms * 0.95 + rms * 0.05;
       }
 
-      // Voice delta: speech must distinctly exceed the ambient room noise
-      const threshold = ambientNoiseFloor + 20.0;
+      // Voice threshold: speech must distinctly exceed ambient noise floor
+      const threshold = Math.max(0.022, ambientRms * 3.5);
+
       let target = 0.0;
-      if (avg > threshold) {
-        const raw = Math.min(1.0, (avg - threshold) / 50.0);
+      if (rms > threshold) {
+        const delta = rms - threshold;
+        const raw = Math.min(1.0, delta / 0.08);
         target = Math.pow(raw, 0.85);
       }
 
-      // Snappy attack on voice (0.22) + clean decay back to absolute zero on silence (0.14)
-      const speed = target > micEnergy ? 0.22 : 0.14;
-      micEnergy += (target - micEnergy) * speed;
-      if (micEnergy < 0.003) {
-        micEnergy = 0.0;
+      if (target > 0.0) {
+        micEnergy += (target - micEnergy) * 0.25;
+      } else {
+        micEnergy *= 0.78;
+        if (micEnergy < 0.001) {
+          micEnergy = 0.0;
+        }
       }
     } else {
-      // Smooth graceful glide back to 0.0 on toggle off
-      micEnergy += (0.0 - micEnergy) * 0.08;
-      if (micEnergy < 0.002) {
+      micEnergy *= 0.78;
+      if (micEnergy < 0.001) {
         micEnergy = 0.0;
         if (micClosing) {
           cleanupMic();
