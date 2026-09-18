@@ -1,6 +1,7 @@
 import { net } from 'electron';
 import { storage } from './storage';
 import { transcribeAudioLocal, checkLocalWhisperAvailable } from './localWhisper';
+import { postBuffer } from './httpClient';
 
 // Polyfill global Blob for any secondary libraries if missing in Node
 if (typeof (globalThis as any).Blob === 'undefined') {
@@ -129,18 +130,16 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
     buffer: audioBuffer
   });
 
-  const fetchFn = typeof fetch !== 'undefined' ? fetch : net.fetch;
-
   try {
-    const res = await fetchFn(endpoint, {
-      method: 'POST',
-      headers: {
+    const res = await postBuffer(
+      endpoint,
+      {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': contentType,
         'Content-Length': String(body.length)
       },
       body
-    });
+    );
 
     if (!res.ok) {
       const errorText = await res.text();

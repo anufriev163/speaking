@@ -24,7 +24,7 @@ export interface UpdateInfoState {
 
 let updateState: UpdateInfoState = {
   status: 'idle',
-  version: '1.0.5'
+  version: '1.0.6'
 };
 
 let downloadedInstallerPath: string | null = null;

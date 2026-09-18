@@ -1,5 +1,6 @@
 import { ActiveContext } from '../../src/types';
 import { storage } from './storage';
+import { postJson } from './httpClient';
 
 export function cleanTextRules(text: string, context: ActiveContext): string {
   let cleaned = text;
@@ -132,13 +133,10 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
   // 1. Try Groq Llama-3.3-70b-versatile (~200ms)
   if (settings.groqApiKey) {
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${settings.groqApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const res = await postJson(
+        'https://api.groq.com/openai/v1/chat/completions',
+        { 'Authorization': `Bearer ${settings.groqApiKey}` },
+        {
           model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: systemPrompt },
@@ -146,8 +144,8 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
           ],
           temperature: 0.1,
           max_tokens: 1024
-        })
-      });
+        }
+      );
 
       if (res.ok) {
         const data: any = await res.json();
@@ -164,13 +162,10 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
   // 2. Fallback to OpenAI gpt-4o-mini (~250ms)
   if (settings.openaiApiKey) {
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${settings.openaiApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const res = await postJson(
+        'https://api.openai.com/v1/chat/completions',
+        { 'Authorization': `Bearer ${settings.openaiApiKey}` },
+        {
           model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: systemPrompt },
@@ -178,8 +173,8 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
           ],
           temperature: 0.1,
           max_tokens: 1024
-        })
-      });
+        }
+      );
 
       if (res.ok) {
         const data: any = await res.json();
@@ -231,13 +226,10 @@ ${userInstruction}`;
   // 1. Try Groq Llama-3.3-70b-versatile
   if (settings.groqApiKey) {
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${settings.groqApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const res = await postJson(
+        'https://api.groq.com/openai/v1/chat/completions',
+        { 'Authorization': `Bearer ${settings.groqApiKey}` },
+        {
           model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: systemPrompt },
@@ -245,8 +237,8 @@ ${userInstruction}`;
           ],
           temperature: 0.2,
           max_tokens: 2048
-        })
-      });
+        }
+      );
 
       if (res.ok) {
         const data: any = await res.json();
@@ -263,13 +255,10 @@ ${userInstruction}`;
   // 2. Fallback to OpenAI gpt-4o-mini
   if (settings.openaiApiKey) {
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${settings.openaiApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const res = await postJson(
+        'https://api.openai.com/v1/chat/completions',
+        { 'Authorization': `Bearer ${settings.openaiApiKey}` },
+        {
           model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: systemPrompt },
@@ -277,8 +266,8 @@ ${userInstruction}`;
           ],
           temperature: 0.2,
           max_tokens: 2048
-        })
-      });
+        }
+      );
 
       if (res.ok) {
         const data: any = await res.json();

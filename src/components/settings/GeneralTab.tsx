@@ -20,7 +20,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
     error?: string;
   }>({
     status: 'idle',
-    version: packageJson.version || '1.0.5'
+    version: packageJson.version || '1.0.6'
   });
 
   useEffect(() => {

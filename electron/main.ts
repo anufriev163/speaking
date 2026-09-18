@@ -1,3 +1,17 @@
+// Global polyfill for Blob in Node/Electron environments
+if (typeof (globalThis as any).Blob === 'undefined') {
+  try {
+    const nodeBuf = require('node:buffer');
+    if (nodeBuf.Blob) (globalThis as any).Blob = nodeBuf.Blob;
+  } catch {}
+  if (typeof (globalThis as any).Blob === 'undefined') {
+    try {
+      const buf = require('buffer');
+      if (buf.Blob) (globalThis as any).Blob = buf.Blob;
+    } catch {}
+  }
+}
+
 import { app, BrowserWindow, globalShortcut, ipcMain, Tray, Menu, screen, nativeImage, session, clipboard, shell, dialog, systemPreferences } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -16,7 +30,6 @@ import os from 'os';
 
 // Hardware and legacy compatibility switches for older PCs/GPUs
 app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
-app.commandLine.appendSwitch('enable-transparent-visuals');
 
 // Catch GPU crash gracefully on older laptops/graphics cards
 app.on('child-process-gone', (_event, details) => {
@@ -176,7 +189,6 @@ function createHudWindow() {
     y,
     frame: false,
     transparent: true,
-    backgroundColor: '#00000000',
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
