@@ -34,11 +34,9 @@
   let micStream = null;
   let audioCtx = null;
   let analyser = null;
-  let micTimeData = null;
+  let micDataArray = null;
   let isMicActive = false;
   let micClosing = false;
-  let micWarmupFrames = 0;
-  let ambientNoiseFloor = 0.015;
   let micEnergy = 0.0;
 
   // Spatial Callout DOM elements & smoothed screen coords
@@ -208,11 +206,16 @@
         float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
         float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
 
-        // Silky, organic voice deformation:
-        // Amplifies the existing smooth wave hills with zero high-frequency noise or spikes
-        float voiceWaveAmp = 1.0 + uMicEnergy * 1.85;
-        float voiceSwell = sin(p.x * 0.24 + uTime * 1.8 + p.z * 0.16) * (uMicEnergy * 1.05);
-        p.y += wave * voiceWaveAmp + pulse + voiceSwell;
+        // Bold, beautiful voice deformation:
+        // Stays 100% still in silence, surges and ripples dynamically with speech
+        if (uMicEnergy > 0.001) {
+          float speechWave = wave * (1.0 + uMicEnergy * 3.5);
+          float speechSwell = sin(p.x * 0.32 + uTime * 2.4 + p.z * 0.22) * (uMicEnergy * 2.2);
+          float speechHarmonic = sin(p.x * 0.65 - uTime * 3.0) * cos(p.z * 0.55 + uTime * 2.0) * (uMicEnergy * 1.2);
+          p.y += speechWave + pulse + speechSwell + speechHarmonic;
+        } else {
+          p.y += wave + pulse;
+        }
 
         if (uRippleStrength > 0.001) {
           float dist = length(p.xz - uRipplePos);
@@ -223,12 +226,13 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float size = (38.0 / -mvPosition.z) * uPixelRatio;
-        gl_PointSize = clamp(size, 2.5, 52.0);
+        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25);
+        gl_PointSize = clamp(size, 2.5, 54.0);
 
         vec3 cDeep  = vec3(0.008, 0.518, 0.780); // #0284C7
         vec3 cSky   = vec3(0.220, 0.741, 0.973); // #38BDF8
         vec3 cMist  = vec3(0.961, 0.973, 0.980); // #F5F8FA
+        vec3 cVoice = vec3(0.000, 0.900, 1.000); // Vibrant voice cyan
 
         float h = clamp((p.y + 4.0) / 8.0, 0.0, 1.0);
         if (h < 0.5) {
@@ -238,7 +242,7 @@
         }
 
         if (uMicEnergy > 0.01) {
-          vColor = mix(vColor, vec3(0.06, 0.78, 0.98), clamp(uMicEnergy * 0.25, 0.0, 0.35));
+          vColor = mix(vColor, cVoice, clamp(uMicEnergy * 0.65, 0.0, 0.75));
         }
 
         float distFog = clamp((-mvPosition.z - 10.0) / 38.0, 0.0, 1.0);
@@ -545,7 +549,6 @@
     const hintEl = document.getElementById('mic-hint');
 
     if (isMicActive) {
-      // Smooth shutdown: turn off listening flag and let energy glide gracefully back to 0
       isMicActive = false;
       micClosing = true;
       if (hintEl) {
@@ -560,14 +563,12 @@
         return;
       }
       micClosing = false;
-      micWarmupFrames = 25; // Warmup frames: prevent connection pop from moving wave
-      ambientNoiseFloor = 0.015;
 
       micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false
+          noiseSuppression: false,
+          autoGainControl: true // Auto Gain Control guarantees strong audio level on all microphones
         }
       });
 
@@ -577,11 +578,11 @@
       }
       const source = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.5;
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.35;
       source.connect(analyser);
 
-      micTimeData = new Uint8Array(analyser.fftSize);
+      micDataArray = new Uint8Array(analyser.frequencyBinCount);
       isMicActive = true;
 
       if (hintEl) {
@@ -589,6 +590,9 @@
       }
     } catch (err) {
       console.warn('mic access error:', err);
+      if (location.protocol === 'file:') {
+        alert('для работы микрофона откройте сайт через http://localhost:5173 (браузеры блокируют микрофон на file://)');
+      }
       if (hintEl) {
         hintEl.classList.add('mic-error');
         setTimeout(() => hintEl.classList.remove('mic-error'), 1800);
@@ -606,7 +610,7 @@
       audioCtx = null;
     }
     analyser = null;
-    micTimeData = null;
+    micDataArray = null;
     micClosing = false;
   }
 
@@ -690,46 +694,32 @@
       }
     }
 
-    // Smooth, zero-latency voice volume tracking via time-domain RMS
-    if (isMicActive && analyser && micTimeData) {
-      analyser.getByteTimeDomainData(micTimeData);
+    // Robust, zero-lag voice volume tracking via vocal frequency bins
+    if (isMicActive && analyser && micDataArray) {
+      analyser.getByteFrequencyData(micDataArray);
 
-      // DC-free RMS computation
-      let sum = 0;
-      const len = micTimeData.length;
-      for (let i = 0; i < len; i++) {
-        sum += micTimeData[i];
+      let vocalSum = 0;
+      const bStart = 2;
+      const bEnd = 36;
+      for (let i = bStart; i < bEnd; i++) {
+        vocalSum += micDataArray[i];
       }
-      const mean = sum / len;
+      const avg = vocalSum / (bEnd - bStart); // 0..255
 
-      let sumSq = 0;
-      for (let i = 0; i < len; i++) {
-        const diff = (micTimeData[i] - mean) / 128;
-        sumSq += diff * diff;
+      // Room silence is ~0-14. Human speech is 45-180!
+      const gate = 15.0;
+      let target = 0.0;
+      if (avg > gate) {
+        const raw = Math.min(1.0, (avg - gate) / 60.0);
+        target = Math.pow(raw, 0.75); // Bold, immediate response on speech
       }
-      const rms = Math.sqrt(sumSq / len);
 
-      if (micWarmupFrames > 0) {
-        micWarmupFrames--;
-        ambientNoiseFloor = Math.max(ambientNoiseFloor, rms * 1.2);
-        micEnergy += (0.0 - micEnergy) * 0.08;
-      } else {
-        // Precise noise gate: stays 100% still in room silence
-        const gate = Math.max(0.012, ambientNoiseFloor * 1.15);
-        let target = 0.0;
-        if (rms > gate) {
-          // Smoothstep S-curve for silky voice dynamics (zero bottom kick, smooth upper saturation)
-          const raw = Math.min(1.0, (rms - gate) / 0.065);
-          target = raw * raw * (3.0 - 2.0 * raw);
-        }
-
-        // Soft, elastic fluid smoothing: 0.16 attack, 0.065 decay (pure liquid motion, zero sudden kicks)
-        const speed = target > micEnergy ? 0.16 : 0.065;
-        micEnergy += (target - micEnergy) * speed;
-      }
+      // Snappy attack on syllables (0.30) + smooth decay on pauses (0.075)
+      const speed = target > micEnergy ? 0.30 : 0.075;
+      micEnergy += (target - micEnergy) * speed;
     } else {
       // Smooth graceful glide back to 0.0 on toggle off (zero abrupt snaps)
-      micEnergy += (0.0 - micEnergy) * 0.055;
+      micEnergy += (0.0 - micEnergy) * 0.06;
       if (micEnergy < 0.001) {
         micEnergy = 0.0;
         if (micClosing) {
