@@ -92,38 +92,49 @@
   let flightStartWaveP = 0.0;
   let flightEndWaveP = 0.0;
 
+  let currentMorphAbout = 0.0;
+  let currentMorphPrivacy = 0.0;
+  let currentMorphAudience = 0.0;
+  let currentMorphDownload = 0.0;
+  const flightStartMorphs = {
+    about: 0.0,
+    privacy: 0.0,
+    audience: 0.0,
+    download: 0.0
+  };
+
   const ISLANDS = {
     about: {
       targetP: 0.6,
-      islandPos: new THREE.Vector3(-0.4, 0.4, 4.0),
-      camPos: new THREE.Vector3(-5.5, 1.8, 14.8),
-      camLook: new THREE.Vector3(1.2, -0.6, 0.0),
-      tiltYaw: 5.0,
-      tiltPitch: -2.5
+      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
+      camPos: new THREE.Vector3(-3.8, 1.2, 14.8),
+      camLook: new THREE.Vector3(0.6, -0.2, 0.0),
+      tiltYaw: 3.5,
+      tiltPitch: -2.0
     },
     privacy: {
       targetP: 1.35,
-      islandPos: new THREE.Vector3(0.0, 1.0, 3.5),
-      camPos: new THREE.Vector3(0.0, 6.2, 14.5),
-      camLook: new THREE.Vector3(0.0, -1.0, 0.0),
+      islandPos: new THREE.Vector3(0.0, 0.6, 3.8),
+      camPos: new THREE.Vector3(0.0, 2.8, 14.6),
+      camLook: new THREE.Vector3(0.0, -0.4, 0.0),
       tiltYaw: 0.0,
-      tiltPitch: 8.0
+      tiltPitch: 4.0
     },
     audience: {
       targetP: 2.1,
-      islandPos: new THREE.Vector3(0.4, 0.4, 4.0),
-      camPos: new THREE.Vector3(5.5, 2.0, 14.8),
-      camLook: new THREE.Vector3(-1.2, -0.6, 0.0),
-      tiltYaw: -5.0,
-      tiltPitch: -2.5
+      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
+      camPos: new THREE.Vector3(3.8, 1.4, 14.8),
+      camLook: new THREE.Vector3(-0.6, -0.2, 0.0),
+      tiltYaw: -3.5,
+      tiltPitch: -2.0
     },
     download: {
       targetP: 2.85,
-      islandPos: new THREE.Vector3(0.0, 0.4, 4.2),
-      camPos: new THREE.Vector3(0.0, -1.5, 15.5),
-      camLook: new THREE.Vector3(0.0, 0.6, 0.0),
+      islandPos: new THREE.Vector3(0.0, 0.3, 4.2),
+      camPos: new THREE.Vector3(0.0, -0.6, 15.2),
+      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
       tiltYaw: 0.0,
-      tiltPitch: -6.0
+      tiltPitch: -3.0
     }
   };
 
@@ -197,6 +208,11 @@
     const pos2 = new Float32Array(N * 3);
     const pos3 = new Float32Array(N * 3);
 
+    const posAbout = new Float32Array(N * 3);
+    const posPrivacy = new Float32Array(N * 3);
+    const posAudience = new Float32Array(N * 3);
+    const posDownload = new Float32Array(N * 3);
+
     const cols = 150;
     const rows = 120;
     const goldenAngle = 2.399963229728653;
@@ -205,7 +221,7 @@
       const i3 = i * 3;
 
       // ====================================================================
-      // STAGE 0: ЖИВАЯ РЕЧЕВАЯ ВОЛНА (СМЕЩЕНА ВНИЗ ДЛЯ ЧИТАЕМОСТИ ТЕКСТА)
+      // TIMELINE STAGE 0: ЖИВАЯ РЕЧЕВАЯ ВОЛНА
       // ====================================================================
       const col = i % cols;
       const row = Math.floor(i / cols);
@@ -222,7 +238,7 @@
       pos0[i3 + 2] = z0;
 
       // ====================================================================
-      // STAGE 1: СФЕРА ГОЛОСА / ИИ-МОЗГ (AI VOICE SPHERE)
+      // TIMELINE STAGE 1: СФЕРА ГОЛОСА / ИИ-МОЗГ
       // ====================================================================
       if (i < 13000) {
         const t = i / 13000;
@@ -242,7 +258,7 @@
       }
 
       // ====================================================================
-      // STAGE 2: ГАРМОНИЧЕСКАЯ СПИРАЛЬ (HARMONIC SOUND HELIX)
+      // TIMELINE STAGE 2: ГАРМОНИЧЕСКАЯ СПИРАЛЬ
       // ====================================================================
       const tHelix = (i / N) * Math.PI * 8.0 - Math.PI * 4.0;
       const strand = (i % 2 === 0) ? 1.0 : -1.0;
@@ -256,7 +272,7 @@
       pos2[i3 + 2] = z2;
 
       // ====================================================================
-      // STAGE 3: КОНЦЕНТРИЧЕСКИЙ РЕЗОНАНС (ACOUSTIC RIPPLE CORE)
+      // TIMELINE STAGE 3: КОНЦЕНТРИЧЕСКИЙ РЕЗОНАНС
       // ====================================================================
       const ringIdx = i % 8;
       const ringPos = Math.floor(i / 8) / (N / 8);
@@ -267,6 +283,242 @@
       pos3[i3]     = Math.cos(ringAngle) * baseRadius;
       pos3[i3 + 1] = waveHeight;
       pos3[i3 + 2] = Math.sin(ringAngle) * baseRadius * 0.65;
+
+      // ====================================================================
+      // SECTION OBJECT 1: 3D СТУДИЙНЫЙ МИКРОФОН («О ПРОЕКТЕ»)
+      // ====================================================================
+      let mx = 0, my = 0, mz = 0;
+      if (i < 7000) {
+        // Microphone Grille Capsule (Mesh head dome & cylinder)
+        const t = i / 7000;
+        const phi = Math.acos(1.0 - 2.0 * t);
+        const theta = i * goldenAngle;
+        const R = 1.65;
+        if (phi < Math.PI * 0.45) {
+          mx = Math.sin(phi) * Math.cos(theta) * R;
+          my = 1.8 + Math.cos(phi) * R * 1.1;
+          mz = Math.sin(phi) * Math.sin(theta) * R;
+        } else {
+          const cyH = (phi - Math.PI * 0.45) / (Math.PI * 0.55);
+          mx = Math.cos(theta) * R;
+          my = 1.8 - cyH * 1.5;
+          mz = Math.sin(theta) * R;
+        }
+        const meshPattern = Math.sin(mx * 16.0) * Math.cos(my * 16.0) * 0.04;
+        mx += meshPattern;
+        mz += meshPattern;
+      } else if (i < 10500) {
+        // Cylindrical microphone body / handle
+        const t = (i - 7000) / 3500;
+        const theta = i * goldenAngle;
+        const cyY = 0.3 - t * 1.9;
+        const taperR = 1.45 - t * 0.25;
+        mx = Math.cos(theta) * taperR;
+        my = cyY;
+        mz = Math.sin(theta) * taperR;
+      } else if (i < 14000) {
+        // Shockmount ring & cross-bars
+        const t = (i - 10500) / 3500;
+        if (t < 0.75) {
+          const ringR = (i % 2 === 0) ? 2.7 : 2.1;
+          const theta = (t / 0.75) * Math.PI * 2.0;
+          mx = Math.cos(theta) * ringR;
+          my = 0.0 + Math.sin(theta * 6.0) * 0.1;
+          mz = Math.sin(theta) * ringR;
+        } else {
+          const cordIdx = i % 4;
+          const cordAngle = cordIdx * (Math.PI * 0.5) + Math.PI * 0.25;
+          const prog = (t - 0.75) / 0.25;
+          const rCord = 1.35 + prog * 1.05;
+          mx = Math.cos(cordAngle) * rCord;
+          my = -0.3 + prog * 0.6;
+          mz = Math.sin(cordAngle) * rCord;
+        }
+      } else {
+        // Stem & Circular Weighted Desk Stand
+        const t = (i - 14000) / 4000;
+        if (t < 0.35) {
+          const theta = i * goldenAngle;
+          const rodY = -1.6 - (t / 0.35) * 1.6;
+          const rodR = 0.28;
+          mx = Math.cos(theta) * rodR;
+          my = rodY;
+          mz = Math.sin(theta) * rodR;
+        } else {
+          const baseT = (t - 0.35) / 0.65;
+          const rBase = Math.sqrt(baseT) * 2.5;
+          const theta = i * goldenAngle;
+          mx = Math.cos(theta) * rBase;
+          my = -3.2 - (1.0 - baseT) * 0.2;
+          mz = Math.sin(theta) * rBase;
+        }
+      }
+      posAbout[i3]     = mx;
+      posAbout[i3 + 1] = my;
+      posAbout[i3 + 2] = mz;
+
+      // ====================================================================
+      // SECTION OBJECT 2: 3D ЩИТ И НАВЕСНОЙ ЗАМОК («ПРИВАТНОСТЬ»)
+      // ====================================================================
+      let sx = 0, sy = 0, sz = 0;
+      if (i < 11500) {
+        // The 3D Curved Security Shield
+        const t = i / 11500;
+        const v = Math.pow(t, 0.75);
+        const yNorm = -3.5 + v * 6.6;
+        const uVal = (Math.sin(i * 3.71) * 0.5 + 0.5) * 2.0 - 1.0;
+
+        let maxW;
+        if (v < 0.6) {
+          maxW = 3.0 * Math.sin(v / 0.6 * (Math.PI * 0.5));
+        } else {
+          const topT = (v - 0.6) / 0.4;
+          maxW = 3.0 * (1.0 - topT * topT * 0.18);
+        }
+
+        const crest = (v > 0.88) ? Math.cos(uVal * Math.PI) * 0.3 : 0.0;
+        sy = yNorm + crest;
+        sx = uVal * maxW;
+
+        const curveFactor = Math.max(0.0, 1.0 - (sx * sx) / 9.5 - (sy * sy) / 16.0);
+        sz = curveFactor * 0.8;
+        if (Math.abs(uVal) > 0.8) {
+          sz += 0.25;
+        }
+      } else if (i < 15000) {
+        // Padlock Body
+        const pX = ((i % 50) / 49 - 0.5) * 2.0 * 1.0;
+        const pY = -0.7 + ((Math.floor(i / 50) % 40) / 39) * 1.1;
+        const pZ = 1.0 + ((i % 7) / 6 - 0.5) * 0.6;
+
+        const isKeyhole = (Math.abs(pX) < 0.18 && pY < 0.0 && pY > -0.5) ||
+                          (pX * pX + (pY + 0.05) * (pY + 0.05) < 0.06);
+        if (isKeyhole) {
+          sx = pX * 1.6;
+          sy = pY;
+          sz = 0.7;
+        } else {
+          sx = pX;
+          sy = pY;
+          sz = pZ;
+        }
+      } else {
+        // Padlock Shackle
+        const t = (i - 15000) / 3000;
+        const theta = t * Math.PI;
+        const archR = 0.72;
+        const tubeR = 0.18;
+        const tubeTheta = i * goldenAngle;
+
+        const arcX = Math.cos(theta) * archR;
+        const arcY = 0.4 + Math.sin(theta) * archR * 1.15;
+        sx = arcX + Math.cos(tubeTheta) * tubeR;
+        sy = arcY;
+        sz = 1.0 + Math.sin(tubeTheta) * tubeR;
+      }
+      posPrivacy[i3]     = sx;
+      posPrivacy[i3 + 1] = sy;
+      posPrivacy[i3 + 2] = sz;
+
+      // ====================================================================
+      // SECTION OBJECT 3: 3D НЕЙРОННЫЙ МОЗГ И РАЗУМ («ДЛЯ КОГО»)
+      // ====================================================================
+      let bx = 0, by = 0, bz = 0;
+      if (i < 13500) {
+        const side = (i % 2 === 0) ? 1.0 : -1.0;
+        const t = i / 13500;
+        const phi = Math.acos(1.0 - 2.0 * t);
+        const theta = i * goldenAngle;
+
+        const rx = 1.65;
+        const ry = 1.95;
+        const rz = 2.45;
+
+        const gyri = 0.14 * Math.sin(theta * 9.0) * Math.cos(phi * 8.0) +
+                     0.08 * Math.sin(theta * 18.0) +
+                     0.06 * Math.cos(phi * 14.0);
+
+        const rMod = 1.0 + gyri;
+        bx = side * (0.45 + Math.sin(phi) * Math.abs(Math.cos(theta)) * rx * rMod);
+        by = 0.4 + Math.cos(phi) * ry * rMod;
+        bz = Math.sin(phi) * Math.sin(theta) * rz * rMod;
+
+        if (by < 0.0 && bz > 0.0) {
+          bx *= 0.9;
+        }
+      } else if (i < 16000) {
+        const t = (i - 13500) / 2500;
+        if (t < 0.6) {
+          const side = (i % 2 === 0) ? 1.0 : -1.0;
+          const theta = i * goldenAngle;
+          const crR = 0.85;
+          bx = side * (0.6 + Math.cos(theta) * crR * 0.6);
+          by = -1.2 + Math.sin(theta) * crR * 0.5;
+          bz = -1.2 + Math.sin(theta * 2.0) * crR * 0.5;
+        } else {
+          const stemT = (t - 0.6) / 0.4;
+          const theta = i * goldenAngle;
+          bx = Math.cos(theta) * 0.35;
+          by = -1.2 - stemT * 1.8;
+          bz = -0.4 + Math.sin(theta) * 0.35;
+        }
+      } else {
+        const t = (i - 16000) / 2000;
+        const angle = t * Math.PI * 8.0;
+        const rOrbit = 2.8 + Math.sin(i * 3.1) * 0.6;
+        bx = Math.cos(angle) * rOrbit;
+        by = 0.4 + Math.sin(i * 1.7) * 2.2;
+        bz = Math.sin(angle) * rOrbit;
+      }
+      posAudience[i3]     = bx;
+      posAudience[i3 + 1] = by;
+      posAudience[i3 + 2] = bz;
+
+      // ====================================================================
+      // SECTION OBJECT 4: 3D СТРЕЛКА СКАЧИВАНИЯ И ДОК-СТАНЦИЯ («СКАЧАТЬ»)
+      // ====================================================================
+      let dx = 0, dy = 0, dz = 0;
+      if (i < 11000) {
+        const t = i / 11000;
+        const depth = ((i % 16) / 15 - 0.5) * 1.4;
+
+        if (t < 0.45) {
+          const stemT = t / 0.45;
+          const stemX = ((i % 30) / 29 - 0.5) * 2.0 * 0.85;
+          dx = stemX;
+          dy = 0.6 + stemT * 2.6;
+          dz = depth;
+        } else {
+          const headT = (t - 0.45) / 0.55;
+          const yHead = 0.6 - headT * 1.8;
+          const wingW = 2.5 * (1.0 - headT);
+          const uVal = ((i % 40) / 39 - 0.5) * 2.0;
+          dx = uVal * wingW;
+          dy = yHead;
+          dz = depth * (1.0 - headT * 0.3);
+        }
+      } else {
+        const t = (i - 11000) / 7000;
+        if (t < 0.65) {
+          const ringIdx = i % 4;
+          const rRing = 0.8 + ringIdx * 0.85;
+          const theta = (t / 0.65) * Math.PI * 2.0 + (i % 5);
+          dx = Math.cos(theta) * rRing;
+          dy = -2.6 + Math.sin(theta * 4.0) * 0.08;
+          dz = Math.sin(theta) * rRing * 0.75;
+        } else {
+          const bracketIdx = i % 2;
+          const sign = (bracketIdx === 0) ? -1.0 : 1.0;
+          const prog = (t - 0.65) / 0.35;
+          const bTheta = (prog - 0.5) * (Math.PI * 0.6);
+          dx = sign * (3.3 + Math.cos(bTheta) * 0.4);
+          dy = -2.6 + prog * 1.4;
+          dz = Math.sin(bTheta) * 2.2;
+        }
+      }
+      posDownload[i3]     = dx;
+      posDownload[i3 + 1] = dy;
+      posDownload[i3 + 2] = dz;
     }
 
     waveGeometry = new THREE.BufferGeometry();
@@ -276,6 +528,12 @@
     waveGeometry.setAttribute('pos2', new THREE.BufferAttribute(pos2, 3));
     waveGeometry.setAttribute('pos3', new THREE.BufferAttribute(pos3, 3));
 
+    // Thematic 3D Section Object Attributes
+    waveGeometry.setAttribute('posAbout', new THREE.BufferAttribute(posAbout, 3));
+    waveGeometry.setAttribute('posPrivacy', new THREE.BufferAttribute(posPrivacy, 3));
+    waveGeometry.setAttribute('posAudience', new THREE.BufferAttribute(posAudience, 3));
+    waveGeometry.setAttribute('posDownload', new THREE.BufferAttribute(posDownload, 3));
+
     // ── GLSL SHADER: CELESTIAL SKY BLUE & ICE MIST ──
     const vertexShader = `
       attribute vec3 pos0;
@@ -283,7 +541,17 @@
       attribute vec3 pos2;
       attribute vec3 pos3;
 
+      attribute vec3 posAbout;
+      attribute vec3 posPrivacy;
+      attribute vec3 posAudience;
+      attribute vec3 posDownload;
+
       uniform float uProgress;
+      uniform float uMorphAbout;
+      uniform float uMorphPrivacy;
+      uniform float uMorphAudience;
+      uniform float uMorphDownload;
+
       uniform float uTime;
       uniform float uRippleTime;
       uniform vec2 uRipplePos;
@@ -302,26 +570,40 @@
 
       void main() {
         float pVal = clamp(uProgress, 0.0, 3.0);
-        vec3 p;
+        vec3 pTimeline;
 
         if (pVal < 1.0) {
           float t = ease(0.0, 1.0, pVal);
-          p = mix(pos0, pos1, t);
+          pTimeline = mix(pos0, pos1, t);
         } else if (pVal < 2.0) {
           float t = ease(1.0, 2.0, pVal);
-          p = mix(pos1, pos2, t);
+          pTimeline = mix(pos1, pos2, t);
         } else {
           float t = ease(2.0, 3.0, pVal);
-          p = mix(pos2, pos3, t);
+          pTimeline = mix(pos2, pos3, t);
         }
 
-        float waveFactor = max(0.0, 1.0 - pVal * 0.7);
-        float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
-        float pulse = sin(uTime * 1.5 + length(p) * 0.5) * 0.1;
+        // 3D Thematic Section Object Morphing
+        float totalMorph = uMorphAbout + uMorphPrivacy + uMorphAudience + uMorphDownload;
+        vec3 pObject = posAbout * uMorphAbout +
+                       posPrivacy * uMorphPrivacy +
+                       posAudience * uMorphAudience +
+                       posDownload * uMorphDownload;
 
-        // In silence, wave stays 100% still in original form.
-        // During speech, wave gently pulses in place along its natural shape.
-        float voicePulse = wave * (uMicEnergy * 0.9);
+        if (totalMorph > 0.001) {
+          pObject /= totalMorph;
+        }
+
+        float morphFactor = clamp(totalMorph, 0.0, 1.0);
+        vec3 p = mix(pTimeline, pObject, morphFactor);
+
+        // Wave motion dampens when morphed into solid 3D objects, but preserves organic breathing
+        float waveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - morphFactor * 0.85);
+        float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
+        float pulse = sin(uTime * 1.8 + length(p) * 0.5) * (0.08 + 0.06 * morphFactor);
+
+        // Voice reactivity: reacts in silence vs active speech
+        float voicePulse = (wave + sin(uTime * 3.5 + p.y * 1.8) * 0.18) * (uMicEnergy * 1.1);
         p.y += wave + pulse + voicePulse;
 
         // Hyperspace warp effect during 3D section transition
@@ -339,7 +621,7 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8);
+        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8 + morphFactor * 0.15);
         gl_PointSize = clamp(size, 2.5, 68.0);
 
         vec3 cDeep  = vec3(0.008, 0.518, 0.780); // #0284C7
@@ -362,8 +644,12 @@
           vColor = mix(vColor, vec3(0.08, 0.85, 1.0), clamp(uWarpSpeed * 0.65, 0.0, 0.75));
         }
 
+        if (morphFactor > 0.01) {
+          vColor = mix(vColor, cSky, morphFactor * 0.25);
+        }
+
         float distFog = clamp((-mvPosition.z - 10.0) / 38.0, 0.0, 1.0);
-        vAlpha = 1.0 - distFog * 0.65;
+        vAlpha = (1.0 - distFog * 0.65) * (0.85 + morphFactor * 0.15);
       }
     `;
 
@@ -386,6 +672,10 @@
       fragmentShader: fragmentShader,
       uniforms: {
         uProgress:       { value: 0.0 },
+        uMorphAbout:     { value: 0.0 },
+        uMorphPrivacy:   { value: 0.0 },
+        uMorphAudience:  { value: 0.0 },
+        uMorphDownload:  { value: 0.0 },
         uTime:           { value: 0.0 },
         uRippleTime:     { value: 0.0 },
         uRipplePos:      { value: new THREE.Vector2(0, 0) },
@@ -443,7 +733,12 @@
   // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
   function updateSpatialCallouts(p) {
     let timelineAlpha = 1.0;
-    if (flightState === 'warping_out' || flightState === 'in_section') {
+    if (flightState === 'warping_out') {
+      const elapsed = performance.now() - flightStartTime;
+      const rawT = Math.min(1.0, elapsed / flightDuration);
+      // Smoothly fade out callouts in the first 35% of the flight (approx 480ms)
+      timelineAlpha = Math.max(0.0, 1.0 - rawT / 0.35);
+    } else if (flightState === 'in_section') {
       timelineAlpha = 0.0;
     } else if (flightState === 'warping_in') {
       const elapsed = performance.now() - flightStartTime;
@@ -452,76 +747,74 @@
     }
 
     callouts.forEach((el, idx) => {
-      let opacity = 0;
-      let exitFraction = 0;
+      let baseOpacity = 0;
+      let baseExit = 0;
 
-      if (timelineAlpha > 0.0) {
-        if (idx === 0) {
-          // Hero stage: 100% visible right from p = 0.0!
-          if (p <= 0.35) {
-            opacity = timelineAlpha;
-            exitFraction = 1.0 - timelineAlpha;
-          } else if (p <= 0.65) {
-            const t = (p - 0.35) / 0.30;
-            exitFraction = Math.max(t, 1.0 - timelineAlpha);
-            opacity = Math.max(0.0, (1.0 - t * 1.5) * timelineAlpha);
+      if (idx === 0) {
+        // Hero stage: 100% visible right from p = 0.0!
+        if (p <= 0.35) {
+          baseOpacity = 1.0;
+          baseExit = 0.0;
+        } else if (p <= 0.65) {
+          const t = (p - 0.35) / 0.30;
+          baseExit = t;
+          baseOpacity = Math.max(0.0, 1.0 - t * 1.5);
+        } else {
+          baseOpacity = 0;
+          baseExit = 1.0;
+        }
+      } else if (idx === 1) {
+        // Stage 1 (Sphere): enters 0.65..0.95, stays 0.95..1.35, exits 1.35..1.65
+        if (p >= 0.65 && p <= 1.65) {
+          if (p < 0.95) {
+            const t = (p - 0.65) / 0.30;
+            baseOpacity = t;
+            baseExit = 1.0 - t;
+          } else if (p <= 1.35) {
+            baseOpacity = 1.0;
+            baseExit = 0.0;
           } else {
-            opacity = 0;
-            exitFraction = 1.0;
-          }
-        } else if (idx === 1) {
-          // Stage 1 (Sphere): enters 0.65..0.95, stays 0.95..1.35, exits 1.35..1.65
-          if (p >= 0.65 && p <= 1.65) {
-            if (p < 0.95) {
-              const t = (p - 0.65) / 0.30;
-              opacity = t;
-              exitFraction = 1.0 - t;
-            } else if (p <= 1.35) {
-              opacity = 1.0;
-              exitFraction = 0.0;
-            } else {
-              const t = (p - 1.35) / 0.30;
-              exitFraction = t;
-              opacity = Math.max(0.0, 1.0 - t * 1.5);
-            }
-          } else {
-            opacity = 0;
-            exitFraction = 1.0;
-          }
-        } else if (idx === 2) {
-          // Stage 2 (Helix): enters 1.65..1.95, stays 1.95..2.25, exits 2.25..2.55
-          if (p >= 1.65 && p <= 2.55) {
-            if (p < 1.95) {
-              const t = (p - 1.65) / 0.30;
-              opacity = t;
-              exitFraction = 1.0 - t;
-            } else if (p <= 2.25) {
-              opacity = 1.0;
-              exitFraction = 0.0;
-            } else {
-              const t = (p - 2.25) / 0.30;
-              exitFraction = t;
-              opacity = Math.max(0.0, 1.0 - t * 1.5);
-            }
-          } else {
-            opacity = 0;
-            exitFraction = 1.0;
+            const t = (p - 1.35) / 0.30;
+            baseExit = t;
+            baseOpacity = Math.max(0.0, 1.0 - t * 1.5);
           }
         } else {
-          // Stage 3 (Finale): enters from 2.30, fully solid at 2.65, stays 100% to end
-          if (p >= 2.30) {
-            const t = Math.min(1.0, (p - 2.30) / 0.35);
-            opacity = t;
-            exitFraction = 1.0 - t;
+          baseOpacity = 0;
+          baseExit = 1.0;
+        }
+      } else if (idx === 2) {
+        // Stage 2 (Helix): enters 1.65..1.95, stays 1.95..2.25, exits 2.25..2.55
+        if (p >= 1.65 && p <= 2.55) {
+          if (p < 1.95) {
+            const t = (p - 1.65) / 0.30;
+            baseOpacity = t;
+            baseExit = 1.0 - t;
+          } else if (p <= 2.25) {
+            baseOpacity = 1.0;
+            baseExit = 0.0;
           } else {
-            opacity = 0;
-            exitFraction = 1.0;
+            const t = (p - 2.25) / 0.30;
+            baseExit = t;
+            baseOpacity = Math.max(0.0, 1.0 - t * 1.5);
           }
+        } else {
+          baseOpacity = 0;
+          baseExit = 1.0;
         }
       } else {
-        opacity = 0;
-        exitFraction = 1.0;
+        // Stage 3 (Finale at end of scroll): enters from 2.30, fully solid at 2.65, stays 100% to end
+        if (p >= 2.30) {
+          const t = Math.min(1.0, (p - 2.30) / 0.35);
+          baseOpacity = t;
+          baseExit = 1.0 - t;
+        } else {
+          baseOpacity = 0;
+          baseExit = 1.0;
+        }
       }
+
+      const opacity = baseOpacity * timelineAlpha;
+      const exitFraction = Math.max(baseExit, 1.0 - timelineAlpha);
 
       // Base 3D target coordinates (fully adaptive, zero layout thrashing)
       let targetX, targetY;
@@ -583,25 +876,23 @@
 
     // ── 3D ANCHORED MIC HINT NOTE (ACTIVE ONLY IN STAGE 0) ──
     if (micHintEl) {
-      let micOpacity = 0;
-      let micExitFraction = 0;
+      let baseMicOpacity = 0;
+      let baseMicExit = 0;
 
-      if (timelineAlpha > 0.0) {
-        if (p <= 0.35) {
-          micOpacity = timelineAlpha;
-          micExitFraction = 1.0 - timelineAlpha;
-        } else if (p <= 0.65) {
-          const t = (p - 0.35) / 0.30;
-          micExitFraction = Math.max(t, 1.0 - timelineAlpha);
-          micOpacity = Math.max(0.0, (1.0 - t * 1.5) * timelineAlpha);
-        } else {
-          micOpacity = 0;
-          micExitFraction = 1.0;
-        }
+      if (p <= 0.35) {
+        baseMicOpacity = 1.0;
+        baseMicExit = 0.0;
+      } else if (p <= 0.65) {
+        const t = (p - 0.35) / 0.30;
+        baseMicExit = t;
+        baseMicOpacity = Math.max(0.0, 1.0 - t * 1.5);
       } else {
-        micOpacity = 0;
-        micExitFraction = 1.0;
+        baseMicOpacity = 0;
+        baseMicExit = 1.0;
       }
+
+      const micOpacity = baseMicOpacity * timelineAlpha;
+      const micExitFraction = Math.max(baseMicExit, 1.0 - timelineAlpha);
 
       // Responsive 3D Anchor for mic note
       let targetX, targetY;
@@ -645,6 +936,11 @@
 
     flightStartWaveP = currentWaveP;
     flightEndWaveP = (targetWaveP !== undefined) ? targetWaveP : smoothProgress;
+
+    flightStartMorphs.about = currentMorphAbout;
+    flightStartMorphs.privacy = currentMorphPrivacy;
+    flightStartMorphs.audience = currentMorphAudience;
+    flightStartMorphs.download = currentMorphDownload;
 
     // Smooth drone apex arc
     camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
@@ -974,6 +1270,11 @@
       currentParallaxLookScale.x = 0.0;
       currentParallaxLookScale.y = 0.0;
 
+      currentMorphAbout = 0.0;
+      currentMorphPrivacy = 0.0;
+      currentMorphAudience = 0.0;
+      currentMorphDownload = 0.0;
+
       warpSpeed = 0.0;
       currentWaveP = p;
     } else if (flightState === 'warping_out') {
@@ -999,6 +1300,17 @@
       currentParallaxLookScale.x = (1.0 - easeT) * flightStartParallaxLook.x + easeT * 0.06;
       currentParallaxLookScale.y = (1.0 - easeT) * flightStartParallaxLook.y + easeT * 0.06;
 
+      // Smoothly morph into the target 3D object
+      const targetAbout = (activeSection === 'about') ? 1.0 : 0.0;
+      const targetPrivacy = (activeSection === 'privacy') ? 1.0 : 0.0;
+      const targetAudience = (activeSection === 'audience') ? 1.0 : 0.0;
+      const targetDownload = (activeSection === 'download') ? 1.0 : 0.0;
+
+      currentMorphAbout = flightStartMorphs.about + (targetAbout - flightStartMorphs.about) * easeT;
+      currentMorphPrivacy = flightStartMorphs.privacy + (targetPrivacy - flightStartMorphs.privacy) * easeT;
+      currentMorphAudience = flightStartMorphs.audience + (targetAudience - flightStartMorphs.audience) * easeT;
+      currentMorphDownload = flightStartMorphs.download + (targetDownload - flightStartMorphs.download) * easeT;
+
       if (rawT >= 1.0) {
         flightState = 'in_section';
         sectionEnterTime = performance.now();
@@ -1008,6 +1320,11 @@
     } else if (flightState === 'in_section') {
       warpSpeed = 0.0;
       currentWaveP = flightEndWaveP;
+      currentMorphAbout = (activeSection === 'about') ? 1.0 : 0.0;
+      currentMorphPrivacy = (activeSection === 'privacy') ? 1.0 : 0.0;
+      currentMorphAudience = (activeSection === 'audience') ? 1.0 : 0.0;
+      currentMorphDownload = (activeSection === 'download') ? 1.0 : 0.0;
+
       const island = ISLANDS[activeSection];
       if (island) {
         currentBasePos.copy(island.camPos);
@@ -1043,11 +1360,21 @@
       currentParallaxLookScale.x = (1.0 - easeT) * flightStartParallaxLook.x + easeT * 0.0;
       currentParallaxLookScale.y = (1.0 - easeT) * flightStartParallaxLook.y + easeT * 0.0;
 
+      // Smoothly dissolve 3D objects back into wave
+      currentMorphAbout = flightStartMorphs.about * (1.0 - easeT);
+      currentMorphPrivacy = flightStartMorphs.privacy * (1.0 - easeT);
+      currentMorphAudience = flightStartMorphs.audience * (1.0 - easeT);
+      currentMorphDownload = flightStartMorphs.download * (1.0 - easeT);
+
       if (rawT >= 1.0) {
         flightState = 'timeline';
         activeSection = null;
         warpSpeed = 0.0;
         currentWaveP = p;
+        currentMorphAbout = 0.0;
+        currentMorphPrivacy = 0.0;
+        currentMorphAudience = 0.0;
+        currentMorphDownload = 0.0;
       }
     }
 
@@ -1127,6 +1454,10 @@
 
     if (waveMaterial && waveMaterial.uniforms) {
       waveMaterial.uniforms.uProgress.value = currentWaveP;
+      waveMaterial.uniforms.uMorphAbout.value = currentMorphAbout;
+      waveMaterial.uniforms.uMorphPrivacy.value = currentMorphPrivacy;
+      waveMaterial.uniforms.uMorphAudience.value = currentMorphAudience;
+      waveMaterial.uniforms.uMorphDownload.value = currentMorphDownload;
       waveMaterial.uniforms.uTime.value = elapsedTime;
       waveMaterial.uniforms.uRippleTime.value = rippleTimeSec;
       waveMaterial.uniforms.uRipplePos.value.set(rippleOriginX, rippleOriginZ);
