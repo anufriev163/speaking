@@ -144,10 +144,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transform: translate3d(0, 0, 0);
-  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-              letter-spacing 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity, filter, letter-spacing;
+  will-change: transform, opacity, filter;
   display: flex;
   flex-direction: column;
 }
@@ -510,7 +507,7 @@ body {
   z-index: 90;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .spatial-island-hud.is-active {
@@ -518,58 +515,66 @@ body {
   opacity: 1;
 }
 
+.spatial-back-pill,
 .section-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1.5px solid rgba(203, 213, 225, 0.9);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(203, 213, 225, 0.85);
   border-radius: 9999px;
-  padding: 8px 18px;
+  padding: 6px 16px;
   font-family: var(--font-text);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: #1E293B;
   cursor: pointer;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.spatial-back-pill:hover,
 .section-back-btn:hover {
   color: #0F172A;
   background: #FFFFFF;
   border-color: #0F172A;
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
 }
 
+.spatial-back-pill:focus-visible,
 .section-back-btn:focus-visible {
   outline: 2px solid var(--color-accent-sky);
   outline-offset: 2px;
 }
 
 .esc-tag {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 2px 5px;
+  border-radius: 5px;
   background: #E2E8F0;
   color: #64748B;
 }
 
+/* 3D Spatial Island: Pure Typography floating in 3D Space (NO PLATES / БЕЗ ПЛАШЕК) */
 .spatial-island {
   position: absolute;
   top: 0;
   left: 0;
-  width: 660px;
+  width: 760px;
   max-width: calc(100vw - 36px);
   pointer-events: none;
   opacity: 0;
   transform-origin: center center;
   will-change: transform, opacity;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .spatial-island.is-active {
@@ -579,101 +584,142 @@ body {
 
 .island-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 30px;
-  padding: 38px 42px;
-  box-shadow: 0 30px 80px -15px rgba(15, 23, 42, 0.16), 0 0 50px rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
 .card-badge {
   display: inline-block;
   font-family: var(--font-text);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: #0284C7;
-  background: rgba(14, 165, 233, 0.1);
-  padding: 4px 12px;
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.16);
+  padding: 3px 12px;
   border-radius: 9999px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
 }
 
 .card-title {
   font-family: var(--font-display);
-  font-size: 2.1rem;
+  font-size: 2.6rem;
   font-weight: 800;
   color: var(--color-black);
-  line-height: 1.16;
-  letter-spacing: -0.035em;
-  margin-bottom: 14px;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin-bottom: 16px;
+  text-shadow: 0 0 35px rgba(255, 255, 255, 0.98), 0 2px 10px rgba(255, 255, 255, 0.95);
 }
 
 .card-lead {
   font-family: var(--font-text);
-  font-size: 1.05rem;
+  font-size: 1.12rem;
   font-weight: 500;
-  color: #475569;
-  line-height: 1.55;
-  margin-bottom: 26px;
+  color: #334155;
+  line-height: 1.6;
+  max-width: 620px;
+  margin-bottom: 32px;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.95);
 }
 
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 24px;
+  width: 100%;
+  max-width: 720px;
 }
 
+/* NO PLATES: Clean airy typographic columns with subtle top accent */
 .grid-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: rgba(248, 250, 252, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 16px;
-  padding: 16px;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 10px 8px;
+  position: relative;
+}
+
+.grid-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  width: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(2, 132, 199, 0.35), transparent);
 }
 
 .grid-item strong {
   font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: #0F172A;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
 }
 
 .grid-item span {
   font-family: var(--font-text);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 500;
-  color: #64748B;
-  line-height: 1.4;
+  color: #475569;
+  line-height: 1.45;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.95);
 }
 
+/* Download platform buttons - sleek floating translucent pills (NOT cards) */
 .card-platforms {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 580px;
 }
 
 .platform-choice-btn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1.5px solid rgba(226, 232, 240, 0.9);
-  border-radius: 18px;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 9999px;
   color: #0F172A;
   text-decoration: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.8);
 }
 
 .platform-choice-btn:hover {
+  background: #0F172A;
   border-color: #0F172A;
+  color: #FFFFFF;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.22);
+}
+
+.platform-choice-btn:hover .platform-meta span {
+  color: #94A3B8;
 }
 
 .platform-choice-btn:focus-visible {
@@ -681,22 +727,31 @@ body {
   outline-offset: 2px;
 }
 
+.platform-choice-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .platform-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-start;
+  gap: 1px;
 }
 
 .platform-meta strong {
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .platform-meta span {
   font-family: var(--font-text);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #64748B;
+  transition: color 0.22s ease;
 }
 
 /* Responsive */

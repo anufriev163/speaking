@@ -79,6 +79,8 @@
   const currentLookAt = new THREE.Vector3(0, -0.4, 0);
   const timelineTargetPos = new THREE.Vector3();
   const timelineTargetLook = new THREE.Vector3();
+  const targetCamUp = new THREE.Vector3(0, 1, 0);
+  const currentCamUp = new THREE.Vector3(0, 1, 0);
 
   const ISLANDS = {
     about: {
@@ -385,46 +387,6 @@
 
     wavePoints = new THREE.Points(waveGeometry, waveMaterial);
     scene.add(wavePoints);
-
-    // ── 3D SPATIAL ISLAND CELESTIAL HALOS ──
-    const haloCount = 480;
-    const haloPositions = new Float32Array(haloCount * 3);
-    const haloColors = new Float32Array(haloCount * 3);
-    const islandKeys = Object.keys(ISLANDS);
-    const perIsland = haloCount / islandKeys.length;
-
-    islandKeys.forEach((key, islandIdx) => {
-      const island = ISLANDS[key];
-      for (let j = 0; j < perIsland; j++) {
-        const hIdx = (islandIdx * perIsland + j) * 3;
-        const angle = (j / perIsland) * Math.PI * 2.0;
-        const rad = 8.5 + (j % 6) * 1.6;
-        const h = (Math.sin(j * 1.7) - 0.5) * 6.5;
-
-        haloPositions[hIdx]     = island.islandPos.x + Math.cos(angle) * rad;
-        haloPositions[hIdx + 1] = island.islandPos.y + h;
-        haloPositions[hIdx + 2] = island.islandPos.z + Math.sin(angle) * rad;
-
-        // Radiant sky cyan
-        haloColors[hIdx]     = 0.22;
-        haloColors[hIdx + 1] = 0.74;
-        haloColors[hIdx + 2] = 0.97;
-      }
-    });
-
-    const haloGeo = new THREE.BufferGeometry();
-    haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPositions, 3));
-    haloGeo.setAttribute('color', new THREE.BufferAttribute(haloColors, 3));
-    const haloMat = new THREE.PointsMaterial({
-      size: 4.8,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.65,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    const islandHaloPoints = new THREE.Points(haloGeo, haloMat);
-    scene.add(islandHaloPoints);
   }
 
   function measureCallouts() {
@@ -466,22 +428,29 @@
 
   // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
   function updateSpatialCallouts(p) {
-    const isWarpingOrSection = flightState !== 'timeline';
+    let timelineAlpha = 1.0;
+    if (flightState === 'warping_out' || flightState === 'in_section') {
+      timelineAlpha = 0.0;
+    } else if (flightState === 'warping_in') {
+      const elapsed = performance.now() - flightStartTime;
+      const rawT = Math.min(1.0, elapsed / flightDuration);
+      timelineAlpha = Math.max(0.0, Math.min(1.0, (rawT - 0.45) / 0.55));
+    }
 
     callouts.forEach((el, idx) => {
       let opacity = 0;
       let exitFraction = 0;
 
-      if (!isWarpingOrSection) {
+      if (timelineAlpha > 0.0) {
         if (idx === 0) {
           // Hero stage: 100% visible right from p = 0.0!
           if (p <= 0.35) {
-            opacity = 1.0;
-            exitFraction = 0.0;
+            opacity = timelineAlpha;
+            exitFraction = 1.0 - timelineAlpha;
           } else if (p <= 0.65) {
             const t = (p - 0.35) / 0.30;
-            exitFraction = t;
-            opacity = Math.max(0.0, 1.0 - t * 1.5);
+            exitFraction = Math.max(t, 1.0 - timelineAlpha);
+            opacity = Math.max(0.0, (1.0 - t * 1.5) * timelineAlpha);
           } else {
             opacity = 0;
             exitFraction = 1.0;
@@ -606,14 +575,14 @@
       let micOpacity = 0;
       let micExitFraction = 0;
 
-      if (!isWarpingOrSection) {
+      if (timelineAlpha > 0.0) {
         if (p <= 0.35) {
-          micOpacity = 1.0;
-          micExitFraction = 0.0;
+          micOpacity = timelineAlpha;
+          micExitFraction = 1.0 - timelineAlpha;
         } else if (p <= 0.65) {
           const t = (p - 0.35) / 0.30;
-          micExitFraction = t;
-          micOpacity = Math.max(0.0, 1.0 - t * 1.5);
+          micExitFraction = Math.max(t, 1.0 - timelineAlpha);
+          micOpacity = Math.max(0.0, (1.0 - t * 1.5) * timelineAlpha);
         } else {
           micOpacity = 0;
           micExitFraction = 1.0;
@@ -650,6 +619,11 @@
   }
 
   // ── 3D SPATIAL SWOOP & BANK FLIGHT CONTROLS ──
+  function smootherstep(t) {
+    const c = Math.max(0.0, Math.min(1.0, t));
+    return c * c * c * (c * (c * 6.0 - 15.0) + 10.0);
+  }
+
   function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection) {
     camFlightStartPos.copy(camera.position);
     camFlightStartLook.copy(currentLookAt);
@@ -658,18 +632,16 @@
     camFlightEndLook.copy(targetCamLook);
 
     // Calculate mid-flight apex arc for high-speed swoop
-    camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
     const dist = camFlightStartPos.distanceTo(camFlightEndPos);
-    const arcHeight = Math.min(22.0, Math.max(8.0, dist * 0.35));
+    camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
+    const arcHeight = Math.min(11.0, Math.max(3.5, dist * 0.20));
     camFlightMidPos.y += arcHeight;
-    camFlightMidPos.z += arcHeight * 0.45;
+    camFlightMidPos.z += arcHeight * 0.3;
 
     // Banking direction based on lateral translation
-    flightTurnSign = Math.sign(camFlightEndPos.x - camFlightStartPos.x);
-    if (Math.abs(flightTurnSign) < 0.1) {
-      flightTurnSign = (Math.sign(camFlightEndPos.y - camFlightStartPos.y) || 1.0);
-    }
-    flightDuration = Math.min(1300, Math.max(850, dist * 24));
+    const dx = camFlightEndPos.x - camFlightStartPos.x;
+    flightTurnSign = Math.abs(dx) > 1.5 ? Math.sign(dx) : (Math.sign(camFlightEndPos.y - camFlightStartPos.y) || 1.0);
+    flightDuration = Math.min(1350, Math.max(900, dist * 22));
 
     flightStartTime = performance.now();
     flightState = targetState;
@@ -738,12 +710,12 @@
 
       const relCamX = camera.position.x - island.islandPos.x;
       const relCamY = camera.position.y - island.islandPos.y;
-      const dynamicYaw = island.tiltYaw + relCamX * 0.22;
-      const dynamicPitch = island.tiltPitch - relCamY * 0.22;
+      const dynamicYaw = island.tiltYaw + relCamX * 0.16;
+      const dynamicPitch = island.tiltPitch - relCamY * 0.16;
 
-      el.style.transform = `translate3d(${Math.round(screenX)}px, ${Math.round(screenY)}px, 0) translate(-50%, -50%) scale(${baseScale.toFixed(3)}) rotateY(${dynamicYaw.toFixed(1)}deg) rotateX(${dynamicPitch.toFixed(1)}deg)`;
+      el.style.transform = `translate3d(${screenX.toFixed(1)}px, ${screenY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${baseScale.toFixed(3)}) rotateY(${dynamicYaw.toFixed(1)}deg) rotateX(${dynamicPitch.toFixed(1)}deg)`;
 
-      if (inFront && activeSection === key && (flightState === 'in_section' || (flightState === 'warping_out' && dist < 36.0))) {
+      if (inFront && activeSection === key && (flightState === 'in_section' || (flightState === 'warping_out' && dist < 32.0))) {
         el.classList.add('is-active');
       } else {
         el.classList.remove('is-active');
@@ -998,31 +970,35 @@
     const p = Math.max(0.0, Math.min(3.0, smoothProgress));
 
     // ── CAMERA POSITIONING & 3D SPATIAL SWOOP STATE MACHINE ──
+    currentCamUp.lerp(targetCamUp, 0.08);
+    camera.up.copy(currentCamUp);
+
     if (flightState === 'timeline') {
       getTimelineCamera(p, timelineTargetPos, timelineTargetLook);
 
       camera.position.x = timelineTargetPos.x + currentCamX;
       camera.position.y = timelineTargetPos.y + currentCamY;
       camera.position.z = timelineTargetPos.z;
-      camera.up.set(0, 1, 0);
+      targetCamUp.set(0, 1, 0);
       currentLookAt.copy(timelineTargetLook);
       camera.lookAt(currentLookAt);
       warpSpeed = 0.0;
     } else if (flightState === 'warping_out') {
       const elapsed = performance.now() - flightStartTime;
       const rawT = Math.min(1.0, elapsed / flightDuration);
-      const easeT = easeInOutCubic(rawT);
+      const easeT = smootherstep(rawT);
       warpSpeed = Math.sin(rawT * Math.PI);
 
       // Quadratic Bezier arc in 3D world space
       const oneMinusT = 1.0 - easeT;
-      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * 0.25;
-      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * 0.25;
+      const mouseBlend = (1.0 - Math.sin(rawT * Math.PI)) * 0.15;
+      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * mouseBlend;
+      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * mouseBlend;
       camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
       // Dynamic banking roll into the turn
-      const bankRoll = Math.sin(rawT * Math.PI) * flightTurnSign * 0.16;
-      camera.up.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
+      const bankRoll = Math.sin(rawT * Math.PI) * flightTurnSign * 0.08;
+      targetCamUp.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
 
       currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
       camera.lookAt(currentLookAt);
@@ -1031,26 +1007,27 @@
         flightState = 'in_section';
         sectionEnterTime = performance.now();
         warpSpeed = 0.0;
-        camera.up.set(0, 1, 0);
+        targetCamUp.set(0, 1, 0);
       }
     } else if (flightState === 'in_section') {
       warpSpeed = 0.0;
-      camera.up.set(0, 1, 0);
+      targetCamUp.set(0, 1, 0);
       const island = ISLANDS[activeSection];
       if (island) {
         const inSecTime = (performance.now() - sectionEnterTime) * 0.001;
-        const floatX = Math.cos(inSecTime * 0.7) * 0.25;
-        const floatY = Math.sin(inSecTime * 0.9) * 0.35;
+        const floatBlend = Math.min(1.0, inSecTime * 1.5);
+        const floatX = Math.sin(inSecTime * 0.6) * 0.25 * floatBlend;
+        const floatY = Math.sin(inSecTime * 0.8) * 0.30 * floatBlend;
 
         camera.position.set(
-          island.camPos.x + floatX + currentCamX * 0.35,
-          island.camPos.y + floatY + currentCamY * 0.35,
+          island.camPos.x + floatX + currentCamX * 0.3,
+          island.camPos.y + floatY + currentCamY * 0.3,
           island.camPos.z
         );
 
         currentLookAt.set(
-          island.camLook.x + currentCamX * 0.1,
-          island.camLook.y + currentCamY * 0.1,
+          island.camLook.x + currentCamX * 0.08,
+          island.camLook.y + currentCamY * 0.08,
           island.camLook.z
         );
         camera.lookAt(currentLookAt);
@@ -1058,7 +1035,7 @@
     } else if (flightState === 'warping_in') {
       const elapsed = performance.now() - flightStartTime;
       const rawT = Math.min(1.0, elapsed / flightDuration);
-      const easeT = easeInOutCubic(rawT);
+      const easeT = smootherstep(rawT);
       warpSpeed = Math.sin(rawT * Math.PI);
 
       // Re-evaluate latest smooth timeline target position
@@ -1066,13 +1043,14 @@
 
       // Smooth Bezier return arc to timeline
       const oneMinusT = 1.0 - easeT;
-      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * 0.2;
-      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * 0.2;
+      const mouseBlend = (1.0 - Math.sin(rawT * Math.PI)) * 0.15;
+      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * mouseBlend;
+      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * mouseBlend;
       camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
       // Inverse banking roll back to level horizon
-      const bankRoll = -Math.sin(rawT * Math.PI) * flightTurnSign * 0.14;
-      camera.up.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
+      const bankRoll = -Math.sin(rawT * Math.PI) * flightTurnSign * 0.07;
+      targetCamUp.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
 
       currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
       camera.lookAt(currentLookAt);
@@ -1081,7 +1059,7 @@
         flightState = 'timeline';
         activeSection = null;
         warpSpeed = 0.0;
-        camera.up.set(0, 1, 0);
+        targetCamUp.set(0, 1, 0);
       }
     }
 
