@@ -511,9 +511,9 @@ body {
   inset: 0;
   z-index: 75;
   pointer-events: none;
-  overflow: hidden;
-  perspective: 1200px;
-  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .spatial-island-hud {
@@ -524,7 +524,7 @@ body {
   z-index: 90;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s ease;
 }
 
 .spatial-island-hud.is-active {
@@ -541,8 +541,6 @@ body {
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   padding: 6px 12px;
   font-family: var(--font-text);
   font-size: 0.88rem;
@@ -580,24 +578,29 @@ body {
 /* 3D Spatial Island: Pure Typography floating in 3D Space (NO PLATES / БЕЗ ПЛАШЕК) */
 .spatial-island {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%, calc(-50% + 14px), 0);
   width: 780px;
   max-width: calc(100vw - 36px);
   pointer-events: none;
   opacity: 0;
-  transform-origin: center center;
-  will-change: transform, opacity;
-  transition: opacity 0.4s ease;
+  visibility: hidden;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.4s;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  will-change: opacity, transform;
 }
 
 .spatial-island.is-active {
   pointer-events: auto;
   opacity: 1;
+  visibility: visible;
+  transform: translate3d(-50%, -50%, 0);
 }
 
 .island-card {
@@ -607,8 +610,6 @@ body {
   border-radius: 0 !important;
   padding: 0 !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -627,9 +628,6 @@ body {
   color: #0284C7;
   background: transparent !important;
   border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
   padding: 0 !important;
   margin-bottom: 16px;
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
@@ -702,50 +700,56 @@ body {
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
 }
 
-/* Organic 3D Swaying for Items (Плавно покачиваются) */
-@keyframes swayItemLeft {
+/* Organic 2D Hardware-Accelerated Swaying for Items (Плавно покачиваются без дергания) */
+@keyframes swayNodeLeft {
   0%, 100% {
-    transform: translateY(0px) rotateZ(-1.4deg) rotateX(0deg);
+    transform: translate3d(0, 0px, 0);
   }
   50% {
-    transform: translateY(-9px) rotateZ(1.2deg) rotateX(3deg);
+    transform: translate3d(0, -9px, 0);
   }
 }
 
-@keyframes swayItemCenter {
+@keyframes swayNodeCenter {
   0%, 100% {
-    transform: translateY(-5px) rotateZ(0.9deg) rotateX(2deg);
+    transform: translate3d(0, -4px, 0);
   }
   50% {
-    transform: translateY(8px) rotateZ(-0.9deg) rotateX(-2deg);
+    transform: translate3d(0, 5px, 0);
   }
 }
 
-@keyframes swayItemRight {
+@keyframes swayNodeRight {
   0%, 100% {
-    transform: translateY(4px) rotateZ(-1deg) rotateX(-2deg);
+    transform: translate3d(0, 3px, 0);
   }
   50% {
-    transform: translateY(-8px) rotateZ(1.3deg) rotateX(2.5deg);
+    transform: translate3d(0, -6px, 0);
   }
 }
 
 .grid-item:nth-child(1),
 .platform-choice-btn:nth-child(1) {
-  animation: swayItemLeft 5.2s ease-in-out infinite;
+  animation: swayNodeLeft 5.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .grid-item:nth-child(2),
 .platform-choice-btn:nth-child(2) {
-  animation: swayItemCenter 5.8s ease-in-out infinite 0.6s;
+  animation: swayNodeCenter 5.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite 0.7s;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .grid-item:nth-child(3),
 .platform-choice-btn:nth-child(3) {
-  animation: swayItemRight 5.4s ease-in-out infinite 1.2s;
+  animation: swayNodeRight 5.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite 1.4s;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Download platform buttons - sleek floating typographic columns (NO PLATES / БЕЗ ПЛАШЕК) */
@@ -767,10 +771,7 @@ body {
   padding: 12px 16px;
   background: transparent !important;
   border: none !important;
-  border-radius: 0 !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   color: #0F172A;
   text-decoration: none;
   cursor: pointer;

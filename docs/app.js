@@ -77,6 +77,12 @@
   const camFlightEndPos = new THREE.Vector3();
   const camFlightEndLook = new THREE.Vector3();
   const currentLookAt = new THREE.Vector3(0, -0.4, 0);
+  const currentBasePos = new THREE.Vector3(0, 0.5, 17.5);
+  const currentBaseLook = new THREE.Vector3(0, -0.4, 0);
+  const currentParallaxPosScale = { x: 1.0, y: 1.0 };
+  const currentParallaxLookScale = { x: 0.0, y: 0.0 };
+  const flightStartParallaxPos = { x: 1.0, y: 1.0 };
+  const flightStartParallaxLook = { x: 0.0, y: 0.0 };
   const timelineTargetPos = new THREE.Vector3();
   const timelineTargetLook = new THREE.Vector3();
   const targetCamUp = new THREE.Vector3(0, 1, 0);
@@ -561,15 +567,12 @@
       smooth.x += (targetX - smooth.x) * 0.12;
       smooth.y += (targetY - smooth.y) * 0.12;
 
-      // Wave-dissolution: text sinks down into the audio wave + frequency blur & letter dispersion
-      const waveSinkY = exitFraction * 35.0;
-      const blurPx = (exitFraction * 12.0).toFixed(1);
-      const letterSpacePx = (exitFraction * 6.0).toFixed(1);
+      // Clean GPU-composited exit: smooth sink + subtle scale dampening (zero layout reflows!)
+      const waveSinkY = exitFraction * 30.0;
+      const scale = (1.0 - exitFraction * 0.04).toFixed(3);
 
       el.style.opacity = opacity.toFixed(3);
-      el.style.filter = blurPx > 0.2 ? `blur(${blurPx}px)` : 'none';
-      el.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '-0.035em';
-      el.style.transform = `translate3d(${Math.round(smooth.x)}px, ${Math.round(smooth.y + waveSinkY)}px, 0)`;
+      el.style.transform = `translate3d(${smooth.x.toFixed(1)}px, ${(smooth.y + waveSinkY).toFixed(1)}px, 0) scale(${scale})`;
 
       if (opacity > 0.05) {
         el.style.pointerEvents = idx === 3 ? 'auto' : 'none';
@@ -614,14 +617,10 @@
       smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
       smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
 
-      const waveSinkY = micExitFraction * 35.0;
-      const blurPx = (micExitFraction * 12.0).toFixed(1);
-      const letterSpacePx = (micExitFraction * 6.0).toFixed(1);
+      const waveSinkY = micExitFraction * 26.0;
 
       micHintEl.style.opacity = micOpacity.toFixed(3);
-      micHintEl.style.filter = blurPx > 0.2 ? `blur(${blurPx}px)` : 'none';
-      micHintEl.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '0.02em';
-      micHintEl.style.transform = `translate3d(${Math.round(smoothMicHint.x)}px, ${Math.round(smoothMicHint.y + waveSinkY)}px, 0) rotate(-3deg)`;
+      micHintEl.style.transform = `translate3d(${smoothMicHint.x.toFixed(1)}px, ${(smoothMicHint.y + waveSinkY).toFixed(1)}px, 0) rotate(-3deg)`;
       micHintEl.style.pointerEvents = micOpacity > 0.08 ? 'auto' : 'none';
     }
   }
@@ -633,26 +632,26 @@
   }
 
   function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection, targetWaveP) {
-    camFlightStartPos.copy(camera.position);
-    camFlightStartLook.copy(currentLookAt);
+    camFlightStartPos.copy(currentBasePos);
+    camFlightStartLook.copy(currentBaseLook);
 
     camFlightEndPos.copy(targetCamPos);
     camFlightEndLook.copy(targetCamLook);
 
+    flightStartParallaxPos.x = currentParallaxPosScale.x;
+    flightStartParallaxPos.y = currentParallaxPosScale.y;
+    flightStartParallaxLook.x = currentParallaxLookScale.x;
+    flightStartParallaxLook.y = currentParallaxLookScale.y;
+
     flightStartWaveP = currentWaveP;
     flightEndWaveP = (targetWaveP !== undefined) ? targetWaveP : smoothProgress;
 
-    // Calculate mid-flight apex arc for high-speed swoop
-    const dist = camFlightStartPos.distanceTo(camFlightEndPos);
+    // Smooth drone apex arc
     camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
-    const arcHeight = Math.min(3.2, Math.max(1.0, dist * 0.22));
-    camFlightMidPos.y += arcHeight;
-    camFlightMidPos.z += arcHeight * 0.35;
+    camFlightMidPos.y += 1.2;
 
-    // Banking direction based on lateral translation
-    const dx = camFlightEndPos.x - camFlightStartPos.x;
-    flightTurnSign = Math.abs(dx) > 1.0 ? Math.sign(dx) : (Math.sign(camFlightEndPos.y - camFlightStartPos.y) || 1.0);
-    flightDuration = Math.min(1250, Math.max(850, dist * 65));
+    // Fixed 1.4s luxurious flight duration for silky smoothness
+    flightDuration = 1400;
 
     flightStartTime = performance.now();
     flightState = targetState;
@@ -692,45 +691,27 @@
     startFlightTo(timelineTargetPos, timelineTargetLook, 'warping_in', null, smoothProgress);
   }
 
+  let prevIsSectionActive = false;
+  let prevActiveSection = null;
+
   function update3DSpatialIslands() {
-    const isSectionActive = flightState === 'in_section' || flightState === 'warping_out';
+    const isSectionActive = flightState === 'in_section' || (flightState === 'warping_out' && (performance.now() - flightStartTime) > flightDuration * 0.45);
+
+    if (isSectionActive === prevIsSectionActive && activeSection === prevActiveSection) {
+      return;
+    }
+    prevIsSectionActive = isSectionActive;
+    prevActiveSection = activeSection;
+
     const hud = document.getElementById('spatial-hud');
     if (hud) {
-      if (isSectionActive) {
-        hud.classList.add('is-active');
-      } else {
-        hud.classList.remove('is-active');
-      }
+      hud.classList.toggle('is-active', isSectionActive);
     }
 
     Object.keys(ISLANDS).forEach(key => {
-      const island = ISLANDS[key];
       const el = document.getElementById(`island-${key}`);
       if (!el) return;
-
-      projVec.copy(island.islandPos);
-      projVec.project(camera);
-
-      const inFront = projVec.z < 1.0;
-      const screenX = (projVec.x * 0.5 + 0.5) * W;
-      const screenY = (-projVec.y * 0.5 + 0.5) * H;
-
-      const dist = camera.position.distanceTo(island.islandPos);
-      // Perspective depth scaling
-      const baseScale = Math.max(0.12, Math.min(1.25, 20.0 / Math.max(dist, 0.1)));
-
-      const relCamX = camera.position.x - island.islandPos.x;
-      const relCamY = camera.position.y - island.islandPos.y;
-      const dynamicYaw = island.tiltYaw + relCamX * 0.14;
-      const dynamicPitch = island.tiltPitch - relCamY * 0.14;
-
-      el.style.transform = `translate3d(${screenX.toFixed(1)}px, ${screenY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${baseScale.toFixed(3)}) rotateY(${dynamicYaw.toFixed(1)}deg) rotateX(${dynamicPitch.toFixed(1)}deg)`;
-
-      if (inFront && activeSection === key && (flightState === 'in_section' || (flightState === 'warping_out' && dist < 14.0))) {
-        el.classList.add('is-active');
-      } else {
-        el.classList.remove('is-active');
-      }
+      el.classList.toggle('is-active', isSectionActive && activeSection === key);
     });
   }
 
@@ -980,80 +961,67 @@
 
     const p = Math.max(0.0, Math.min(3.0, smoothProgress));
 
-    // ── CAMERA POSITIONING & 3D SPATIAL SWOOP STATE MACHINE ──
-    currentCamUp.lerp(targetCamUp, 0.08);
-    camera.up.copy(currentCamUp);
+    // Level horizon: zero roll wobble
+    camera.up.set(0, 1, 0);
 
     if (flightState === 'timeline') {
       getTimelineCamera(p, timelineTargetPos, timelineTargetLook);
+      currentBasePos.copy(timelineTargetPos);
+      currentBaseLook.copy(timelineTargetLook);
 
-      camera.position.x = timelineTargetPos.x + currentCamX;
-      camera.position.y = timelineTargetPos.y + currentCamY;
-      camera.position.z = timelineTargetPos.z;
-      targetCamUp.set(0, 1, 0);
-      currentLookAt.copy(timelineTargetLook);
-      camera.lookAt(currentLookAt);
+      currentParallaxPosScale.x = 1.0;
+      currentParallaxPosScale.y = 1.0;
+      currentParallaxLookScale.x = 0.0;
+      currentParallaxLookScale.y = 0.0;
+
       warpSpeed = 0.0;
       currentWaveP = p;
     } else if (flightState === 'warping_out') {
       const elapsed = performance.now() - flightStartTime;
       const rawT = Math.min(1.0, elapsed / flightDuration);
       const easeT = smootherstep(rawT);
-      warpSpeed = Math.sin(rawT * Math.PI) * 0.6;
+      warpSpeed = Math.sin(rawT * Math.PI) * 0.35;
 
       // Morph 3D wave smoothly during flight
       currentWaveP = flightStartWaveP + (flightEndWaveP - flightStartWaveP) * easeT;
 
-      // Quadratic Bezier arc in 3D world space
+      // Pure smooth quadratic Bezier arc on base coordinates
       const oneMinusT = 1.0 - easeT;
-      const mouseBlend = (1.0 - Math.sin(rawT * Math.PI)) * 0.15;
-      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * mouseBlend;
-      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * mouseBlend;
-      camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
+      currentBasePos.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x;
+      currentBasePos.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y;
+      currentBasePos.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
-      // Dynamic banking roll into the turn
-      const bankRoll = Math.sin(rawT * Math.PI) * flightTurnSign * 0.07;
-      targetCamUp.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
+      currentBaseLook.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
 
-      currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
-      camera.lookAt(currentLookAt);
+      // Continuously blend parallax scales (100% continuous across state transition!)
+      currentParallaxPosScale.x = (1.0 - easeT) * flightStartParallaxPos.x + easeT * 0.25;
+      currentParallaxPosScale.y = (1.0 - easeT) * flightStartParallaxPos.y + easeT * 0.20;
+      currentParallaxLookScale.x = (1.0 - easeT) * flightStartParallaxLook.x + easeT * 0.06;
+      currentParallaxLookScale.y = (1.0 - easeT) * flightStartParallaxLook.y + easeT * 0.06;
 
       if (rawT >= 1.0) {
         flightState = 'in_section';
         sectionEnterTime = performance.now();
         warpSpeed = 0.0;
-        targetCamUp.set(0, 1, 0);
         currentWaveP = flightEndWaveP;
       }
     } else if (flightState === 'in_section') {
       warpSpeed = 0.0;
-      targetCamUp.set(0, 1, 0);
       currentWaveP = flightEndWaveP;
       const island = ISLANDS[activeSection];
       if (island) {
-        const inSecTime = (performance.now() - sectionEnterTime) * 0.001;
-        const floatBlend = Math.min(1.0, inSecTime * 1.5);
-        const floatX = Math.sin(inSecTime * 0.6) * 0.22 * floatBlend;
-        const floatY = Math.sin(inSecTime * 0.8) * 0.28 * floatBlend;
-
-        camera.position.set(
-          island.camPos.x + floatX + currentCamX * 0.3,
-          island.camPos.y + floatY + currentCamY * 0.3,
-          island.camPos.z
-        );
-
-        currentLookAt.set(
-          island.camLook.x + currentCamX * 0.08,
-          island.camLook.y + currentCamY * 0.08,
-          island.camLook.z
-        );
-        camera.lookAt(currentLookAt);
+        currentBasePos.copy(island.camPos);
+        currentBaseLook.copy(island.camLook);
+        currentParallaxPosScale.x = 0.25;
+        currentParallaxPosScale.y = 0.20;
+        currentParallaxLookScale.x = 0.06;
+        currentParallaxLookScale.y = 0.06;
       }
     } else if (flightState === 'warping_in') {
       const elapsed = performance.now() - flightStartTime;
       const rawT = Math.min(1.0, elapsed / flightDuration);
       const easeT = smootherstep(rawT);
-      warpSpeed = Math.sin(rawT * Math.PI) * 0.6;
+      warpSpeed = Math.sin(rawT * Math.PI) * 0.35;
 
       // Morph 3D wave back to current timeline progress
       currentWaveP = flightStartWaveP + (p - flightStartWaveP) * easeT;
@@ -1061,28 +1029,40 @@
       // Re-evaluate latest smooth timeline target position
       getTimelineCamera(p, camFlightEndPos, camFlightEndLook);
 
-      // Smooth Bezier return arc to timeline
+      // Pure smooth Bezier return arc on base coordinates
       const oneMinusT = 1.0 - easeT;
-      const mouseBlend = (1.0 - Math.sin(rawT * Math.PI)) * 0.15;
-      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * mouseBlend;
-      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * mouseBlend;
-      camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
+      currentBasePos.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x;
+      currentBasePos.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y;
+      currentBasePos.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
-      // Inverse banking roll back to level horizon
-      const bankRoll = -Math.sin(rawT * Math.PI) * flightTurnSign * 0.06;
-      targetCamUp.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
+      currentBaseLook.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
 
-      currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
-      camera.lookAt(currentLookAt);
+      // Continuously blend parallax scales back to timeline
+      currentParallaxPosScale.x = (1.0 - easeT) * flightStartParallaxPos.x + easeT * 1.0;
+      currentParallaxPosScale.y = (1.0 - easeT) * flightStartParallaxPos.y + easeT * 1.0;
+      currentParallaxLookScale.x = (1.0 - easeT) * flightStartParallaxLook.x + easeT * 0.0;
+      currentParallaxLookScale.y = (1.0 - easeT) * flightStartParallaxLook.y + easeT * 0.0;
 
       if (rawT >= 1.0) {
         flightState = 'timeline';
         activeSection = null;
         warpSpeed = 0.0;
-        targetCamUp.set(0, 1, 0);
         currentWaveP = p;
       }
     }
+
+    // Unified, seamlessly continuous camera position & lookAt (zero delta jump at transitions)
+    camera.position.set(
+      currentBasePos.x + currentCamX * currentParallaxPosScale.x,
+      currentBasePos.y + currentCamY * currentParallaxPosScale.y,
+      currentBasePos.z
+    );
+    currentLookAt.set(
+      currentBaseLook.x + currentCamX * currentParallaxLookScale.x,
+      currentBaseLook.y + currentCamY * currentParallaxLookScale.y,
+      currentBaseLook.z
+    );
+    camera.lookAt(currentLookAt);
 
     if (wavePoints) {
       wavePoints.rotation.y = elapsedTime * 0.12 + currentCamX * 0.04;
