@@ -82,34 +82,42 @@
   const targetCamUp = new THREE.Vector3(0, 1, 0);
   const currentCamUp = new THREE.Vector3(0, 1, 0);
 
+  let currentWaveP = 0.0;
+  let flightStartWaveP = 0.0;
+  let flightEndWaveP = 0.0;
+
   const ISLANDS = {
     about: {
-      islandPos: new THREE.Vector3(-46.0, 14.0, -26.0),
-      camPos: new THREE.Vector3(-42.0, 14.0, -8.0),
-      camLook: new THREE.Vector3(-46.0, 14.0, -26.0),
-      tiltYaw: 14.0,
-      tiltPitch: -4.0
+      targetP: 0.6,
+      islandPos: new THREE.Vector3(-0.4, 0.4, 4.0),
+      camPos: new THREE.Vector3(-5.5, 1.8, 14.8),
+      camLook: new THREE.Vector3(1.2, -0.6, 0.0),
+      tiltYaw: 5.0,
+      tiltPitch: -2.5
     },
     privacy: {
-      islandPos: new THREE.Vector3(0.0, 48.0, -32.0),
-      camPos: new THREE.Vector3(0.0, 42.0, -14.0),
-      camLook: new THREE.Vector3(0.0, 48.0, -32.0),
+      targetP: 1.35,
+      islandPos: new THREE.Vector3(0.0, 1.0, 3.5),
+      camPos: new THREE.Vector3(0.0, 6.2, 14.5),
+      camLook: new THREE.Vector3(0.0, -1.0, 0.0),
       tiltYaw: 0.0,
-      tiltPitch: 14.0
+      tiltPitch: 8.0
     },
     audience: {
-      islandPos: new THREE.Vector3(48.0, 11.0, -26.0),
-      camPos: new THREE.Vector3(44.0, 11.0, -8.0),
-      camLook: new THREE.Vector3(48.0, 11.0, -26.0),
-      tiltYaw: -14.0,
-      tiltPitch: -4.0
+      targetP: 2.1,
+      islandPos: new THREE.Vector3(0.4, 0.4, 4.0),
+      camPos: new THREE.Vector3(5.5, 2.0, 14.8),
+      camLook: new THREE.Vector3(-1.2, -0.6, 0.0),
+      tiltYaw: -5.0,
+      tiltPitch: -2.5
     },
     download: {
-      islandPos: new THREE.Vector3(0.0, -34.0, -12.0),
-      camPos: new THREE.Vector3(0.0, -26.0, 6.0),
-      camLook: new THREE.Vector3(0.0, -34.0, -12.0),
+      targetP: 2.85,
+      islandPos: new THREE.Vector3(0.0, 0.4, 4.2),
+      camPos: new THREE.Vector3(0.0, -1.5, 15.5),
+      camLook: new THREE.Vector3(0.0, 0.6, 0.0),
       tiltYaw: 0.0,
-      tiltPitch: -14.0
+      tiltPitch: -6.0
     }
   };
 
@@ -624,24 +632,27 @@
     return c * c * c * (c * (c * 6.0 - 15.0) + 10.0);
   }
 
-  function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection) {
+  function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection, targetWaveP) {
     camFlightStartPos.copy(camera.position);
     camFlightStartLook.copy(currentLookAt);
 
     camFlightEndPos.copy(targetCamPos);
     camFlightEndLook.copy(targetCamLook);
 
+    flightStartWaveP = currentWaveP;
+    flightEndWaveP = (targetWaveP !== undefined) ? targetWaveP : smoothProgress;
+
     // Calculate mid-flight apex arc for high-speed swoop
     const dist = camFlightStartPos.distanceTo(camFlightEndPos);
     camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
-    const arcHeight = Math.min(11.0, Math.max(3.5, dist * 0.20));
+    const arcHeight = Math.min(3.2, Math.max(1.0, dist * 0.22));
     camFlightMidPos.y += arcHeight;
-    camFlightMidPos.z += arcHeight * 0.3;
+    camFlightMidPos.z += arcHeight * 0.35;
 
     // Banking direction based on lateral translation
     const dx = camFlightEndPos.x - camFlightStartPos.x;
-    flightTurnSign = Math.abs(dx) > 1.5 ? Math.sign(dx) : (Math.sign(camFlightEndPos.y - camFlightStartPos.y) || 1.0);
-    flightDuration = Math.min(1350, Math.max(900, dist * 22));
+    flightTurnSign = Math.abs(dx) > 1.0 ? Math.sign(dx) : (Math.sign(camFlightEndPos.y - camFlightStartPos.y) || 1.0);
+    flightDuration = Math.min(1250, Math.max(850, dist * 65));
 
     flightStartTime = performance.now();
     flightState = targetState;
@@ -669,7 +680,7 @@
       }
     });
 
-    startFlightTo(island.camPos, island.camLook, 'warping_out', sectionKey);
+    startFlightTo(island.camPos, island.camLook, 'warping_out', sectionKey, island.targetP);
   }
 
   function closeSection() {
@@ -678,7 +689,7 @@
     document.querySelectorAll('.nav-pill').forEach(pill => pill.classList.remove('is-active'));
     getTimelineCamera(smoothProgress, timelineTargetPos, timelineTargetLook);
 
-    startFlightTo(timelineTargetPos, timelineTargetLook, 'warping_in', null);
+    startFlightTo(timelineTargetPos, timelineTargetLook, 'warping_in', null, smoothProgress);
   }
 
   function update3DSpatialIslands() {
@@ -710,12 +721,12 @@
 
       const relCamX = camera.position.x - island.islandPos.x;
       const relCamY = camera.position.y - island.islandPos.y;
-      const dynamicYaw = island.tiltYaw + relCamX * 0.16;
-      const dynamicPitch = island.tiltPitch - relCamY * 0.16;
+      const dynamicYaw = island.tiltYaw + relCamX * 0.14;
+      const dynamicPitch = island.tiltPitch - relCamY * 0.14;
 
       el.style.transform = `translate3d(${screenX.toFixed(1)}px, ${screenY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${baseScale.toFixed(3)}) rotateY(${dynamicYaw.toFixed(1)}deg) rotateX(${dynamicPitch.toFixed(1)}deg)`;
 
-      if (inFront && activeSection === key && (flightState === 'in_section' || (flightState === 'warping_out' && dist < 32.0))) {
+      if (inFront && activeSection === key && (flightState === 'in_section' || (flightState === 'warping_out' && dist < 14.0))) {
         el.classList.add('is-active');
       } else {
         el.classList.remove('is-active');
@@ -983,11 +994,15 @@
       currentLookAt.copy(timelineTargetLook);
       camera.lookAt(currentLookAt);
       warpSpeed = 0.0;
+      currentWaveP = p;
     } else if (flightState === 'warping_out') {
       const elapsed = performance.now() - flightStartTime;
       const rawT = Math.min(1.0, elapsed / flightDuration);
       const easeT = smootherstep(rawT);
-      warpSpeed = Math.sin(rawT * Math.PI);
+      warpSpeed = Math.sin(rawT * Math.PI) * 0.6;
+
+      // Morph 3D wave smoothly during flight
+      currentWaveP = flightStartWaveP + (flightEndWaveP - flightStartWaveP) * easeT;
 
       // Quadratic Bezier arc in 3D world space
       const oneMinusT = 1.0 - easeT;
@@ -997,7 +1012,7 @@
       camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
       // Dynamic banking roll into the turn
-      const bankRoll = Math.sin(rawT * Math.PI) * flightTurnSign * 0.08;
+      const bankRoll = Math.sin(rawT * Math.PI) * flightTurnSign * 0.07;
       targetCamUp.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
 
       currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
@@ -1008,16 +1023,18 @@
         sectionEnterTime = performance.now();
         warpSpeed = 0.0;
         targetCamUp.set(0, 1, 0);
+        currentWaveP = flightEndWaveP;
       }
     } else if (flightState === 'in_section') {
       warpSpeed = 0.0;
       targetCamUp.set(0, 1, 0);
+      currentWaveP = flightEndWaveP;
       const island = ISLANDS[activeSection];
       if (island) {
         const inSecTime = (performance.now() - sectionEnterTime) * 0.001;
         const floatBlend = Math.min(1.0, inSecTime * 1.5);
-        const floatX = Math.sin(inSecTime * 0.6) * 0.25 * floatBlend;
-        const floatY = Math.sin(inSecTime * 0.8) * 0.30 * floatBlend;
+        const floatX = Math.sin(inSecTime * 0.6) * 0.22 * floatBlend;
+        const floatY = Math.sin(inSecTime * 0.8) * 0.28 * floatBlend;
 
         camera.position.set(
           island.camPos.x + floatX + currentCamX * 0.3,
@@ -1036,7 +1053,10 @@
       const elapsed = performance.now() - flightStartTime;
       const rawT = Math.min(1.0, elapsed / flightDuration);
       const easeT = smootherstep(rawT);
-      warpSpeed = Math.sin(rawT * Math.PI);
+      warpSpeed = Math.sin(rawT * Math.PI) * 0.6;
+
+      // Morph 3D wave back to current timeline progress
+      currentWaveP = flightStartWaveP + (p - flightStartWaveP) * easeT;
 
       // Re-evaluate latest smooth timeline target position
       getTimelineCamera(p, camFlightEndPos, camFlightEndLook);
@@ -1049,7 +1069,7 @@
       camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
       // Inverse banking roll back to level horizon
-      const bankRoll = -Math.sin(rawT * Math.PI) * flightTurnSign * 0.07;
+      const bankRoll = -Math.sin(rawT * Math.PI) * flightTurnSign * 0.06;
       targetCamUp.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
 
       currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
@@ -1060,6 +1080,7 @@
         activeSection = null;
         warpSpeed = 0.0;
         targetCamUp.set(0, 1, 0);
+        currentWaveP = p;
       }
     }
 
@@ -1125,7 +1146,7 @@
     }
 
     if (waveMaterial && waveMaterial.uniforms) {
-      waveMaterial.uniforms.uProgress.value = p;
+      waveMaterial.uniforms.uProgress.value = currentWaveP;
       waveMaterial.uniforms.uTime.value = elapsedTime;
       waveMaterial.uniforms.uRippleTime.value = rippleTimeSec;
       waveMaterial.uniforms.uRipplePos.value.set(rippleOriginX, rippleOriginZ);
