@@ -63,57 +63,51 @@
   const screenPosOut = { x: 0, y: 0, visible: true };
   let isTouchDevice = false;
 
-  // ── 3D SPATIAL ORBIT FLIGHT & SECTION WARP ENGINE ──
+  // ── 3D SPATIAL WORLD ISLANDS & SWOOP FLIGHT ENGINE ──
   let flightState = 'timeline'; // 'timeline' | 'warping_out' | 'in_section' | 'warping_in'
   let activeSection = null;
   let flightStartTime = 0;
+  let flightDuration = 1050; // ms
   let sectionEnterTime = 0;
-  const FLIGHT_DURATION = 1150; // ms
   let warpSpeed = 0.0;
+  let flightTurnSign = 1.0;
   const camFlightStartPos = new THREE.Vector3();
   const camFlightStartLook = new THREE.Vector3();
+  const camFlightMidPos = new THREE.Vector3();
   const camFlightEndPos = new THREE.Vector3();
   const camFlightEndLook = new THREE.Vector3();
   const currentLookAt = new THREE.Vector3(0, -0.4, 0);
   const timelineTargetPos = new THREE.Vector3();
   const timelineTargetLook = new THREE.Vector3();
-  let flightStartAngle = 0;
-  let flightStartRadius = 17.5;
-  let flightTargetAngle = 0;
-  let flightTargetRadius = 10.0;
 
-  const SECTION_TARGETS = {
+  const ISLANDS = {
     about: {
-      pos: new THREE.Vector3(5.5, 3.2, 8.5),
-      look: new THREE.Vector3(0.0, 0.4, 0.0),
-      radius: 10.2,
-      height: 3.2,
-      baseAngle: 0.98,
-      orbitSpeed: 0.11
+      islandPos: new THREE.Vector3(-46.0, 14.0, -26.0),
+      camPos: new THREE.Vector3(-42.0, 14.0, -8.0),
+      camLook: new THREE.Vector3(-46.0, 14.0, -26.0),
+      tiltYaw: 14.0,
+      tiltPitch: -4.0
     },
     privacy: {
-      pos: new THREE.Vector3(-12.5, 7.0, 9.5),
-      look: new THREE.Vector3(0.0, 0.6, 0.0),
-      radius: 15.7,
-      height: 7.0,
-      baseAngle: 3.96,
-      orbitSpeed: 0.08
+      islandPos: new THREE.Vector3(0.0, 48.0, -32.0),
+      camPos: new THREE.Vector3(0.0, 42.0, -14.0),
+      camLook: new THREE.Vector3(0.0, 48.0, -32.0),
+      tiltYaw: 0.0,
+      tiltPitch: 14.0
     },
     audience: {
-      pos: new THREE.Vector3(13.5, 5.2, 9.0),
-      look: new THREE.Vector3(0.0, 0.3, 0.0),
-      radius: 16.2,
-      height: 5.2,
-      baseAngle: 0.99,
-      orbitSpeed: 0.09
+      islandPos: new THREE.Vector3(48.0, 11.0, -26.0),
+      camPos: new THREE.Vector3(44.0, 11.0, -8.0),
+      camLook: new THREE.Vector3(48.0, 11.0, -26.0),
+      tiltYaw: -14.0,
+      tiltPitch: -4.0
     },
     download: {
-      pos: new THREE.Vector3(0.0, 11.5, 21.0),
-      look: new THREE.Vector3(0.0, -1.2, 0.0),
-      radius: 21.0,
-      height: 11.5,
-      baseAngle: 0.0,
-      orbitSpeed: 0.06
+      islandPos: new THREE.Vector3(0.0, -34.0, -12.0),
+      camPos: new THREE.Vector3(0.0, -26.0, 6.0),
+      camLook: new THREE.Vector3(0.0, -34.0, -12.0),
+      tiltYaw: 0.0,
+      tiltPitch: -14.0
     }
   };
 
@@ -391,6 +385,46 @@
 
     wavePoints = new THREE.Points(waveGeometry, waveMaterial);
     scene.add(wavePoints);
+
+    // ── 3D SPATIAL ISLAND CELESTIAL HALOS ──
+    const haloCount = 480;
+    const haloPositions = new Float32Array(haloCount * 3);
+    const haloColors = new Float32Array(haloCount * 3);
+    const islandKeys = Object.keys(ISLANDS);
+    const perIsland = haloCount / islandKeys.length;
+
+    islandKeys.forEach((key, islandIdx) => {
+      const island = ISLANDS[key];
+      for (let j = 0; j < perIsland; j++) {
+        const hIdx = (islandIdx * perIsland + j) * 3;
+        const angle = (j / perIsland) * Math.PI * 2.0;
+        const rad = 8.5 + (j % 6) * 1.6;
+        const h = (Math.sin(j * 1.7) - 0.5) * 6.5;
+
+        haloPositions[hIdx]     = island.islandPos.x + Math.cos(angle) * rad;
+        haloPositions[hIdx + 1] = island.islandPos.y + h;
+        haloPositions[hIdx + 2] = island.islandPos.z + Math.sin(angle) * rad;
+
+        // Radiant sky cyan
+        haloColors[hIdx]     = 0.22;
+        haloColors[hIdx + 1] = 0.74;
+        haloColors[hIdx + 2] = 0.97;
+      }
+    });
+
+    const haloGeo = new THREE.BufferGeometry();
+    haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPositions, 3));
+    haloGeo.setAttribute('color', new THREE.BufferAttribute(haloColors, 3));
+    const haloMat = new THREE.PointsMaterial({
+      size: 4.8,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const islandHaloPoints = new THREE.Points(haloGeo, haloMat);
+    scene.add(islandHaloPoints);
   }
 
   function measureCallouts() {
@@ -615,32 +649,44 @@
     }
   }
 
-  // ── 3D SPATIAL ORBIT NAVIGATION CONTROLS ──
+  // ── 3D SPATIAL SWOOP & BANK FLIGHT CONTROLS ──
+  function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection) {
+    camFlightStartPos.copy(camera.position);
+    camFlightStartLook.copy(currentLookAt);
+
+    camFlightEndPos.copy(targetCamPos);
+    camFlightEndLook.copy(targetCamLook);
+
+    // Calculate mid-flight apex arc for high-speed swoop
+    camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
+    const dist = camFlightStartPos.distanceTo(camFlightEndPos);
+    const arcHeight = Math.min(22.0, Math.max(8.0, dist * 0.35));
+    camFlightMidPos.y += arcHeight;
+    camFlightMidPos.z += arcHeight * 0.45;
+
+    // Banking direction based on lateral translation
+    flightTurnSign = Math.sign(camFlightEndPos.x - camFlightStartPos.x);
+    if (Math.abs(flightTurnSign) < 0.1) {
+      flightTurnSign = (Math.sign(camFlightEndPos.y - camFlightStartPos.y) || 1.0);
+    }
+    flightDuration = Math.min(1300, Math.max(850, dist * 24));
+
+    flightStartTime = performance.now();
+    flightState = targetState;
+    if (onArriveSection !== undefined) {
+      activeSection = onArriveSection;
+    }
+  }
+
   function openSection(sectionKey) {
-    if (!SECTION_TARGETS[sectionKey]) return;
+    if (!ISLANDS[sectionKey]) return;
 
     if (flightState === 'in_section' && activeSection === sectionKey) {
       closeSection();
       return;
     }
 
-    const target = SECTION_TARGETS[sectionKey];
-    activeSection = sectionKey;
-
-    camFlightStartPos.copy(camera.position);
-    camFlightStartLook.copy(currentLookAt);
-
-    camFlightEndPos.copy(target.pos);
-    camFlightEndLook.copy(target.look);
-
-    flightStartAngle = Math.atan2(camFlightStartPos.x, camFlightStartPos.z);
-    flightStartRadius = Math.sqrt(camFlightStartPos.x * camFlightStartPos.x + camFlightStartPos.z * camFlightStartPos.z);
-
-    flightTargetAngle = Math.atan2(target.pos.x, target.pos.z);
-    flightTargetRadius = Math.sqrt(target.pos.x * target.pos.x + target.pos.z * target.pos.z);
-
-    flightStartTime = performance.now();
-    flightState = 'warping_out';
+    const island = ISLANDS[sectionKey];
 
     // Update active nav pill
     document.querySelectorAll('.nav-pill').forEach(pill => {
@@ -651,41 +697,58 @@
       }
     });
 
-    // Show spatial overlay and active card
-    const overlay = document.getElementById('section-overlay');
-    if (overlay) {
-      overlay.classList.add('is-active');
-      overlay.setAttribute('aria-hidden', 'false');
-      document.querySelectorAll('.section-card').forEach(card => card.classList.remove('is-active'));
-      const targetCard = document.getElementById(`card-${sectionKey}`);
-      if (targetCard) targetCard.classList.add('is-active');
-    }
+    startFlightTo(island.camPos, island.camLook, 'warping_out', sectionKey);
   }
 
   function closeSection() {
     if (flightState === 'timeline' || flightState === 'warping_in') return;
 
-    camFlightStartPos.copy(camera.position);
-    camFlightStartLook.copy(currentLookAt);
-
-    getTimelineCamera(smoothProgress, camFlightEndPos, camFlightEndLook);
-
-    flightStartAngle = Math.atan2(camFlightStartPos.x, camFlightStartPos.z);
-    flightStartRadius = Math.sqrt(camFlightStartPos.x * camFlightStartPos.x + camFlightStartPos.z * camFlightStartPos.z);
-
-    flightTargetAngle = Math.atan2(camFlightEndPos.x, camFlightEndPos.z);
-    flightTargetRadius = Math.sqrt(camFlightEndPos.x * camFlightEndPos.x + camFlightEndPos.z * camFlightEndPos.z);
-
-    flightStartTime = performance.now();
-    flightState = 'warping_in';
-
     document.querySelectorAll('.nav-pill').forEach(pill => pill.classList.remove('is-active'));
+    getTimelineCamera(smoothProgress, timelineTargetPos, timelineTargetLook);
 
-    const overlay = document.getElementById('section-overlay');
-    if (overlay) {
-      overlay.classList.remove('is-active');
-      overlay.setAttribute('aria-hidden', 'true');
+    startFlightTo(timelineTargetPos, timelineTargetLook, 'warping_in', null);
+  }
+
+  function update3DSpatialIslands() {
+    const isSectionActive = flightState === 'in_section' || flightState === 'warping_out';
+    const hud = document.getElementById('spatial-hud');
+    if (hud) {
+      if (isSectionActive) {
+        hud.classList.add('is-active');
+      } else {
+        hud.classList.remove('is-active');
+      }
     }
+
+    Object.keys(ISLANDS).forEach(key => {
+      const island = ISLANDS[key];
+      const el = document.getElementById(`island-${key}`);
+      if (!el) return;
+
+      projVec.copy(island.islandPos);
+      projVec.project(camera);
+
+      const inFront = projVec.z < 1.0;
+      const screenX = (projVec.x * 0.5 + 0.5) * W;
+      const screenY = (-projVec.y * 0.5 + 0.5) * H;
+
+      const dist = camera.position.distanceTo(island.islandPos);
+      // Perspective depth scaling
+      const baseScale = Math.max(0.12, Math.min(1.25, 20.0 / Math.max(dist, 0.1)));
+
+      const relCamX = camera.position.x - island.islandPos.x;
+      const relCamY = camera.position.y - island.islandPos.y;
+      const dynamicYaw = island.tiltYaw + relCamX * 0.22;
+      const dynamicPitch = island.tiltPitch - relCamY * 0.22;
+
+      el.style.transform = `translate3d(${Math.round(screenX)}px, ${Math.round(screenY)}px, 0) translate(-50%, -50%) scale(${baseScale.toFixed(3)}) rotateY(${dynamicYaw.toFixed(1)}deg) rotateX(${dynamicPitch.toFixed(1)}deg)`;
+
+      if (inFront && activeSection === key && (flightState === 'in_section' || (flightState === 'warping_out' && dist < 36.0))) {
+        el.classList.add('is-active');
+      } else {
+        el.classList.remove('is-active');
+      }
+    });
   }
 
   let toastTimer = null;
@@ -732,8 +795,8 @@
     }, { passive: true });
 
     window.addEventListener('pointerdown', (e) => {
-      // Don't trigger ripple if clicking nav or card
-      if (e.target.closest('.site-header') || e.target.closest('.spatial-section-overlay')) return;
+      // Don't trigger ripple if clicking nav, HUD or spatial stage
+      if (e.target.closest('.site-header') || e.target.closest('.spatial-3d-stage') || e.target.closest('.spatial-island-hud')) return;
       triggerCalmRipple(e.clientX, e.clientY);
     });
 
@@ -776,11 +839,11 @@
       });
     }
 
-    // Backdrop click on overlay
-    const overlay = document.getElementById('section-overlay');
-    if (overlay) {
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
+    // Backdrop click on spatial stage (outside card and HUD)
+    const stage = document.getElementById('spatial-stage');
+    if (stage) {
+      stage.addEventListener('click', (e) => {
+        if (!e.target.closest('.island-card') && !e.target.closest('.spatial-island-hud')) {
           closeSection();
         }
       });
@@ -934,36 +997,32 @@
 
     const p = Math.max(0.0, Math.min(3.0, smoothProgress));
 
-    // ── CAMERA POSITIONING & ORBITAL FLIGHT STATE MACHINE ──
+    // ── CAMERA POSITIONING & 3D SPATIAL SWOOP STATE MACHINE ──
     if (flightState === 'timeline') {
       getTimelineCamera(p, timelineTargetPos, timelineTargetLook);
 
       camera.position.x = timelineTargetPos.x + currentCamX;
       camera.position.y = timelineTargetPos.y + currentCamY;
       camera.position.z = timelineTargetPos.z;
+      camera.up.set(0, 1, 0);
       currentLookAt.copy(timelineTargetLook);
       camera.lookAt(currentLookAt);
       warpSpeed = 0.0;
     } else if (flightState === 'warping_out') {
       const elapsed = performance.now() - flightStartTime;
-      const rawT = Math.min(1.0, elapsed / FLIGHT_DURATION);
+      const rawT = Math.min(1.0, elapsed / flightDuration);
       const easeT = easeInOutCubic(rawT);
       warpSpeed = Math.sin(rawT * Math.PI);
 
-      let dTheta = flightTargetAngle - flightStartAngle;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      // Quadratic Bezier arc in 3D world space
+      const oneMinusT = 1.0 - easeT;
+      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * 0.25;
+      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * 0.25;
+      camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
-      const currentTheta = flightStartAngle + dTheta * easeT;
-      const arcBoostR = Math.sin(rawT * Math.PI) * 4.0;
-      const currentR = (flightStartRadius + (flightTargetRadius - flightStartRadius) * easeT) + arcBoostR;
-
-      const arcBoostY = Math.sin(rawT * Math.PI) * 2.8;
-      const currentY = (camFlightStartPos.y + (camFlightEndPos.y - camFlightStartPos.y) * easeT) + arcBoostY;
-
-      camera.position.x = Math.sin(currentTheta) * currentR + currentCamX * 0.3;
-      camera.position.y = currentY + currentCamY * 0.3;
-      camera.position.z = Math.cos(currentTheta) * currentR;
+      // Dynamic banking roll into the turn
+      const bankRoll = Math.sin(rawT * Math.PI) * flightTurnSign * 0.16;
+      camera.up.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
 
       currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
       camera.lookAt(currentLookAt);
@@ -972,52 +1031,48 @@
         flightState = 'in_section';
         sectionEnterTime = performance.now();
         warpSpeed = 0.0;
+        camera.up.set(0, 1, 0);
       }
     } else if (flightState === 'in_section') {
       warpSpeed = 0.0;
-      const target = SECTION_TARGETS[activeSection];
-      if (target) {
+      camera.up.set(0, 1, 0);
+      const island = ISLANDS[activeSection];
+      if (island) {
         const inSecTime = (performance.now() - sectionEnterTime) * 0.001;
-        const orbitAngle = target.baseAngle + inSecTime * target.orbitSpeed;
-        const curR = target.radius + Math.sin(inSecTime * 0.5) * 0.8;
-        const curY = target.height + Math.cos(inSecTime * 0.4) * 0.5;
+        const floatX = Math.cos(inSecTime * 0.7) * 0.25;
+        const floatY = Math.sin(inSecTime * 0.9) * 0.35;
 
-        camera.position.x = Math.sin(orbitAngle) * curR + currentCamX * 0.5;
-        camera.position.y = curY + currentCamY * 0.5;
-        camera.position.z = Math.cos(orbitAngle) * curR;
+        camera.position.set(
+          island.camPos.x + floatX + currentCamX * 0.35,
+          island.camPos.y + floatY + currentCamY * 0.35,
+          island.camPos.z
+        );
 
         currentLookAt.set(
-          target.look.x + currentCamX * 0.15,
-          target.look.y + currentCamY * 0.15,
-          target.look.z
+          island.camLook.x + currentCamX * 0.1,
+          island.camLook.y + currentCamY * 0.1,
+          island.camLook.z
         );
         camera.lookAt(currentLookAt);
       }
     } else if (flightState === 'warping_in') {
       const elapsed = performance.now() - flightStartTime;
-      const rawT = Math.min(1.0, elapsed / FLIGHT_DURATION);
+      const rawT = Math.min(1.0, elapsed / flightDuration);
       const easeT = easeInOutCubic(rawT);
       warpSpeed = Math.sin(rawT * Math.PI);
 
       // Re-evaluate latest smooth timeline target position
       getTimelineCamera(p, camFlightEndPos, camFlightEndLook);
-      flightTargetAngle = Math.atan2(camFlightEndPos.x, camFlightEndPos.z);
-      flightTargetRadius = Math.sqrt(camFlightEndPos.x * camFlightEndPos.x + camFlightEndPos.z * camFlightEndPos.z);
 
-      let dTheta = flightTargetAngle - flightStartAngle;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      // Smooth Bezier return arc to timeline
+      const oneMinusT = 1.0 - easeT;
+      camera.position.x = oneMinusT * oneMinusT * camFlightStartPos.x + 2.0 * oneMinusT * easeT * camFlightMidPos.x + easeT * easeT * camFlightEndPos.x + currentCamX * 0.2;
+      camera.position.y = oneMinusT * oneMinusT * camFlightStartPos.y + 2.0 * oneMinusT * easeT * camFlightMidPos.y + easeT * easeT * camFlightEndPos.y + currentCamY * 0.2;
+      camera.position.z = oneMinusT * oneMinusT * camFlightStartPos.z + 2.0 * oneMinusT * easeT * camFlightMidPos.z + easeT * easeT * camFlightEndPos.z;
 
-      const currentTheta = flightStartAngle + dTheta * easeT;
-      const arcBoostR = Math.sin(rawT * Math.PI) * 4.0;
-      const currentR = (flightStartRadius + (flightTargetRadius - flightStartRadius) * easeT) + arcBoostR;
-
-      const arcBoostY = Math.sin(rawT * Math.PI) * 2.8;
-      const currentY = (camFlightStartPos.y + (camFlightEndPos.y - camFlightStartPos.y) * easeT) + arcBoostY;
-
-      camera.position.x = Math.sin(currentTheta) * currentR + currentCamX * 0.3;
-      camera.position.y = currentY + currentCamY * 0.3;
-      camera.position.z = Math.cos(currentTheta) * currentR;
+      // Inverse banking roll back to level horizon
+      const bankRoll = -Math.sin(rawT * Math.PI) * flightTurnSign * 0.14;
+      camera.up.set(Math.sin(bankRoll), Math.cos(bankRoll), 0);
 
       currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
       camera.lookAt(currentLookAt);
@@ -1026,6 +1081,7 @@
         flightState = 'timeline';
         activeSection = null;
         warpSpeed = 0.0;
+        camera.up.set(0, 1, 0);
       }
     }
 
@@ -1102,6 +1158,9 @@
 
     // Update Wave-Dissolving Callouts
     updateSpatialCallouts(p);
+
+    // Update 3D Spatial Islands Perspective Projection
+    update3DSpatialIslands();
 
     renderer.render(scene, camera);
   }

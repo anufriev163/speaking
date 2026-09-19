@@ -490,65 +490,59 @@ body {
 }
 
 /* ==========================================================================
-   SPATIAL SECTION 3D DEEP OVERLAY (WARP DESTINATION)
+   SPATIAL 3D WORLD STAGE (TRUE 3D FLOATING ISLANDS)
    ========================================================================== */
-.spatial-section-overlay {
+.spatial-3d-stage {
   position: fixed;
   inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  z-index: 75;
+  pointer-events: none;
+  overflow: hidden;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.spatial-island-hud {
+  position: fixed;
+  top: 86px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.spatial-section-overlay.active,
-.spatial-section-overlay.is-active {
-  opacity: 1;
+.spatial-island-hud.is-active {
   pointer-events: auto;
-}
-
-.section-card-wrapper {
-  position: relative;
-  max-width: 680px;
-  width: 100%;
-  transform: scale(0.92) translate3d(0, 30px, 0);
-  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.spatial-section-overlay.active .section-card-wrapper,
-.spatial-section-overlay.is-active .section-card-wrapper {
-  transform: scale(1) translate3d(0, 0, 0);
+  opacity: 1;
 }
 
 .section-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1.5px solid rgba(203, 213, 225, 0.85);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(203, 213, 225, 0.9);
   border-radius: 9999px;
-  padding: 8px 16px;
+  padding: 8px 18px;
   font-family: var(--font-text);
   font-size: 0.88rem;
   font-weight: 600;
-  color: #334155;
+  color: #1E293B;
   cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-  margin-bottom: 16px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .section-back-btn:hover {
   color: #0F172A;
   background: #FFFFFF;
   border-color: #0F172A;
-  transform: translateX(-3px);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
 }
 
 .section-back-btn:focus-visible {
@@ -565,34 +559,33 @@ body {
   color: #64748B;
 }
 
-.section-card {
-  display: none;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1.5px solid rgba(226, 232, 240, 0.9);
-  border-radius: 28px;
-  padding: 38px 40px;
-  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.14), 0 0 40px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.spatial-island {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 660px;
+  max-width: calc(100vw - 36px);
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  transition: opacity 0.35s ease;
 }
 
-.section-card.active,
-.section-card.is-active {
-  display: block;
-  animation: cardAppear 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+.spatial-island.is-active {
+  pointer-events: auto;
+  opacity: 1;
 }
 
-@keyframes cardAppear {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-    filter: blur(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0px);
-  }
+.island-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 30px;
+  padding: 38px 42px;
+  box-shadow: 0 30px 80px -15px rgba(15, 23, 42, 0.16), 0 0 50px rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
 }
 
 .card-badge {
