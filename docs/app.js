@@ -106,33 +106,33 @@
   const ISLANDS = {
     about: {
       targetP: 0.6,
-      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
-      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
-      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
+      islandPos: new THREE.Vector3(3.6, 0.2, 0.0),
+      camPos: new THREE.Vector3(0.0, 0.0, 16.0),
+      camLook: new THREE.Vector3(0.0, 0.0, 0.0),
       tiltYaw: 0.0,
       tiltPitch: 0.0
     },
     privacy: {
       targetP: 1.35,
-      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
-      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
-      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
+      islandPos: new THREE.Vector3(3.6, 0.2, 0.0),
+      camPos: new THREE.Vector3(0.0, 0.0, 16.0),
+      camLook: new THREE.Vector3(0.0, 0.0, 0.0),
       tiltYaw: 0.0,
       tiltPitch: 0.0
     },
     audience: {
       targetP: 2.1,
-      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
-      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
-      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
+      islandPos: new THREE.Vector3(3.6, 0.2, 0.0),
+      camPos: new THREE.Vector3(0.0, 0.0, 16.0),
+      camLook: new THREE.Vector3(0.0, 0.0, 0.0),
       tiltYaw: 0.0,
       tiltPitch: 0.0
     },
     download: {
       targetP: 2.85,
-      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
-      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
-      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
+      islandPos: new THREE.Vector3(3.6, 0.2, 0.0),
+      camPos: new THREE.Vector3(0.0, 0.0, 16.0),
+      camLook: new THREE.Vector3(0.0, 0.0, 0.0),
       tiltYaw: 0.0,
       tiltPitch: 0.0
     }
@@ -180,6 +180,11 @@
     initCallouts();
     bindEvents();
     animate();
+
+    const initHash = window.location.hash.replace('#', '');
+    if (ISLANDS[initHash]) {
+      setTimeout(() => openSection(initHash), 180);
+    }
   });
 
   function initScene() {
@@ -285,102 +290,102 @@
       pos3[i3 + 2] = Math.sin(ringAngle) * baseRadius * 0.65;
 
       // ====================================================================
-      // SECTION OBJECT 1: БОЛЬШАЯ 3D РАБОЧАЯ ПАПКА С ДОКУМЕНТАМИ («О ПРОЕКТЕ»)
+      // SECTION OBJECT 1: 3D РАБОЧАЯ ПАПКА С ДОКУМЕНТАМИ («О ПРОЕКТЕ»)
       // ====================================================================
       let fx = 0, fy = 0, fz = 0;
-      if (i < 3600) {
-        // Crisp Glowing Silhouette & Tab Perimeter Ribbon (3600 particles)
-        const t = i / 3600;
-        const bevelZ = ((i % 12) / 11 - 0.5) * 0.5;
+      if (i < 3500) {
+        // Glowing Silhouette Ribbon & Tab on top-left (3500 particles)
+        const t = i / 3500;
+        const bevelZ = ((i % 12) / 11 - 0.5) * 0.35;
         let px = 0, py = 0;
 
         if (t < 0.20) {
           const segT = t / 0.20;
-          px = -5.8 + segT * 11.6;
-          py = -3.6;
+          px = 0.0 + segT * 7.2;
+          py = -3.2;
         } else if (t < 0.40) {
           const segT = (t - 0.20) / 0.20;
-          px = 5.8;
-          py = -3.6 + segT * 5.8;
+          px = 7.2;
+          py = -3.2 + segT * 5.0; // up to Y = 1.8
         } else if (t < 0.55) {
           const segT = (t - 0.40) / 0.15;
-          px = 5.8 - segT * 6.2;
-          py = 2.2;
+          px = 7.2 - segT * 3.6;  // to X = 3.6
+          py = 1.8;
         } else if (t < 0.65) {
           const segT = (t - 0.55) / 0.10;
-          px = -0.4 - segT * 1.0;
-          py = 2.2 + segT * 2.2;
+          px = 3.6 - segT * 1.0;  // to X = 2.6
+          py = 1.8 + segT * 1.6;  // up to Y = 3.4
         } else if (t < 0.85) {
           const segT = (t - 0.65) / 0.20;
-          px = -1.4 - segT * 4.4;
-          py = 4.4;
+          px = 2.6 - segT * 2.6;  // to X = 0.0
+          py = 3.4;
         } else {
           const segT = (t - 0.85) / 0.15;
-          px = -5.8;
-          py = 4.4 - segT * 8.0;
+          px = 0.0;
+          py = 3.4 - segT * 6.6;  // down to Y = -3.2
         }
         fx = px;
         fy = py;
-        fz = -0.65 + bevelZ;
-      } else if (i < 8500) {
-        // Layered Project Documents peeking out of folder (4900 particles: 2 sheets)
-        const idx = i - 3600;
-        const isSheet2 = (idx >= 2500);
-        const sIdx = isSheet2 ? (idx - 2500) : idx;
-        const totalRows = isSheet2 ? 24 : 25;
+        fz = -0.55 + bevelZ;
+      } else if (i < 9000) {
+        // Layered Project Documents peeking out of folder (5500 particles)
+        const idx = i - 3500;
+        const isSheet2 = (idx >= 2800);
+        const sIdx = isSheet2 ? (idx - 2800) : idx;
+        const totalRows = isSheet2 ? 26 : 27;
         const u = ((sIdx % 100) / 99) * 2.0 - 1.0;
         const v = Math.floor(sIdx / 100) / (totalRows - 1);
 
         if (!isSheet2) {
-          // Document Sheet 1: Main Project Blueprint (rises to Y = 4.0)
-          const px = u * 4.8;
-          const py = -2.8 + v * 6.8;
-          const rowMod = Math.sin(py * 6.8);
+          // Document Sheet 1: Main Project Blueprint (Y in [-2.5, 3.0])
+          const px = 3.6 + u * 3.0; // X in [0.6, 6.6]
+          const py = -2.5 + v * 5.5;
+          const rowMod = Math.sin(py * 7.5);
           const isText = (rowMod > 0.25) && (u > -0.85 && u < 0.85);
           fx = px;
           fy = py;
-          fz = -0.22 + (isText ? 0.08 : 0.0);
+          fz = -0.15 + (isText ? 0.08 : 0.0);
         } else {
-          // Document Sheet 2: Angled secondary spec sheet (tilted +3 deg, rises to Y = 4.3)
-          const rawX = u * 4.4;
-          const rawY = -2.4 + v * 6.7;
+          // Document Sheet 2: Angled secondary spec sheet (tilted +3 deg)
+          const localX = u * 2.7;
+          const localY = -2.2 + v * 5.4;
           const ang = 0.05;
-          fx = rawX * Math.cos(ang) - rawY * Math.sin(ang) + 0.3;
-          fy = rawX * Math.sin(ang) + rawY * Math.cos(ang);
-          fz = 0.02;
+          fx = 3.6 + localX * Math.cos(ang) - localY * Math.sin(ang) + 0.2;
+          fy = localX * Math.sin(ang) + localY * Math.cos(ang);
+          fz = 0.05;
         }
-      } else if (i < 14500) {
-        // Open 3D Front Cover leaning forward (6000 particles: 100 cols x 60 rows)
-        const idx = i - 8500;
+      } else if (i < 15000) {
+        // Open 3D Front Cover leaning forward into camera space (6000 particles)
+        const idx = i - 9000;
         const u = ((idx % 100) / 99) * 2.0 - 1.0;
         const v = Math.floor(idx / 100) / 59;
 
-        const xFront = u * 5.85;
-        const scoop = Math.exp(-u * u * 5.5) * 0.75;
-        const yTopFront = 0.8 - scoop;
-        const yFront = -3.6 + v * (yTopFront - (-3.6));
-        const zFront = -0.3 + v * 2.35;
+        const xFront = 3.6 + u * 3.6; // X in [0.0, 7.2]
+        const scoop = Math.exp(-u * u * 5.0) * 0.6;
+        const yTopFront = 0.6 - scoop;
+        const yFront = -3.2 + v * (yTopFront - (-3.2));
+        const zFront = -0.2 + v * 1.8; // leaning open forward in 3D!
 
         const isBorder = Math.abs(u) > 0.94 || v < 0.04 || v > 0.94;
         fx = xFront;
         fy = yFront;
         fz = zFront + (isBorder ? 0.08 : 0.0);
       } else {
-        // Back Cover Interior Mesh & Cylindrical Hinge Spine (3500 particles)
-        const idx = i - 14500;
+        // Cylindrical Bottom Hinge Spine & Holographic Ambient Dust (3000 particles)
+        const idx = i - 15000;
         if (idx < 1500) {
           const t = idx / 1500;
           const spineAngle = (idx * goldenAngle);
-          const spineR = 0.38;
-          fx = -5.8 + t * 11.6;
-          fy = -3.6 + Math.sin(spineAngle) * spineR;
-          fz = -0.3 + Math.cos(spineAngle) * spineR;
+          const spineR = 0.28;
+          fx = 0.0 + t * 7.2;
+          fy = -3.2 + Math.sin(spineAngle) * spineR;
+          fz = -0.2 + Math.cos(spineAngle) * spineR;
         } else {
           const u = ((idx % 50) / 49) * 2.0 - 1.0;
-          const v = Math.floor((idx - 1500) / 50) / 39;
-          fx = u * 5.4;
-          fy = -3.4 + v * 5.0;
-          fz = -0.55 + ((idx % 7) / 6) * 0.9;
+          const v = Math.floor((idx - 1500) / 50) / 29;
+          fx = 3.6 + u * 3.4;
+          fy = -3.0 + v * 4.2;
+          fz = -0.45 + ((idx % 7) / 6) * 0.8;
         }
       }
       posAbout[i3]     = fx;
@@ -388,232 +393,270 @@
       posAbout[i3 + 2] = fz;
 
       // ====================================================================
-      // SECTION OBJECT 2: БОЛЬШОЙ 3D НАВЕСНОЙ КИБЕР-ЗАМОК («ПРИВАТНОСТЬ»)
+      // SECTION OBJECT 2: 3D КОДОВЫЙ ЗАМОЧЕК ДЛЯ ПАРОЛЯ («ПРИВАТНОСТЬ»)
       // ====================================================================
       let kx = 0, ky = 0, kz = 0;
-      if (i < 7000) {
-        // Massive Toroidal Shackle Arch (Дужка замка) - 7000 particles
-        const t = i / 7000;
+      if (i < 4500) {
+        // Massive Tubular Shackle Arch (U-образная дужка кодового замка) - 4500 particles
+        const t = i / 4500;
         const theta = i * goldenAngle;
-        const tubeR = 0.62;
+        const tubeR = 0.40;
         const offX = Math.cos(theta) * tubeR;
         const offZ = Math.sin(theta) * tubeR;
 
-        if (t < 0.26) {
-          const legT = t / 0.26;
-          kx = -2.85 + offX;
-          ky = 1.2 + legT * 2.2;
+        if (t < 0.24) {
+          // Left vertical shackle leg plunging into lock body
+          const legT = t / 0.24;
+          kx = 2.1 + offX;
+          ky = 0.7 + legT * 1.6; // up to Y = 2.3
           kz = offZ;
-        } else if (t < 0.52) {
-          const legT = (t - 0.26) / 0.26;
-          kx = 2.85 + offX;
-          ky = 1.2 + legT * 2.2;
+        } else if (t < 0.48) {
+          // Right vertical shackle leg
+          const legT = (t - 0.24) / 0.24;
+          kx = 5.1 + offX;
+          ky = 0.7 + legT * 1.6;
           kz = offZ;
         } else {
-          const archT = (t - 0.52) / 0.48;
+          // Top semi-circular arch sweeping up to Y = 3.8
+          const archT = (t - 0.48) / 0.52;
           const arcAngle = archT * Math.PI;
-          const archR = 2.85;
-          kx = -Math.cos(arcAngle) * archR + offX * Math.sin(arcAngle);
-          ky = 3.4 + Math.sin(arcAngle) * archR + offX * Math.cos(arcAngle);
+          const archR = 1.5;
+          kx = 3.6 - Math.cos(arcAngle) * archR + offX * Math.sin(arcAngle);
+          ky = 2.3 + Math.sin(arcAngle) * archR + offX * Math.cos(arcAngle);
           kz = offZ;
         }
-      } else if (i < 13500) {
-        // Sculpted Padlock Armor Body (6500 particles)
-        const idx = i - 7000;
+      } else if (i < 11500) {
+        // Sculpted Padlock Solid Body (Массивный корпус замка) - 7000 particles
+        // X in [0.9, 6.3], Y in [-3.2, 0.7], Z in [-0.85, 0.85]
+        const idx = i - 4500;
         const u = ((idx % 100) / 99) * 2.0 - 1.0;
-        const v = Math.floor(idx / 100) / 64;
+        const v = Math.floor(idx / 100) / 69;
 
-        const xBody = u * 4.7;
-        const yBody = -4.0 + v * 5.2;
+        const xBody = 3.6 + u * 2.7;
+        const yBody = -3.2 + v * 3.9;
 
-        const cornerR = 0.8;
-        const distFromEdgeX = Math.max(0.0, Math.abs(xBody) - (4.7 - cornerR));
-        const distFromEdgeY = Math.max(0.0, Math.abs(yBody - (-1.4)) - (2.6 - cornerR));
-        const isCorner = (distFromEdgeX * distFromEdgeX + distFromEdgeY * distFromEdgeY) > (cornerR * cornerR);
+        const cornerR = 0.55;
+        const distEdgeX = Math.max(0.0, Math.abs(xBody - 3.6) - (2.7 - cornerR));
+        const distEdgeY = Math.max(0.0, Math.abs(yBody - (-1.25)) - (1.95 - cornerR));
+        const isCorner = (distEdgeX * distEdgeX + distEdgeY * distEdgeY) > (cornerR * cornerR);
 
-        const isKeyholeVoid = (xBody * xBody + (yBody + 1.2) * (yBody + 1.2) < 1.4) ||
-                              (Math.abs(xBody) < 0.55 && yBody < -1.0 && yBody > -3.0);
+        // Recessed front cutout for the password dial chamber
+        const isDialChamber = (Math.abs(xBody - 3.6) < 2.0) && (yBody > -1.75 && yBody < -0.35);
 
-        const plateZ = ((Math.floor(idx / 3250) % 2) === 0) ? -1.15 : 1.15;
-        const zDepth = (idx % 6 === 0) ? ((idx % 13) / 12 - 0.5) * 2.3 : plateZ;
+        const plateZ = ((Math.floor(idx / 3500) % 2) === 0) ? -0.85 : 0.85;
+        const zDepth = (idx % 5 === 0) ? ((idx % 11) / 10 - 0.5) * 1.7 : plateZ;
 
-        if (isKeyholeVoid && zDepth > 0.0) {
-          kx = xBody * 1.65;
+        if (isDialChamber && zDepth > 0.0) {
+          kx = xBody;
           ky = yBody;
-          kz = 0.35;
+          kz = 0.45; // recessed chamber floor behind the wheels
         } else if (isCorner) {
-          kx = xBody * 0.92;
-          ky = yBody * 0.92;
-          kz = zDepth * 0.8;
+          kx = 3.6 + (xBody - 3.6) * 0.92;
+          ky = -1.25 + (yBody - (-1.25)) * 0.92;
+          kz = zDepth * 0.85;
         } else {
           kx = xBody;
           ky = yBody;
           kz = zDepth;
         }
-      } else if (i < 16500) {
-        // Glowing Cyber Keyhole & Concentric Security Rings (3000 particles)
-        const idx = i - 13500;
-        const t = idx / 3000;
-        if (t < 0.60) {
-          const ringIdx = idx % 3;
-          const rRing = 0.65 + ringIdx * 0.55;
-          const ringAngle = (idx * goldenAngle);
-          kx = Math.cos(ringAngle) * rRing;
-          ky = -1.2 + Math.sin(ringAngle) * rRing;
-          kz = 1.22;
-        } else {
-          const slotT = (t - 0.60) / 0.40;
-          const side = (idx % 2 === 0) ? -1.0 : 1.0;
-          const slotW = 0.42 - slotT * 0.20;
-          kx = side * slotW;
-          ky = -1.2 - slotT * 1.6;
-          kz = 1.22;
-        }
       } else {
-        // Exterior Armor Rim Bevels & Security Aura (1500 particles)
-        const idx = i - 16500;
-        const t = idx / 1500;
-        const theta = t * Math.PI * 2.0;
-        const auraR = 5.2 + Math.sin(idx * 3.7) * 0.4;
-        kx = Math.cos(theta) * auraR;
-        ky = -1.4 + Math.sin(theta) * 3.2;
-        kz = ((idx % 7) / 6 - 0.5) * 1.2;
+        // Combination Password Mechanism (4 Кодовых Барабана с Паролем и PIN-индикаторы) - 6500 particles
+        const idx = i - 11500;
+        if (idx < 4000) {
+          // 4 Rotating Password Code Wheels (4 цилиндрических ролика с делениями цифр)
+          const wheelIdx = idx % 4; // 0, 1, 2, 3
+          const wheelCenters = [2.25, 3.15, 4.05, 4.95];
+          const wCenterX = wheelCenters[wheelIdx];
+
+          const pInWheel = Math.floor(idx / 4);
+          const angle = (pInWheel % 36) / 36 * Math.PI * 2.0;
+          const uW = ((pInWheel % 9) / 8 - 0.5) * 0.62; // width of wheel
+
+          // Protrudes forward from face: Z in [0.85, 1.25]
+          const cosA = Math.cos(angle);
+          const sinA = Math.sin(angle);
+          const rDial = 0.52;
+
+          // Number ticks / ridges on password wheels
+          const isTick = (Math.abs(sinA) < 0.12 || Math.abs(cosA) < 0.12);
+          const tickBump = isTick ? 0.08 : 0.0;
+
+          kx = wCenterX + uW;
+          ky = -1.05 + sinA * (rDial + tickBump);
+          kz = 0.85 + (cosA * 0.5 + 0.5) * (0.42 + tickBump);
+        } else if (idx < 5300) {
+          // Recessed Password Chamber Bevel Frame (Рамка вокруг 4 барабанов)
+          const fIdx = idx - 4000;
+          const t = fIdx / 1300;
+          const u = ((fIdx % 60) / 59) * 2.0 - 1.0;
+          const isTopBottom = (fIdx % 2 === 0);
+
+          if (isTopBottom) {
+            kx = 3.6 + u * 2.1;
+            ky = (u > 0 ? -0.38 : -1.72);
+            kz = 0.95;
+          } else {
+            const side = (u > 0 ? 1.0 : -1.0);
+            kx = 3.6 + side * 2.1;
+            ky = -1.05 + ((fIdx % 25) / 24 - 0.5) * 1.34;
+            kz = 0.95;
+          }
+        } else {
+          // 4 Password Confirmation PIN Dots and Security Status Rail (Индикаторы ввода PIN-кода)
+          const pIdx = idx - 5300;
+          const dotIdx = pIdx % 4;
+          const dotCenters = [2.25, 3.15, 4.05, 4.95];
+          const dCenterX = dotCenters[dotIdx];
+
+          if (pIdx < 800) {
+            // 4 Circular Password PIN Dots [ • ] [ • ] [ • ] [ • ]
+            const dAngle = pIdx * goldenAngle;
+            const dR = ((pIdx % 8) / 7) * 0.20;
+            kx = dCenterX + Math.cos(dAngle) * dR;
+            ky = -2.30 + Math.sin(dAngle) * dR;
+            kz = 0.96;
+          } else {
+            // Sleek Horizontal Status Bar beneath PIN dots
+            const bT = (pIdx - 800) / 400;
+            const u = bT * 2.0 - 1.0;
+            kx = 3.6 + u * 1.9;
+            ky = -2.62 + ((pIdx % 4) / 3) * 0.08;
+            kz = 0.94;
+          }
+        }
       }
       posPrivacy[i3]     = kx;
       posPrivacy[i3 + 1] = ky;
       posPrivacy[i3 + 2] = kz;
 
       // ====================================================================
-      // SECTION OBJECT 3: БОЛЬШАЯ 3D ФИГУРА ЧЕЛОВЕКА («ДЛЯ КОГО»)
+      // SECTION OBJECT 3: 3D ЧИСТАЯ ФИГУРА ЧЕЛОВЕКА («ДЛЯ КОГО»)
       // ====================================================================
       let hx = 0, hy = 0, hz = 0;
-      if (i < 6000) {
-        // Sculpted Human Head & Cranial Halo (6000 particles)
-        const t = i / 6000;
-        if (t < 0.78) {
-          const phi = Math.acos(1.0 - 2.0 * (t / 0.78));
-          const theta = i * goldenAngle;
-          const rx = 1.75;
-          const ry = 2.15;
-          const rz = 1.95;
-
-          hx = Math.sin(phi) * Math.cos(theta) * rx;
-          hy = 3.65 + Math.cos(phi) * ry;
-          hz = Math.sin(phi) * Math.sin(theta) * rz;
-        } else {
-          const haloT = (t - 0.78) / 0.22;
-          const angle = haloT * Math.PI * 8.0 + (i % 5);
-          const rHalo = 2.2 + Math.sin(i * 2.1) * 0.4;
-          hx = Math.cos(angle) * rHalo;
-          hy = 4.2 + Math.sin(haloT * Math.PI * 4.0) * 0.8;
-          hz = Math.sin(angle) * rHalo;
-        }
-      } else if (i < 8000) {
-        // Anatomical Neck & Throat Column (2000 particles)
-        const t = (i - 6000) / 2000;
+      if (i < 5500) {
+        // Sculpted Human Head: Pure Anatomical Silhouette (5500 particles)
+        // Zero halos, zero orbital rings - clean aesthetic skull, temples, face, jaw
+        const t = i / 5500;
+        const phi = Math.acos(1.0 - 2.0 * t);
         const theta = i * goldenAngle;
-        const neckR = 0.72 + (1.0 - t) * 0.15;
-        const yNeck = 1.45 + t * 0.85;
 
-        hx = Math.cos(theta) * neckR;
+        // Smooth head proportions
+        const rx = 1.15;
+        const ry = 1.45;
+        const rz = 1.25;
+
+        // Realistic jawline and chin contour taper
+        const yHead = 2.30 + Math.cos(phi) * ry; // top reaches Y = 3.75
+        let xRadius = rx;
+        let zPush = 0.0;
+        if (yHead < 2.0) {
+          const jawT = (2.0 - yHead) / 1.15;
+          xRadius = rx * (1.0 - jawT * 0.28); // taper to jaw
+          zPush = Math.max(0.0, Math.sin(phi)) * jawT * 0.35; // chin projection
+        }
+
+        const volScale = 0.72 + 0.28 * ((i % 5) / 4);
+        hx = 3.6 + Math.sin(phi) * Math.cos(theta) * xRadius * volScale;
+        hy = yHead;
+        hz = Math.sin(phi) * Math.sin(theta) * rz * volScale + zPush;
+      } else if (i < 8000) {
+        // Anatomical Neck Connecting Head to Shoulders (2500 particles)
+        // Clean solid cylinder column, zero stray lines
+        const t = (i - 5500) / 2500;
+        const theta = i * goldenAngle;
+        const yNeck = 0.55 + t * 0.75; // Y in [0.55, 1.30]
+
+        // Natural neck flare at the base of the traps
+        const neckR = 0.50 + (1.0 - t) * 0.14;
+        const volScale = 0.75 + 0.25 * ((i % 4) / 3);
+
+        hx = 3.6 + Math.cos(theta) * neckR * volScale;
         hy = yNeck;
-        hz = Math.sin(theta) * neckR * 0.88;
-      } else if (i < 15500) {
-        // Expansive Shoulders & Torso Contours (7500 particles)
+        hz = Math.sin(theta) * neckR * 0.90 * volScale;
+      } else {
+        // Broad Sculpted Shoulders & Upper Torso (10000 particles)
+        // Natural clavicle slope, chest volume, and upper arms silhouette
+        // Zero neural ribbons, zero extraneous fibers - pure human body
         const idx = i - 8000;
-        const t = idx / 7500;
-        const v = Math.pow(t, 0.75);
-        const yTorso = 1.45 - v * 5.2;
+        const t = idx / 10000;
+        const v = Math.pow(t, 0.78);
+        const yTorso = 0.55 - v * 3.75; // down to Y = -3.2
 
-        let shoulderW;
+        let halfW;
         if (v < 0.22) {
+          // Trapezius and clavicle sloping down from neck (0.64) to deltoid tips (2.65)
           const sT = v / 0.22;
-          shoulderW = 0.85 + sT * 5.35;
+          halfW = 0.64 + Math.sin(sT * Math.PI * 0.5) * 2.05; // half-width up to 2.69 (span 5.38)
         } else {
+          // Torso below shoulders tapering gracefully toward waist
           const bT = (v - 0.22) / 0.78;
-          shoulderW = 6.20 - bT * 1.80;
+          halfW = 2.69 - bT * 0.75; // tapers to 1.94 at waist
         }
 
         const u = ((idx % 100) / 99) * 2.0 - 1.0;
-        const depthCurve = Math.cos(u * (Math.PI * 0.48));
-        const zTorso = ((idx % 9) / 8 - 0.5) * 1.4 + depthCurve * 1.5;
+        const depthArc = Math.cos(u * (Math.PI * 0.48));
+        const zChest = depthArc * 0.85;
+        const zThickness = ((idx % 11) / 10 - 0.45) * 1.15;
 
-        const isCenterAiry = Math.abs(u) < 0.55 && yTorso < 0.2 && yTorso > -2.8;
-        if (isCenterAiry && (idx % 3 !== 0)) {
-          const pushSign = (u < 0) ? -1.0 : 1.0;
-          hx = pushSign * (shoulderW * (0.65 + Math.abs(u) * 0.35));
-          hy = yTorso;
-          hz = zTorso * 0.6;
-        } else {
-          hx = u * shoulderW;
-          hy = yTorso;
-          hz = zTorso;
-        }
-      } else {
-        // Flowing Neural Ribbon Fibers Flanking the Silhouette (2500 particles)
-        const idx = i - 15500;
-        const t = idx / 2500;
-        const side = (idx % 2 === 0) ? -1.0 : 1.0;
-        const curveT = t * Math.PI * 2.0;
-        const xFiber = side * (3.8 + t * 2.8 + Math.sin(curveT * 3.0) * 0.4);
-        const yFiber = 3.2 - t * 6.5;
-        const zFiber = Math.sin(curveT * 2.0) * 1.2;
-
-        hx = xFiber;
-        hy = yFiber;
-        hz = zFiber;
+        hx = 3.6 + u * halfW;
+        hy = yTorso;
+        hz = zChest + zThickness;
       }
       posAudience[i3]     = hx;
       posAudience[i3 + 1] = hy;
       posAudience[i3 + 2] = hz;
 
       // ====================================================================
-      // SECTION OBJECT 4: БОЛЬШАЯ 3D СТРЕЛКА СКАЧИВАНИЯ И ДОК-СТАНЦИЯ («СКАЧАТЬ»)
+      // SECTION OBJECT 4: 3D СТРЕЛКА СКАЧИВАНИЯ И ДОК-СТАНЦИЯ («СКАЧАТЬ»)
       // ====================================================================
       let dx = 0, dy = 0, dz = 0;
       if (i < 4500) {
-        // Massive Arrow Shaft (Стержень стрелки) - 4500 particles
+        // Vertical Arrow Shaft (4500 particles)
+        // X in [2.8, 4.4], Y in [0.8, 3.8]
         const u = ((i % 50) / 49) * 2.0 - 1.0;
         const v = Math.floor(i / 50) / 89;
-        const w = ((i % 10) / 9 - 0.5) * 1.7;
+        const w = ((i % 10) / 9 - 0.5) * 1.3;
 
-        dx = u * 1.35;
-        dy = 1.5 + v * 4.5;
+        dx = 3.6 + u * 0.8;
+        dy = 0.8 + v * 3.0; // up to Y = 3.8
         dz = w;
       } else if (i < 11500) {
         // Aerodynamic 3D Chevron Arrowhead (7000 particles)
+        // Tip at (3.6, -0.9), Shoulders at Y = 0.8, Wings expand to X in [0.8, 6.4]!
         const idx = i - 4500;
         const t = idx / 7000;
         const v = Math.pow(t, 0.85);
-        const yHead = 1.5 - v * 2.5;
-        const wingW = 4.8 * (1.0 - v);
+        const yHead = 0.8 - v * 1.7; // down to Y = -0.9
+        const wingW = 2.8 * (1.0 - v);
         const u = ((idx % 70) / 69) * 2.0 - 1.0;
-        const w = ((idx % 12) / 11 - 0.5) * 1.8 * (1.0 - v * 0.35);
+        const w = ((idx % 12) / 11 - 0.5) * 1.4 * (1.0 - v * 0.3);
 
-        dx = u * wingW;
+        dx = 3.6 + u * wingW;
         dy = yHead;
         dz = w;
       } else if (i < 16500) {
-        // Monumental Receiving Dock Cradle (5000 particles)
+        // Receiving Dock Cradle (5000 particles)
+        // Base X in [0.0, 7.2], Y in [-3.2, -2.4]
         const idx = i - 11500;
         const t = idx / 5000;
         if (t < 0.65) {
           const segT = t / 0.65;
           const u = segT * 2.0 - 1.0;
-          const curveSag = Math.cos(u * Math.PI * 0.5) * 0.4;
-          const barY = -3.5 - curveSag + ((idx % 16) / 15) * 0.9;
-          const barZ = ((idx % 10) / 9 - 0.5) * 2.2;
+          const curveSag = Math.cos(u * Math.PI * 0.5) * 0.3;
+          const barY = -2.9 - curveSag + ((idx % 16) / 15) * 0.7;
+          const barZ = ((idx % 10) / 9 - 0.5) * 1.8;
 
-          dx = u * 6.2;
+          dx = 3.6 + u * 3.6; // X in [0.0, 7.2]
           dy = barY;
           dz = barZ;
         } else {
+          // Vertical cradle bracket lips rising to Y = -0.8
           const armT = (t - 0.65) / 0.35;
           const isLeft = (idx % 2 === 0);
           const sign = isLeft ? -1.0 : 1.0;
-          const armY = -2.8 + armT * 2.4;
-          const armX = sign * (5.6 + ((idx % 6) / 5) * 0.6);
-          const armZ = ((idx % 8) / 7 - 0.5) * 2.0;
+          const armY = -2.4 + armT * 1.8; // up to Y = -0.6
+          const armX = 3.6 + sign * (3.3 + ((idx % 6) / 5) * 0.3);
+          const armZ = ((idx % 8) / 7 - 0.5) * 1.6;
 
           dx = armX;
           dy = armY;
@@ -623,11 +666,11 @@
         // Concentric Holographic Dock Radar Rings (1500 particles)
         const idx = i - 16500;
         const ringIdx = idx % 3;
-        const rRing = 1.8 + ringIdx * 1.5;
+        const rRing = 1.3 + ringIdx * 1.1; // 1.3, 2.4, 3.5
         const theta = (idx * goldenAngle);
-        dx = Math.cos(theta) * rRing;
-        dy = -3.2 + Math.sin(theta * 3.0) * 0.12;
-        dz = Math.sin(theta) * rRing * 0.65;
+        dx = 3.6 + Math.cos(theta) * rRing;
+        dy = -2.7 + Math.sin(theta * 3.0) * 0.10;
+        dz = Math.sin(theta) * rRing * 0.6;
       }
       posDownload[i3]     = dx;
       posDownload[i3 + 1] = dy;
@@ -734,35 +777,41 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8 + morphFactor * 0.15);
-        gl_PointSize = clamp(size, 2.5, 68.0);
+        float baseScale = (morphFactor > 0.01) ? 58.0 : 42.0;
+        float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8);
+        gl_PointSize = clamp(size, 3.2, 72.0);
 
-        vec3 cDeep  = vec3(0.008, 0.518, 0.780); // #0284C7
-        vec3 cSky   = vec3(0.220, 0.741, 0.973); // #38BDF8
-        vec3 cMist  = vec3(0.961, 0.973, 0.980); // #F5F8FA
-        vec3 cVoice = vec3(0.000, 0.900, 1.000); // Vibrant voice cyan
+        // Rich high-contrast celestial blue palette - never fading to white!
+        vec3 cDeepNavy  = vec3(0.012, 0.380, 0.700); // #0361B3
+        vec3 cCerulean  = vec3(0.020, 0.550, 0.880); // #058CE0
+        vec3 cBrightSky = vec3(0.050, 0.720, 0.980); // #0DB8FA
+        vec3 cNeonCyan  = vec3(0.000, 0.900, 1.000); // #00E5FF
+        vec3 cVoice     = vec3(0.000, 0.950, 1.000); // Vibrant voice cyan
 
         float h = clamp((p.y + 4.0) / 8.0, 0.0, 1.0);
         if (h < 0.5) {
-          vColor = mix(cDeep, cSky, h * 2.0);
+          vColor = mix(cDeepNavy, cCerulean, h * 2.0);
         } else {
-          vColor = mix(cSky, cMist, (h - 0.5) * 2.0);
-        }
-
-        if (uMicEnergy > 0.01) {
-          vColor = mix(vColor, cVoice, clamp(uMicEnergy * 0.65, 0.0, 0.75));
-        }
-
-        if (uWarpSpeed > 0.01) {
-          vColor = mix(vColor, vec3(0.08, 0.85, 1.0), clamp(uWarpSpeed * 0.65, 0.0, 0.75));
+          vColor = mix(cCerulean, cBrightSky, (h - 0.5) * 2.0);
         }
 
         if (morphFactor > 0.01) {
-          vColor = mix(vColor, cSky, morphFactor * 0.25);
+          // Boost 3D object saturation and contrast
+          float zHighlight = clamp((p.z + 1.5) / 3.0, 0.0, 1.0);
+          vec3 objColor = mix(cCerulean, cNeonCyan, zHighlight * 0.7 + 0.3);
+          vColor = mix(vColor, objColor, morphFactor * 0.85);
         }
 
-        float distFog = clamp((-mvPosition.z - 10.0) / 38.0, 0.0, 1.0);
-        vAlpha = (1.0 - distFog * 0.65) * (0.85 + morphFactor * 0.15);
+        if (uMicEnergy > 0.01) {
+          vColor = mix(vColor, cVoice, clamp(uMicEnergy * 0.75, 0.0, 0.85));
+        }
+
+        if (uWarpSpeed > 0.01) {
+          vColor = mix(vColor, vec3(0.02, 0.92, 1.0), clamp(uWarpSpeed * 0.65, 0.0, 0.75));
+        }
+
+        float distFog = clamp((-mvPosition.z - 12.0) / 45.0, 0.0, 1.0);
+        vAlpha = (1.0 - distFog * 0.55) * (0.92 + morphFactor * 0.08);
       }
     `;
 
@@ -775,8 +824,10 @@
         float dist = length(coord);
         if (dist > 0.5) discard;
 
-        float alphaEdge = smoothstep(0.5, 0.06, dist);
-        gl_FragColor = vec4(vColor, alphaEdge * vAlpha * 0.95);
+        float alphaEdge = smoothstep(0.5, 0.10, dist);
+        float core = smoothstep(0.25, 0.0, dist) * 0.28;
+        vec3 col = vColor + vec3(core);
+        gl_FragColor = vec4(col, alphaEdge * vAlpha);
       }
     `;
 
@@ -1035,7 +1086,9 @@
     return c * c * c * (c * (c * 6.0 - 15.0) + 10.0);
   }
 
-  function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection, targetWaveP) {
+  let isSwitchingSections = false;
+
+  function startFlightTo(targetCamPos, targetCamLook, targetState, onArriveSection, targetWaveP, durationOverride, switchingSections = false) {
     camFlightStartPos.copy(currentBasePos);
     camFlightStartLook.copy(currentBaseLook);
 
@@ -1055,12 +1108,18 @@
     flightStartMorphs.audience = currentMorphAudience;
     flightStartMorphs.download = currentMorphDownload;
 
-    // Smooth drone apex arc
-    camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
-    camFlightMidPos.y += 1.2;
+    isSwitchingSections = switchingSections;
 
-    // Fixed 1.4s luxurious flight duration for silky smoothness
-    flightDuration = 1400;
+    if (switchingSections) {
+      camFlightMidPos.copy(targetCamPos);
+      camFlightMidPos.z += 0.35; // gentle optical breath on section switch
+      flightDuration = durationOverride || 800;
+    } else {
+      // Smooth drone apex arc
+      camFlightMidPos.addVectors(camFlightStartPos, camFlightEndPos).multiplyScalar(0.5);
+      camFlightMidPos.y += 1.2;
+      flightDuration = durationOverride || 1100;
+    }
 
     flightStartTime = performance.now();
     flightState = targetState;
@@ -1077,6 +1136,7 @@
       return;
     }
 
+    const wasInSection = (flightState === 'in_section' || (flightState === 'warping_out' && isSwitchingSections));
     const island = ISLANDS[sectionKey];
 
     // Update active nav pill
@@ -1088,23 +1148,29 @@
       }
     });
 
-    startFlightTo(island.camPos, island.camLook, 'warping_out', sectionKey, island.targetP);
+    startFlightTo(island.camPos, island.camLook, 'warping_out', sectionKey, island.targetP, wasInSection ? 800 : 1100, wasInSection);
   }
 
   function closeSection() {
     if (flightState === 'timeline' || flightState === 'warping_in') return;
 
+    isSwitchingSections = false;
     document.querySelectorAll('.nav-pill').forEach(pill => pill.classList.remove('is-active'));
     getTimelineCamera(smoothProgress, timelineTargetPos, timelineTargetLook);
 
-    startFlightTo(timelineTargetPos, timelineTargetLook, 'warping_in', null, smoothProgress);
+    startFlightTo(timelineTargetPos, timelineTargetLook, 'warping_in', null, smoothProgress, 1100, false);
   }
 
   let prevIsSectionActive = false;
   let prevActiveSection = null;
 
   function update3DSpatialIslands() {
-    const isSectionActive = flightState === 'in_section' || (flightState === 'warping_out' && (performance.now() - flightStartTime) > flightDuration * 0.45);
+    let isSectionActive;
+    if (isSwitchingSections) {
+      isSectionActive = true;
+    } else {
+      isSectionActive = flightState === 'in_section' || (flightState === 'warping_out' && (performance.now() - flightStartTime) > flightDuration * 0.32);
+    }
 
     if (isSectionActive === prevIsSectionActive && activeSection === prevActiveSection) {
       return;
@@ -1430,6 +1496,7 @@
 
       if (rawT >= 1.0) {
         flightState = 'in_section';
+        isSwitchingSections = false;
         sectionEnterTime = performance.now();
         warpSpeed = 0.0;
         currentWaveP = flightEndWaveP;

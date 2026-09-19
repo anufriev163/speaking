@@ -575,24 +575,24 @@ body {
 .esc-tag::before { content: '('; }
 .esc-tag::after { content: ')'; }
 
-/* 3D Spatial Island: Pure Typography floating in 3D Space (NO PLATES / БЕЗ ПЛАШЕК) */
+/* 3D Spatial Island: Pure Typography in Left Column (NO PLATES / БЕЗ ПЛАШЕК) */
 .spatial-island {
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate3d(-50%, calc(-50% + 14px), 0);
-  width: 780px;
-  max-width: calc(100vw - 36px);
+  left: 11vw;
+  transform: translate3d(0, calc(-50% + 16px), 0);
+  width: 580px;
+  max-width: 43vw;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              visibility 0.4s;
+  transition: opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.38s;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   will-change: opacity, transform;
 }
 
@@ -600,22 +600,82 @@ body {
   pointer-events: auto;
   opacity: 1;
   visibility: visible;
-  transform: translate3d(-50%, -50%, 0);
+  transform: translate3d(0, -50%, 0);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.60s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.55s;
+}
+
+/* Staggered silky smooth entrance for island text elements (без резких скачков) */
+.spatial-island .card-badge,
+.spatial-island .card-title,
+.spatial-island .card-lead,
+.spatial-island .card-grid,
+.spatial-island .card-platforms {
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.52s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.spatial-island:not(.is-active) .card-badge {
+  transform: translate3d(0, 8px, 0);
+  opacity: 0;
+}
+
+.spatial-island:not(.is-active) .card-title {
+  transform: translate3d(0, 12px, 0);
+  opacity: 0;
+}
+
+.spatial-island:not(.is-active) .card-lead {
+  transform: translate3d(0, 14px, 0);
+  opacity: 0;
+}
+
+.spatial-island:not(.is-active) .card-grid,
+.spatial-island:not(.is-active) .card-platforms {
+  transform: translate3d(0, 16px, 0);
+  opacity: 0;
+}
+
+.spatial-island.is-active .card-badge {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition-delay: 0.03s;
+}
+
+.spatial-island.is-active .card-title {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition-delay: 0.08s;
+}
+
+.spatial-island.is-active .card-lead {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition-delay: 0.13s;
+}
+
+.spatial-island.is-active .card-grid,
+.spatial-island.is-active .card-platforms {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition-delay: 0.18s;
 }
 
 .island-card {
   position: relative;
-  background: radial-gradient(ellipse 95% 85% at 50% 50%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.68) 50%, rgba(255, 255, 255, 0) 82%) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: none !important;
-  border-radius: 40px !important;
-  padding: 24px 32px !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
   box-shadow: none !important;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   width: 100%;
 }
 
@@ -624,7 +684,7 @@ body {
   align-items: center;
   gap: 6px;
   font-family: var(--font-text);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: #0284C7;
@@ -632,7 +692,6 @@ body {
   border: none !important;
   padding: 0 !important;
   margin-bottom: 16px;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
 }
 
 .card-badge::before {
@@ -643,13 +702,13 @@ body {
 
 .card-title {
   font-family: var(--font-display);
-  font-size: 2.7rem;
+  font-size: 2.8rem;
   font-weight: 800;
-  color: var(--color-black);
+  color: #0F172A;
   line-height: 1.15;
   letter-spacing: -0.04em;
   margin-bottom: 16px;
-  text-shadow: 0 0 35px rgba(255, 255, 255, 0.98), 0 2px 10px rgba(255, 255, 255, 0.95);
+  text-align: left;
 }
 
 .card-lead {
@@ -658,39 +717,37 @@ body {
   font-weight: 500;
   color: #334155;
   line-height: 1.6;
-  max-width: 640px;
+  max-width: 560px;
   margin-bottom: 34px;
-  text-shadow: 0 0 25px rgba(255, 255, 255, 0.95);
+  text-align: left;
 }
 
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 24px;
   width: 100%;
-  max-width: 780px;
 }
 
 /* NO PLATES: Clean airy typographic columns with organic floating swaying */
 .grid-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   gap: 8px;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  padding: 8px 4px;
+  padding: 0 !important;
 }
 
 .grid-item strong {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #0F172A;
   letter-spacing: -0.02em;
-  text-shadow: 0 0 25px rgba(255, 255, 255, 0.98), 0 2px 8px rgba(255, 255, 255, 0.9);
 }
 
 .grid-item span {
@@ -699,7 +756,6 @@ body {
   font-weight: 500;
   color: #475569;
   line-height: 1.48;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
 }
 
 /* Organic 2D Hardware-Accelerated Swaying for Items (Плавно покачиваются без дергания) */
@@ -723,10 +779,10 @@ body {
 
 @keyframes swayNodeRight {
   0%, 100% {
-    transform: translate3d(0, 3px, 0);
+    transform: translate3d(0, 2px, 0);
   }
   50% {
-    transform: translate3d(0, -6px, 0);
+    transform: translate3d(0, -7px, 0);
   }
 }
 
@@ -758,35 +814,78 @@ body {
 .card-platforms {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 36px;
+  gap: 24px;
   width: 100%;
-  max-width: 660px;
+  max-width: 560px;
   margin-top: 8px;
 }
 
 .platform-choice-btn {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-  padding: 12px 16px;
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
+  padding: 8px 0;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   color: #0F172A;
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.25s ease;
+  transition: color 0.25s ease, transform 0.22s ease;
 }
 
 .platform-choice-btn:hover {
   color: #0284C7;
+  transform: translateY(-2px);
 }
 
 .platform-choice-btn:hover .platform-meta strong,
 .platform-choice-btn:hover .platform-meta span {
   color: #0284C7;
+}
+
+@media (max-width: 1023px) {
+  .spatial-island {
+    left: 50%;
+    top: 52%;
+    transform: translate3d(-50%, calc(-50% + 14px), 0);
+    width: 90vw;
+    max-width: 90vw;
+    align-items: center;
+    text-align: center;
+  }
+  .spatial-island.is-active {
+    transform: translate3d(-50%, -50%, 0);
+  }
+  .island-card {
+    align-items: center;
+    text-align: center;
+  }
+  .card-title,
+  .card-lead {
+    text-align: center;
+  }
+  .card-title {
+    font-size: 2.1rem;
+  }
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .grid-item {
+    align-items: center;
+    text-align: center;
+  }
+  .card-platforms {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .platform-choice-btn {
+    align-items: center;
+    text-align: center;
+  }
 }
 
 .platform-choice-btn svg {
