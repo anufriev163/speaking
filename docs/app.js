@@ -393,136 +393,186 @@
       posAbout[i3 + 2] = fz;
 
       // ====================================================================
-      // SECTION OBJECT 2: 3D КОДОВЫЙ ЗАМОЧЕК ДЛЯ ПАРОЛЯ («ПРИВАТНОСТЬ»)
+      // SECTION OBJECT 2: АККУРАТНЫЙ 3D КОДОВЫЙ ЗАМОК («ПРИВАТНОСТЬ»)
       // ====================================================================
       let kx = 0, ky = 0, kz = 0;
-      if (i < 4500) {
-        // Massive Tubular Shackle Arch (U-образная дужка кодового замка) - 4500 particles
-        const t = i / 4500;
-        const theta = i * goldenAngle;
-        const tubeR = 0.40;
-        const offX = Math.cos(theta) * tubeR;
-        const offZ = Math.sin(theta) * tubeR;
-
-        if (t < 0.24) {
-          // Left vertical shackle leg plunging into lock body
-          const legT = t / 0.24;
-          kx = 2.1 + offX;
-          ky = 0.7 + legT * 1.6; // up to Y = 2.3
-          kz = offZ;
-        } else if (t < 0.48) {
-          // Right vertical shackle leg
-          const legT = (t - 0.24) / 0.24;
-          kx = 5.1 + offX;
-          ky = 0.7 + legT * 1.6;
-          kz = offZ;
+      if (i < 5000) {
+        // 1. Точная U-образная дужка замка и цилиндрические муфты (5000 particles)
+        if (i < 800) {
+          // Две симметричные муфты крепления дужки на корпусе
+          const sIdx = i;
+          const isRight = (sIdx >= 400);
+          const cX = isRight ? 4.9 : 2.3;
+          const p = (sIdx % 400) / 400;
+          const theta = p * Math.PI * 2.0 * 8.0;
+          const hFrac = Math.floor(p * 8.0) / 7.0;
+          const sockR = 0.42;
+          kx = cX + Math.cos(theta) * sockR;
+          ky = 0.60 + hFrac * 0.35;
+          kz = Math.sin(theta) * sockR;
         } else {
-          // Top semi-circular arch sweeping up to Y = 3.8
-          const archT = (t - 0.48) / 0.52;
-          const arcAngle = archT * Math.PI;
-          const archR = 1.5;
-          kx = 3.6 - Math.cos(arcAngle) * archR + offX * Math.sin(arcAngle);
-          ky = 2.3 + Math.sin(arcAngle) * archR + offX * Math.cos(arcAngle);
-          kz = offZ;
+          // Идеально гладкая 3D торическая дужка без искажений
+          const idx = i - 800;
+          const t = idx / 4200; // t in [0, 1]
+          const ringAngle = (idx * goldenAngle);
+          const rTube = 0.34;
+          const cosR = Math.cos(ringAngle) * rTube;
+          const sinR = Math.sin(ringAngle) * rTube;
+
+          if (t < 0.26) {
+            // Левая вертикальная стойка дужки
+            const legT = t / 0.26;
+            kx = 2.3 + cosR;
+            ky = 0.85 + legT * 1.45; // up to Y = 2.30
+            kz = sinR;
+          } else if (t < 0.74) {
+            // Полукруглая верхняя арка дужки
+            const archT = (t - 0.26) / 0.48; // archT in [0, 1]
+            const alpha = archT * Math.PI; // from 0 to PI
+            const rArch = 1.30;
+            // Центр арки (3.6, 2.30, 0)
+            const pX = 3.6 - Math.cos(alpha) * rArch;
+            const pY = 2.30 + Math.sin(alpha) * rArch;
+            // Нормаль в плоскости XY перпендикулярно дуге
+            const normX = -Math.cos(alpha);
+            const normY = Math.sin(alpha);
+            kx = pX + normX * cosR;
+            ky = pY + normY * cosR;
+            kz = sinR;
+          } else {
+            // Правая вертикальная стойка дужки
+            const legT = (t - 0.74) / 0.26;
+            kx = 4.9 + cosR;
+            ky = 2.30 - legT * 1.45; // down to Y = 0.85
+            kz = sinR;
+          }
         }
-      } else if (i < 11500) {
-        // Sculpted Padlock Solid Body (Массивный корпус замка) - 7000 particles
-        // X in [0.9, 6.3], Y in [-3.2, 0.7], Z in [-0.85, 0.85]
-        const idx = i - 4500;
-        const u = ((idx % 100) / 99) * 2.0 - 1.0;
-        const v = Math.floor(idx / 100) / 69;
+      } else if (i < 12000) {
+        // 2. Четкий монолитный корпус замка со скругленными гранями (7000 particles)
+        const idx = i - 5000;
+        const W = 2.35; // полуширина (ширина 4.7, X in [1.25, 5.95])
+        const H = 1.85; // полувысота (высота 3.7, Y in [-3.15, 0.55])
+        const cY = -1.30; // центр по Y
+        const cX = 3.60; // центр по X
+        const rC = 0.48; // радиус скругления углов
 
-        const xBody = 3.6 + u * 2.7;
-        const yBody = -3.2 + v * 3.9;
+        if (idx < 2600) {
+          // Внешний контур и фаска корпуса (четкие грани без размытия)
+          const pT = idx / 2600;
+          const zDepth = ((idx % 13) / 12 - 0.5) * 1.36; // Z in [-0.68, +0.68]
+          const perimAngle = pT * Math.PI * 2.0;
 
-        const cornerR = 0.55;
-        const distEdgeX = Math.max(0.0, Math.abs(xBody - 3.6) - (2.7 - cornerR));
-        const distEdgeY = Math.max(0.0, Math.abs(yBody - (-1.25)) - (1.95 - cornerR));
-        const isCorner = (distEdgeX * distEdgeX + distEdgeY * distEdgeY) > (cornerR * cornerR);
+          // Прямоугольник со скругленными углами
+          const cosP = Math.cos(perimAngle);
+          const sinP = Math.sin(perimAngle);
+          const cornerX = Math.sign(cosP) * (W - rC);
+          const cornerY = Math.sign(sinP) * (H - rC);
+          const localCos = Math.min(1.0, Math.max(-1.0, cosP * 1.4));
+          const localSin = Math.min(1.0, Math.max(-1.0, sinP * 1.4));
 
-        // Recessed front cutout for the password dial chamber
-        const isDialChamber = (Math.abs(xBody - 3.6) < 2.0) && (yBody > -1.75 && yBody < -0.35);
-
-        const plateZ = ((Math.floor(idx / 3500) % 2) === 0) ? -0.85 : 0.85;
-        const zDepth = (idx % 5 === 0) ? ((idx % 11) / 10 - 0.5) * 1.7 : plateZ;
-
-        if (isDialChamber && zDepth > 0.0) {
-          kx = xBody;
-          ky = yBody;
-          kz = 0.45; // recessed chamber floor behind the wheels
-        } else if (isCorner) {
-          kx = 3.6 + (xBody - 3.6) * 0.92;
-          ky = -1.25 + (yBody - (-1.25)) * 0.92;
-          kz = zDepth * 0.85;
-        } else {
-          kx = xBody;
-          ky = yBody;
+          kx = cX + cornerX + localCos * rC;
+          ky = cY + cornerY + localSin * rC;
           kz = zDepth;
-        }
-      } else {
-        // Combination Password Mechanism (4 Кодовых Барабана с Паролем и PIN-индикаторы) - 6500 particles
-        const idx = i - 11500;
-        if (idx < 4000) {
-          // 4 Rotating Password Code Wheels (4 цилиндрических ролика с делениями цифр)
-          const wheelIdx = idx % 4; // 0, 1, 2, 3
-          const wheelCenters = [2.25, 3.15, 4.05, 4.95];
-          const wCenterX = wheelCenters[wheelIdx];
-
-          const pInWheel = Math.floor(idx / 4);
-          const angle = (pInWheel % 36) / 36 * Math.PI * 2.0;
-          const uW = ((pInWheel % 9) / 8 - 0.5) * 0.62; // width of wheel
-
-          // Protrudes forward from face: Z in [0.85, 1.25]
-          const cosA = Math.cos(angle);
-          const sinA = Math.sin(angle);
-          const rDial = 0.52;
-
-          // Number ticks / ridges on password wheels
-          const isTick = (Math.abs(sinA) < 0.12 || Math.abs(cosA) < 0.12);
-          const tickBump = isTick ? 0.08 : 0.0;
-
-          kx = wCenterX + uW;
-          ky = -1.05 + sinA * (rDial + tickBump);
-          kz = 0.85 + (cosA * 0.5 + 0.5) * (0.42 + tickBump);
-        } else if (idx < 5300) {
-          // Recessed Password Chamber Bevel Frame (Рамка вокруг 4 барабанов)
-          const fIdx = idx - 4000;
-          const t = fIdx / 1300;
-          const u = ((fIdx % 60) / 59) * 2.0 - 1.0;
-          const isTopBottom = (fIdx % 2 === 0);
-
-          if (isTopBottom) {
-            kx = 3.6 + u * 2.1;
-            ky = (u > 0 ? -0.38 : -1.72);
-            kz = 0.95;
-          } else {
-            const side = (u > 0 ? 1.0 : -1.0);
-            kx = 3.6 + side * 2.1;
-            ky = -1.05 + ((fIdx % 25) / 24 - 0.5) * 1.34;
-            kz = 0.95;
-          }
         } else {
-          // 4 Password Confirmation PIN Dots and Security Status Rail (Индикаторы ввода PIN-кода)
-          const pIdx = idx - 5300;
-          const dotIdx = pIdx % 4;
-          const dotCenters = [2.25, 3.15, 4.05, 4.95];
-          const dCenterX = dotCenters[dotIdx];
+          // Лицевая и тыльная пластины корпуса с аккуратным окном под ролики
+          const fIdx = idx - 2600;
+          const isFront = (fIdx % 2 === 0);
+          const plateZ = isFront ? 0.68 : -0.68;
 
-          if (pIdx < 800) {
-            // 4 Circular Password PIN Dots [ • ] [ • ] [ • ] [ • ]
-            const dAngle = pIdx * goldenAngle;
-            const dR = ((pIdx % 8) / 7) * 0.20;
-            kx = dCenterX + Math.cos(dAngle) * dR;
-            ky = -2.30 + Math.sin(dAngle) * dR;
-            kz = 0.96;
+          // Равномерная аккуратная сетка точек
+          const u = ((fIdx % 60) / 59) * 2.0 - 1.0;
+          const v = Math.floor(fIdx / 60) / 36;
+
+          const px = cX + u * W;
+          const py = (cY - H) + v * (H * 2.0);
+
+          // Проверяем, не попадает ли в окно кодовых роликов на лицевой панели
+          const inWindow = isFront && (Math.abs(px - cX) < 1.95) && (py > -1.85 && py < -0.45);
+
+          if (inWindow) {
+            // Утопленная задняя стенка окна под ролики
+            kx = px;
+            ky = py;
+            kz = 0.35;
           } else {
-            // Sleek Horizontal Status Bar beneath PIN dots
-            const bT = (pIdx - 800) / 400;
-            const u = bT * 2.0 - 1.0;
-            kx = 3.6 + u * 1.9;
-            ky = -2.62 + ((pIdx % 4) / 3) * 0.08;
-            kz = 0.94;
+            // Скругляем углы корпуса
+            const dx = Math.max(0.0, Math.abs(px - cX) - (W - rC));
+            const dy = Math.max(0.0, Math.abs(py - cY) - (H - rC));
+            const isCorner = (dx * dx + dy * dy) > (rC * rC);
+
+            if (isCorner) {
+              kx = cX + Math.sign(px - cX) * (W - rC + (dx / (dx + dy + 0.001)) * rC * 0.9);
+              ky = cY + Math.sign(py - cY) * (H - rC + (dy / (dx + dy + 0.001)) * rC * 0.9);
+            } else {
+              kx = px;
+              ky = py;
+            }
+            kz = plateZ;
           }
+        }
+      } else if (i < 16500) {
+        // 3. Четыре аккуратных цилиндрических кодовых барабана с делениями (4500 particles)
+        const idx = i - 12000;
+        const wheelIdx = idx % 4; // 0, 1, 2, 3
+        const wheelCenters = [2.20, 3.13, 4.07, 5.00];
+        const wX = wheelCenters[wheelIdx];
+
+        const wP = Math.floor(idx / 4); // 0 to 1124
+        // Барабан вращается вокруг оси X, цилиндр выступает вперед
+        const angle = ((wP % 28) / 27 - 0.5) * Math.PI * 0.82; // угол обзора барабана
+        const widthT = Math.floor(wP / 28) / 39; // вдоль оси ролика
+        const localX = (widthT - 0.5) * 0.62;
+
+        const rDrum = 0.56;
+        const cDrumY = -1.15;
+        const cDrumZ = 0.50;
+
+        // Риски делений шкалы цифр (5 четких делений)
+        const notchStep = Math.abs(Math.sin(angle * 4.0));
+        const isNotch = notchStep < 0.16;
+        const bump = isNotch ? 0.05 : 0.0;
+
+        kx = wX + localX;
+        ky = cDrumY + Math.sin(angle) * (rDrum + bump);
+        kz = cDrumZ + Math.cos(angle) * (rDrum + bump);
+      } else {
+        // 4. Аккуратная рамка окна и круглые PIN-индикаторы (1500 particles)
+        const idx = i - 16500;
+        if (idx < 700) {
+          // Четкая прямоугольная фаска-рамка вокруг кодовых барабанов
+          const p = idx / 700;
+          const u = ((idx % 35) / 34) * 2.0 - 1.0;
+          const isTopBottom = (idx % 2 === 0);
+          if (isTopBottom) {
+            kx = 3.6 + u * 2.02;
+            ky = (u > 0 ? -0.42 : -1.88);
+            kz = 0.72;
+          } else {
+            const side = (idx % 4 < 2) ? 1.0 : -1.0;
+            kx = 3.6 + side * 2.02;
+            ky = -1.15 + u * 0.73;
+            kz = 0.72;
+          }
+        } else if (idx < 1250) {
+          // 4 круглых PIN-индикатора под барабанами [ • ] [ • ] [ • ] [ • ]
+          const dIdx = idx - 700;
+          const wheelCenters = [2.20, 3.13, 4.07, 5.00];
+          const dotIdx = dIdx % 4;
+          const dX = wheelCenters[dotIdx];
+          const p = Math.floor(dIdx / 4) / 137;
+          const theta = p * Math.PI * 2.0 * 4.0;
+          const rDot = ((Math.floor(p * 4.0) + 1) / 4.0) * 0.17;
+
+          kx = dX + Math.cos(theta) * rDot;
+          ky = -2.35 + Math.sin(theta) * rDot;
+          kz = 0.73;
+        } else {
+          // Тонкая горизонтальная линия состояния безопасности
+          const bIdx = idx - 1250;
+          const u = (bIdx / 250) * 2.0 - 1.0;
+          kx = 3.6 + u * 1.85;
+          ky = -2.68;
+          kz = 0.71;
         }
       }
       posPrivacy[i3]     = kx;

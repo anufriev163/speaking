@@ -607,7 +607,6 @@ body {
 }
 
 /* Staggered silky smooth entrance for island text elements (без резких скачков) */
-.spatial-island .card-badge,
 .spatial-island .card-title,
 .spatial-island .card-lead,
 .spatial-island .card-grid,
@@ -617,13 +616,8 @@ body {
   will-change: opacity, transform;
 }
 
-.spatial-island:not(.is-active) .card-badge {
-  transform: translate3d(0, 8px, 0);
-  opacity: 0;
-}
-
 .spatial-island:not(.is-active) .card-title {
-  transform: translate3d(0, 12px, 0);
+  transform: translate3d(0, 10px, 0);
   opacity: 0;
 }
 
@@ -638,22 +632,16 @@ body {
   opacity: 0;
 }
 
-.spatial-island.is-active .card-badge {
-  transform: translate3d(0, 0, 0);
-  opacity: 1;
-  transition-delay: 0.03s;
-}
-
 .spatial-island.is-active .card-title {
   transform: translate3d(0, 0, 0);
   opacity: 1;
-  transition-delay: 0.08s;
+  transition-delay: 0.04s;
 }
 
 .spatial-island.is-active .card-lead {
   transform: translate3d(0, 0, 0);
   opacity: 1;
-  transition-delay: 0.13s;
+  transition-delay: 0.10s;
 }
 
 .spatial-island.is-active .card-grid,
@@ -679,26 +667,6 @@ body {
   width: 100%;
 }
 
-.card-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-text);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #0284C7;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  margin-bottom: 16px;
-}
-
-.card-badge::before {
-  content: '•';
-  font-size: 1.1rem;
-  color: #0EA5E9;
-}
 
 .card-title {
   font-family: var(--font-display);
