@@ -277,116 +277,148 @@
       pos2[i3 + 2] = z2;
 
       // ====================================================================
-      // TIMELINE STAGE 3: КОНЦЕНТРИЧЕСКИЙ РЕЗОНАНС
+      // TIMELINE STAGE 3: МНОГОСЛОЙНАЯ ГАРМОНИЧЕСКАЯ РЕЧЕВАЯ ВОЛНА
       // ====================================================================
-      const ringIdx = i % 8;
-      const ringPos = Math.floor(i / 8) / (N / 8);
-      const ringAngle = ringPos * Math.PI * 2.0;
-      const baseRadius = 2.4 + ringIdx * 2.0;
-      const waveHeight = Math.sin(ringAngle * 4.0 + ringIdx * 1.2) * (0.4 + ringIdx * 0.2);
+      const ribbonIdx = i % 7; // 7 harmonic voice ribbon layers
+      const strandFrac = ribbonIdx / 6.0; // 0..1
+      const tWave = (Math.floor(i / 7) / (N / 7)) * 2.0 - 1.0; // -1..1
+      const x3 = tWave * 13.5;
+      const gauss = Math.exp(-tWave * tWave * 2.8);
 
-      pos3[i3]     = Math.cos(ringAngle) * baseRadius;
-      pos3[i3 + 1] = waveHeight;
-      pos3[i3 + 2] = Math.sin(ringAngle) * baseRadius * 0.65;
+      // Natural speech resonance frequencies
+      const f1 = Math.sin(tWave * 7.5 + ribbonIdx * 0.9) * 0.95;
+      const f2 = Math.sin(tWave * 16.0 + ribbonIdx * 1.6) * 0.45;
+      const f3 = Math.cos(tWave * 28.0 + ribbonIdx * 2.2) * 0.22;
+      const voiceMod = (f1 + f2 + f3) * gauss;
+
+      // Center wave vertically in upper half (Y = 1.8 ± 0.6), floating safely above lowered text
+      const yBaseline = 1.8 + (strandFrac - 0.5) * 1.1;
+      const y3 = yBaseline + voiceMod * (0.8 + strandFrac * 0.5);
+
+      // Volumetric depth in Z
+      const z3 = (strandFrac - 0.5) * 3.6 + Math.cos(tWave * 5.0 + ribbonIdx) * 0.7 * gauss;
+
+      pos3[i3]     = x3;
+      pos3[i3 + 1] = y3;
+      pos3[i3 + 2] = z3;
 
       // ====================================================================
-      // SECTION OBJECT 1: 3D РАБОЧАЯ ПАПКА С ДОКУМЕНТАМИ («О ПРОЕКТЕ»)
+      // SECTION OBJECT 1: ЧИСТАЯ 3D РАБОЧАЯ ПАПКА («О ПРОЕКТЕ»)
       // ====================================================================
       let fx = 0, fy = 0, fz = 0;
-      if (i < 3500) {
-        // Glowing Silhouette Ribbon & Tab on top-left (3500 particles)
-        const t = i / 3500;
-        const bevelZ = ((i % 12) / 11 - 0.5) * 0.35;
-        let px = 0, py = 0;
-
-        if (t < 0.20) {
-          const segT = t / 0.20;
-          px = 0.0 + segT * 7.2;
-          py = -3.2;
-        } else if (t < 0.40) {
-          const segT = (t - 0.20) / 0.20;
-          px = 7.2;
-          py = -3.2 + segT * 5.0; // up to Y = 1.8
-        } else if (t < 0.55) {
-          const segT = (t - 0.40) / 0.15;
-          px = 7.2 - segT * 3.6;  // to X = 3.6
-          py = 1.8;
-        } else if (t < 0.65) {
-          const segT = (t - 0.55) / 0.10;
-          px = 3.6 - segT * 1.0;  // to X = 2.6
-          py = 1.8 + segT * 1.6;  // up to Y = 3.4
-        } else if (t < 0.85) {
-          const segT = (t - 0.65) / 0.20;
-          px = 2.6 - segT * 2.6;  // to X = 0.0
-          py = 3.4;
-        } else {
-          const segT = (t - 0.85) / 0.15;
-          px = 0.0;
-          py = 3.4 - segT * 6.6;  // down to Y = -3.2
-        }
-        fx = px;
-        fy = py;
-        fz = -0.55 + bevelZ;
-      } else if (i < 9000) {
-        // Layered Project Documents peeking out of folder (5500 particles)
-        const idx = i - 3500;
-        const isSheet2 = (idx >= 2800);
-        const sIdx = isSheet2 ? (idx - 2800) : idx;
-        const totalRows = isSheet2 ? 26 : 27;
-        const u = ((sIdx % 100) / 99) * 2.0 - 1.0;
-        const v = Math.floor(sIdx / 100) / (totalRows - 1);
-
-        if (!isSheet2) {
-          // Document Sheet 1: Main Project Blueprint (Y in [-2.5, 3.0])
-          const px = 3.6 + u * 3.0; // X in [0.6, 6.6]
-          const py = -2.5 + v * 5.5;
-          const rowMod = Math.sin(py * 7.5);
-          const isText = (rowMod > 0.25) && (u > -0.85 && u < 0.85);
+      if (i < 6500) {
+        // 1. Solid Folder Back Plate with Clean Rounded Tab (6500 particles)
+        // Clean silhouette: NO strange protruding documents on the right!
+        if (i < 1800) {
+          // Perimeter wireframe border (1800 particles)
+          const t = i / 1800;
+          let px = 0, py = 0;
+          if (t < 0.28) {
+            // Bottom edge: X in [0.0, 7.2], Y = -3.2
+            const segT = t / 0.28;
+            px = segT * 7.2;
+            py = -3.2;
+          } else if (t < 0.50) {
+            // Right edge: X = 7.2, Y in [-3.2, 2.0]
+            const segT = (t - 0.28) / 0.22;
+            px = 7.2;
+            py = -3.2 + segT * 5.2;
+          } else if (t < 0.68) {
+            // Top right rim: X in [7.2, 3.4], Y = 2.0
+            const segT = (t - 0.50) / 0.18;
+            px = 7.2 - segT * 3.8;
+            py = 2.0;
+          } else if (t < 0.76) {
+            // Smooth tab transition: X in [3.4, 2.6], Y slopes up from 2.0 to 2.5
+            const segT = (t - 0.68) / 0.08;
+            px = 3.4 - segT * 0.8;
+            py = 2.0 + segT * 0.5;
+          } else if (t < 0.88) {
+            // Top tab rim: X in [2.6, 0.0], Y = 2.5
+            const segT = (t - 0.76) / 0.12;
+            px = 2.6 - segT * 2.6;
+            py = 2.5;
+          } else {
+            // Left edge: X = 0.0, Y in [2.5, -3.2]
+            const segT = (t - 0.88) / 0.12;
+            px = 0.0;
+            py = 2.5 - segT * 5.7;
+          }
           fx = px;
           fy = py;
-          fz = -0.15 + (isText ? 0.08 : 0.0);
+          fz = -0.55 + ((i % 5) / 4 - 0.5) * 0.15;
         } else {
-          // Document Sheet 2: Angled secondary spec sheet (tilted +3 deg)
-          const localX = u * 2.7;
-          const localY = -2.2 + v * 5.4;
-          const ang = 0.05;
-          fx = 3.6 + localX * Math.cos(ang) - localY * Math.sin(ang) + 0.2;
-          fy = localX * Math.sin(ang) + localY * Math.cos(ang);
-          fz = 0.05;
+          // Solid back cover surface fill (4700 particles)
+          const idx = i - 1800;
+          const u = ((idx % 70) / 69);
+          const v = Math.floor(idx / 70) / 67;
+          const px = u * 7.2;
+          let topY = 2.0;
+          if (px <= 2.6) {
+            topY = 2.5;
+          } else if (px <= 3.4) {
+            const slopeT = (px - 2.6) / 0.8;
+            topY = 2.5 - slopeT * 0.5;
+          }
+          const py = -3.2 + v * (topY - (-3.2));
+          fx = px;
+          fy = py;
+          fz = -0.55;
         }
-      } else if (i < 15000) {
-        // Open 3D Front Cover leaning forward into camera space (6000 particles)
-        const idx = i - 9000;
-        const u = ((idx % 100) / 99) * 2.0 - 1.0;
-        const v = Math.floor(idx / 100) / 59;
+      } else if (i < 11500) {
+        // 2. Project Documents Neatly Tucked INSIDE Folder (5000 particles)
+        // STRICTLY contained below back cover (Y <= 1.45), NEVER jutting above!
+        const idx = i - 6500;
+        const isSheet2 = (idx >= 2500);
+        const sIdx = isSheet2 ? (idx - 2500) : idx;
+        const totalCols = 50;
+        const totalRows = 50;
+        const u = ((sIdx % totalCols) / (totalCols - 1)) * 2.0 - 1.0;
+        const v = Math.floor(sIdx / totalCols) / (totalRows - 1);
+
+        if (!isSheet2) {
+          // Document Sheet 1: Main Blueprint (Y in [-2.5, 1.45])
+          const px = 3.6 + u * 2.8; // X in [0.8, 6.4]
+          const py = -2.5 + v * 3.95; // Top Y = 1.45 (comfortably below back cover Y = 2.0!)
+          const rowMod = Math.sin(py * 8.5);
+          const isText = (rowMod > 0.25) && (u > -0.80 && u < 0.80);
+          fx = px;
+          fy = py;
+          fz = -0.18 + (isText ? 0.06 : 0.0);
+        } else {
+          // Document Sheet 2: Secondary Spec (tilted subtle +2.5 deg, Y <= 1.40)
+          const localX = u * 2.6;
+          const localY = -2.4 + v * 3.75;
+          const ang = 0.04;
+          fx = 3.7 + localX * Math.cos(ang) - localY * Math.sin(ang);
+          fy = localX * Math.sin(ang) + localY * Math.cos(ang);
+          fz = 0.02;
+        }
+      } else if (i < 16500) {
+        // 3. Open 3D Front Cover Leaning Forward into Camera Space (5000 particles)
+        const idx = i - 11500;
+        const u = ((idx % 75) / 74) * 2.0 - 1.0;
+        const v = Math.floor(idx / 75) / 66;
 
         const xFront = 3.6 + u * 3.6; // X in [0.0, 7.2]
-        const scoop = Math.exp(-u * u * 5.0) * 0.6;
-        const yTopFront = 0.6 - scoop;
+        const scoop = Math.exp(-u * u * 4.5) * 0.45;
+        const yTopFront = 0.5 - scoop;
         const yFront = -3.2 + v * (yTopFront - (-3.2));
-        const zFront = -0.2 + v * 1.8; // leaning open forward in 3D!
+        const zFront = -0.2 + v * 1.6; // Leaning open forward in 3D
 
         const isBorder = Math.abs(u) > 0.94 || v < 0.04 || v > 0.94;
         fx = xFront;
         fy = yFront;
         fz = zFront + (isBorder ? 0.08 : 0.0);
       } else {
-        // Cylindrical Bottom Hinge Spine & Holographic Ambient Dust (3000 particles)
-        const idx = i - 15000;
-        if (idx < 1500) {
-          const t = idx / 1500;
-          const spineAngle = (idx * goldenAngle);
-          const spineR = 0.28;
-          fx = 0.0 + t * 7.2;
-          fy = -3.2 + Math.sin(spineAngle) * spineR;
-          fz = -0.2 + Math.cos(spineAngle) * spineR;
-        } else {
-          const u = ((idx % 50) / 49) * 2.0 - 1.0;
-          const v = Math.floor((idx - 1500) / 50) / 29;
-          fx = 3.6 + u * 3.4;
-          fy = -3.0 + v * 4.2;
-          fz = -0.45 + ((idx % 7) / 6) * 0.8;
-        }
+        // 4. Cylindrical Bottom Spine Hinge & Depth Anchors (1500 particles)
+        const idx = i - 16500;
+        const t = idx / 1500;
+        const spineAngle = idx * goldenAngle;
+        const spineR = 0.24;
+        fx = 0.0 + t * 7.2;
+        fy = -3.2 + Math.sin(spineAngle) * spineR;
+        fz = -0.22 + Math.cos(spineAngle) * spineR;
       }
       posAbout[i3]     = fx;
       posAbout[i3 + 1] = fy;
@@ -946,19 +978,22 @@
 
   // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
   function updateSpatialCallouts(p) {
-    let timelineAlpha = 1.0;
-    if (flightState === 'warping_out') {
-      const elapsed = performance.now() - flightStartTime;
-      const rawT = Math.min(1.0, elapsed / flightDuration);
-      // Smoothly fade out callouts in the first 35% of the flight (approx 480ms)
-      timelineAlpha = Math.max(0.0, 1.0 - rawT / 0.35);
-    } else if (flightState === 'in_section') {
-      timelineAlpha = 0.0;
-    } else if (flightState === 'warping_in') {
-      const elapsed = performance.now() - flightStartTime;
-      const rawT = Math.min(1.0, elapsed / flightDuration);
-      timelineAlpha = Math.max(0.0, Math.min(1.0, (rawT - 0.45) / 0.55));
+    // If not on timeline (opening section, in section, or switching sections), hide ALL narrative callouts immediately
+    if (flightState !== 'timeline') {
+      callouts.forEach(el => {
+        if (el) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        }
+      });
+      if (micHintEl) {
+        micHintEl.style.opacity = '0';
+        micHintEl.style.pointerEvents = 'none';
+      }
+      return;
     }
+
+    const timelineAlpha = 1.0;
 
     callouts.forEach((el, idx) => {
       let baseOpacity = 0;
@@ -1062,11 +1097,11 @@
           targetY = Math.max(60, pos.y - 90);
         }
       } else {
-        // Stage 3 (Finale): Perfectly centered horizontally and vertically
+        // Stage 3 (Finale): Positioned cleanly in lower portion of viewport (below 3D harmonic soundwave)
         const cw = calloutSizes[3].width;
         const ch = calloutSizes[3].height;
         targetX = Math.max(16, (W - cw) * 0.5);
-        targetY = Math.max(24, (H - ch) * 0.5);
+        targetY = isMobile ? Math.max(24, H * 0.54) : Math.min(H - ch - 36, Math.max(H * 0.58, H * 0.63));
       }
 
       // Smooth coordinate damping
@@ -1215,6 +1250,8 @@
   let prevActiveSection = null;
 
   function update3DSpatialIslands() {
+    document.body.classList.toggle('in-spatial-mode', flightState !== 'timeline');
+
     let isSectionActive;
     if (isSwitchingSections) {
       isSectionActive = true;
@@ -1603,6 +1640,7 @@
       if (rawT >= 1.0) {
         flightState = 'timeline';
         activeSection = null;
+        document.body.classList.remove('in-spatial-mode');
         warpSpeed = 0.0;
         currentWaveP = p;
         currentMorphAbout = 0.0;
