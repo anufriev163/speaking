@@ -605,10 +605,12 @@ body {
 
 .island-card {
   position: relative;
-  background: transparent !important;
+  background: radial-gradient(ellipse 95% 85% at 50% 50%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.68) 50%, rgba(255, 255, 255, 0) 82%) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
+  border-radius: 40px !important;
+  padding: 24px 32px !important;
   box-shadow: none !important;
   display: flex;
   flex-direction: column;

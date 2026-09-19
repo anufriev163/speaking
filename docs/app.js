@@ -107,34 +107,34 @@
     about: {
       targetP: 0.6,
       islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
-      camPos: new THREE.Vector3(-3.8, 1.2, 14.8),
-      camLook: new THREE.Vector3(0.6, -0.2, 0.0),
-      tiltYaw: 3.5,
-      tiltPitch: -2.0
+      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
+      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
+      tiltYaw: 0.0,
+      tiltPitch: 0.0
     },
     privacy: {
       targetP: 1.35,
-      islandPos: new THREE.Vector3(0.0, 0.6, 3.8),
-      camPos: new THREE.Vector3(0.0, 2.8, 14.6),
-      camLook: new THREE.Vector3(0.0, -0.4, 0.0),
+      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
+      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
+      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
       tiltYaw: 0.0,
-      tiltPitch: 4.0
+      tiltPitch: 0.0
     },
     audience: {
       targetP: 2.1,
       islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
-      camPos: new THREE.Vector3(3.8, 1.4, 14.8),
-      camLook: new THREE.Vector3(-0.6, -0.2, 0.0),
-      tiltYaw: -3.5,
-      tiltPitch: -2.0
+      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
+      camLook: new THREE.Vector3(0.0, 0.4, 0.0),
+      tiltYaw: 0.0,
+      tiltPitch: 0.0
     },
     download: {
       targetP: 2.85,
-      islandPos: new THREE.Vector3(0.0, 0.3, 4.2),
-      camPos: new THREE.Vector3(0.0, -0.6, 15.2),
+      islandPos: new THREE.Vector3(0.0, 0.4, 4.0),
+      camPos: new THREE.Vector3(0.0, 0.8, 16.5),
       camLook: new THREE.Vector3(0.0, 0.4, 0.0),
       tiltYaw: 0.0,
-      tiltPitch: -3.0
+      tiltPitch: 0.0
     }
   };
 
@@ -285,236 +285,349 @@
       pos3[i3 + 2] = Math.sin(ringAngle) * baseRadius * 0.65;
 
       // ====================================================================
-      // SECTION OBJECT 1: 3D СТУДИЙНЫЙ МИКРОФОН («О ПРОЕКТЕ»)
+      // SECTION OBJECT 1: БОЛЬШАЯ 3D РАБОЧАЯ ПАПКА С ДОКУМЕНТАМИ («О ПРОЕКТЕ»)
       // ====================================================================
-      let mx = 0, my = 0, mz = 0;
+      let fx = 0, fy = 0, fz = 0;
+      if (i < 3600) {
+        // Crisp Glowing Silhouette & Tab Perimeter Ribbon (3600 particles)
+        const t = i / 3600;
+        const bevelZ = ((i % 12) / 11 - 0.5) * 0.5;
+        let px = 0, py = 0;
+
+        if (t < 0.20) {
+          const segT = t / 0.20;
+          px = -5.8 + segT * 11.6;
+          py = -3.6;
+        } else if (t < 0.40) {
+          const segT = (t - 0.20) / 0.20;
+          px = 5.8;
+          py = -3.6 + segT * 5.8;
+        } else if (t < 0.55) {
+          const segT = (t - 0.40) / 0.15;
+          px = 5.8 - segT * 6.2;
+          py = 2.2;
+        } else if (t < 0.65) {
+          const segT = (t - 0.55) / 0.10;
+          px = -0.4 - segT * 1.0;
+          py = 2.2 + segT * 2.2;
+        } else if (t < 0.85) {
+          const segT = (t - 0.65) / 0.20;
+          px = -1.4 - segT * 4.4;
+          py = 4.4;
+        } else {
+          const segT = (t - 0.85) / 0.15;
+          px = -5.8;
+          py = 4.4 - segT * 8.0;
+        }
+        fx = px;
+        fy = py;
+        fz = -0.65 + bevelZ;
+      } else if (i < 8500) {
+        // Layered Project Documents peeking out of folder (4900 particles: 2 sheets)
+        const idx = i - 3600;
+        const isSheet2 = (idx >= 2500);
+        const sIdx = isSheet2 ? (idx - 2500) : idx;
+        const totalRows = isSheet2 ? 24 : 25;
+        const u = ((sIdx % 100) / 99) * 2.0 - 1.0;
+        const v = Math.floor(sIdx / 100) / (totalRows - 1);
+
+        if (!isSheet2) {
+          // Document Sheet 1: Main Project Blueprint (rises to Y = 4.0)
+          const px = u * 4.8;
+          const py = -2.8 + v * 6.8;
+          const rowMod = Math.sin(py * 6.8);
+          const isText = (rowMod > 0.25) && (u > -0.85 && u < 0.85);
+          fx = px;
+          fy = py;
+          fz = -0.22 + (isText ? 0.08 : 0.0);
+        } else {
+          // Document Sheet 2: Angled secondary spec sheet (tilted +3 deg, rises to Y = 4.3)
+          const rawX = u * 4.4;
+          const rawY = -2.4 + v * 6.7;
+          const ang = 0.05;
+          fx = rawX * Math.cos(ang) - rawY * Math.sin(ang) + 0.3;
+          fy = rawX * Math.sin(ang) + rawY * Math.cos(ang);
+          fz = 0.02;
+        }
+      } else if (i < 14500) {
+        // Open 3D Front Cover leaning forward (6000 particles: 100 cols x 60 rows)
+        const idx = i - 8500;
+        const u = ((idx % 100) / 99) * 2.0 - 1.0;
+        const v = Math.floor(idx / 100) / 59;
+
+        const xFront = u * 5.85;
+        const scoop = Math.exp(-u * u * 5.5) * 0.75;
+        const yTopFront = 0.8 - scoop;
+        const yFront = -3.6 + v * (yTopFront - (-3.6));
+        const zFront = -0.3 + v * 2.35;
+
+        const isBorder = Math.abs(u) > 0.94 || v < 0.04 || v > 0.94;
+        fx = xFront;
+        fy = yFront;
+        fz = zFront + (isBorder ? 0.08 : 0.0);
+      } else {
+        // Back Cover Interior Mesh & Cylindrical Hinge Spine (3500 particles)
+        const idx = i - 14500;
+        if (idx < 1500) {
+          const t = idx / 1500;
+          const spineAngle = (idx * goldenAngle);
+          const spineR = 0.38;
+          fx = -5.8 + t * 11.6;
+          fy = -3.6 + Math.sin(spineAngle) * spineR;
+          fz = -0.3 + Math.cos(spineAngle) * spineR;
+        } else {
+          const u = ((idx % 50) / 49) * 2.0 - 1.0;
+          const v = Math.floor((idx - 1500) / 50) / 39;
+          fx = u * 5.4;
+          fy = -3.4 + v * 5.0;
+          fz = -0.55 + ((idx % 7) / 6) * 0.9;
+        }
+      }
+      posAbout[i3]     = fx;
+      posAbout[i3 + 1] = fy;
+      posAbout[i3 + 2] = fz;
+
+      // ====================================================================
+      // SECTION OBJECT 2: БОЛЬШОЙ 3D НАВЕСНОЙ КИБЕР-ЗАМОК («ПРИВАТНОСТЬ»)
+      // ====================================================================
+      let kx = 0, ky = 0, kz = 0;
       if (i < 7000) {
-        // Microphone Grille Capsule (Mesh head dome & cylinder)
+        // Massive Toroidal Shackle Arch (Дужка замка) - 7000 particles
         const t = i / 7000;
-        const phi = Math.acos(1.0 - 2.0 * t);
         const theta = i * goldenAngle;
-        const R = 1.65;
-        if (phi < Math.PI * 0.45) {
-          mx = Math.sin(phi) * Math.cos(theta) * R;
-          my = 1.8 + Math.cos(phi) * R * 1.1;
-          mz = Math.sin(phi) * Math.sin(theta) * R;
+        const tubeR = 0.62;
+        const offX = Math.cos(theta) * tubeR;
+        const offZ = Math.sin(theta) * tubeR;
+
+        if (t < 0.26) {
+          const legT = t / 0.26;
+          kx = -2.85 + offX;
+          ky = 1.2 + legT * 2.2;
+          kz = offZ;
+        } else if (t < 0.52) {
+          const legT = (t - 0.26) / 0.26;
+          kx = 2.85 + offX;
+          ky = 1.2 + legT * 2.2;
+          kz = offZ;
         } else {
-          const cyH = (phi - Math.PI * 0.45) / (Math.PI * 0.55);
-          mx = Math.cos(theta) * R;
-          my = 1.8 - cyH * 1.5;
-          mz = Math.sin(theta) * R;
+          const archT = (t - 0.52) / 0.48;
+          const arcAngle = archT * Math.PI;
+          const archR = 2.85;
+          kx = -Math.cos(arcAngle) * archR + offX * Math.sin(arcAngle);
+          ky = 3.4 + Math.sin(arcAngle) * archR + offX * Math.cos(arcAngle);
+          kz = offZ;
         }
-        const meshPattern = Math.sin(mx * 16.0) * Math.cos(my * 16.0) * 0.04;
-        mx += meshPattern;
-        mz += meshPattern;
-      } else if (i < 10500) {
-        // Cylindrical microphone body / handle
-        const t = (i - 7000) / 3500;
-        const theta = i * goldenAngle;
-        const cyY = 0.3 - t * 1.9;
-        const taperR = 1.45 - t * 0.25;
-        mx = Math.cos(theta) * taperR;
-        my = cyY;
-        mz = Math.sin(theta) * taperR;
-      } else if (i < 14000) {
-        // Shockmount ring & cross-bars
-        const t = (i - 10500) / 3500;
-        if (t < 0.75) {
-          const ringR = (i % 2 === 0) ? 2.7 : 2.1;
-          const theta = (t / 0.75) * Math.PI * 2.0;
-          mx = Math.cos(theta) * ringR;
-          my = 0.0 + Math.sin(theta * 6.0) * 0.1;
-          mz = Math.sin(theta) * ringR;
+      } else if (i < 13500) {
+        // Sculpted Padlock Armor Body (6500 particles)
+        const idx = i - 7000;
+        const u = ((idx % 100) / 99) * 2.0 - 1.0;
+        const v = Math.floor(idx / 100) / 64;
+
+        const xBody = u * 4.7;
+        const yBody = -4.0 + v * 5.2;
+
+        const cornerR = 0.8;
+        const distFromEdgeX = Math.max(0.0, Math.abs(xBody) - (4.7 - cornerR));
+        const distFromEdgeY = Math.max(0.0, Math.abs(yBody - (-1.4)) - (2.6 - cornerR));
+        const isCorner = (distFromEdgeX * distFromEdgeX + distFromEdgeY * distFromEdgeY) > (cornerR * cornerR);
+
+        const isKeyholeVoid = (xBody * xBody + (yBody + 1.2) * (yBody + 1.2) < 1.4) ||
+                              (Math.abs(xBody) < 0.55 && yBody < -1.0 && yBody > -3.0);
+
+        const plateZ = ((Math.floor(idx / 3250) % 2) === 0) ? -1.15 : 1.15;
+        const zDepth = (idx % 6 === 0) ? ((idx % 13) / 12 - 0.5) * 2.3 : plateZ;
+
+        if (isKeyholeVoid && zDepth > 0.0) {
+          kx = xBody * 1.65;
+          ky = yBody;
+          kz = 0.35;
+        } else if (isCorner) {
+          kx = xBody * 0.92;
+          ky = yBody * 0.92;
+          kz = zDepth * 0.8;
         } else {
-          const cordIdx = i % 4;
-          const cordAngle = cordIdx * (Math.PI * 0.5) + Math.PI * 0.25;
-          const prog = (t - 0.75) / 0.25;
-          const rCord = 1.35 + prog * 1.05;
-          mx = Math.cos(cordAngle) * rCord;
-          my = -0.3 + prog * 0.6;
-          mz = Math.sin(cordAngle) * rCord;
+          kx = xBody;
+          ky = yBody;
+          kz = zDepth;
+        }
+      } else if (i < 16500) {
+        // Glowing Cyber Keyhole & Concentric Security Rings (3000 particles)
+        const idx = i - 13500;
+        const t = idx / 3000;
+        if (t < 0.60) {
+          const ringIdx = idx % 3;
+          const rRing = 0.65 + ringIdx * 0.55;
+          const ringAngle = (idx * goldenAngle);
+          kx = Math.cos(ringAngle) * rRing;
+          ky = -1.2 + Math.sin(ringAngle) * rRing;
+          kz = 1.22;
+        } else {
+          const slotT = (t - 0.60) / 0.40;
+          const side = (idx % 2 === 0) ? -1.0 : 1.0;
+          const slotW = 0.42 - slotT * 0.20;
+          kx = side * slotW;
+          ky = -1.2 - slotT * 1.6;
+          kz = 1.22;
         }
       } else {
-        // Stem & Circular Weighted Desk Stand
-        const t = (i - 14000) / 4000;
-        if (t < 0.35) {
-          const theta = i * goldenAngle;
-          const rodY = -1.6 - (t / 0.35) * 1.6;
-          const rodR = 0.28;
-          mx = Math.cos(theta) * rodR;
-          my = rodY;
-          mz = Math.sin(theta) * rodR;
-        } else {
-          const baseT = (t - 0.35) / 0.65;
-          const rBase = Math.sqrt(baseT) * 2.5;
-          const theta = i * goldenAngle;
-          mx = Math.cos(theta) * rBase;
-          my = -3.2 - (1.0 - baseT) * 0.2;
-          mz = Math.sin(theta) * rBase;
-        }
+        // Exterior Armor Rim Bevels & Security Aura (1500 particles)
+        const idx = i - 16500;
+        const t = idx / 1500;
+        const theta = t * Math.PI * 2.0;
+        const auraR = 5.2 + Math.sin(idx * 3.7) * 0.4;
+        kx = Math.cos(theta) * auraR;
+        ky = -1.4 + Math.sin(theta) * 3.2;
+        kz = ((idx % 7) / 6 - 0.5) * 1.2;
       }
-      posAbout[i3]     = mx;
-      posAbout[i3 + 1] = my;
-      posAbout[i3 + 2] = mz;
+      posPrivacy[i3]     = kx;
+      posPrivacy[i3 + 1] = ky;
+      posPrivacy[i3 + 2] = kz;
 
       // ====================================================================
-      // SECTION OBJECT 2: 3D ЩИТ И НАВЕСНОЙ ЗАМОК («ПРИВАТНОСТЬ»)
+      // SECTION OBJECT 3: БОЛЬШАЯ 3D ФИГУРА ЧЕЛОВЕКА («ДЛЯ КОГО»)
       // ====================================================================
-      let sx = 0, sy = 0, sz = 0;
-      if (i < 11500) {
-        // The 3D Curved Security Shield
-        const t = i / 11500;
+      let hx = 0, hy = 0, hz = 0;
+      if (i < 6000) {
+        // Sculpted Human Head & Cranial Halo (6000 particles)
+        const t = i / 6000;
+        if (t < 0.78) {
+          const phi = Math.acos(1.0 - 2.0 * (t / 0.78));
+          const theta = i * goldenAngle;
+          const rx = 1.75;
+          const ry = 2.15;
+          const rz = 1.95;
+
+          hx = Math.sin(phi) * Math.cos(theta) * rx;
+          hy = 3.65 + Math.cos(phi) * ry;
+          hz = Math.sin(phi) * Math.sin(theta) * rz;
+        } else {
+          const haloT = (t - 0.78) / 0.22;
+          const angle = haloT * Math.PI * 8.0 + (i % 5);
+          const rHalo = 2.2 + Math.sin(i * 2.1) * 0.4;
+          hx = Math.cos(angle) * rHalo;
+          hy = 4.2 + Math.sin(haloT * Math.PI * 4.0) * 0.8;
+          hz = Math.sin(angle) * rHalo;
+        }
+      } else if (i < 8000) {
+        // Anatomical Neck & Throat Column (2000 particles)
+        const t = (i - 6000) / 2000;
+        const theta = i * goldenAngle;
+        const neckR = 0.72 + (1.0 - t) * 0.15;
+        const yNeck = 1.45 + t * 0.85;
+
+        hx = Math.cos(theta) * neckR;
+        hy = yNeck;
+        hz = Math.sin(theta) * neckR * 0.88;
+      } else if (i < 15500) {
+        // Expansive Shoulders & Torso Contours (7500 particles)
+        const idx = i - 8000;
+        const t = idx / 7500;
         const v = Math.pow(t, 0.75);
-        const yNorm = -3.5 + v * 6.6;
-        const uVal = (Math.sin(i * 3.71) * 0.5 + 0.5) * 2.0 - 1.0;
+        const yTorso = 1.45 - v * 5.2;
 
-        let maxW;
-        if (v < 0.6) {
-          maxW = 3.0 * Math.sin(v / 0.6 * (Math.PI * 0.5));
+        let shoulderW;
+        if (v < 0.22) {
+          const sT = v / 0.22;
+          shoulderW = 0.85 + sT * 5.35;
         } else {
-          const topT = (v - 0.6) / 0.4;
-          maxW = 3.0 * (1.0 - topT * topT * 0.18);
+          const bT = (v - 0.22) / 0.78;
+          shoulderW = 6.20 - bT * 1.80;
         }
 
-        const crest = (v > 0.88) ? Math.cos(uVal * Math.PI) * 0.3 : 0.0;
-        sy = yNorm + crest;
-        sx = uVal * maxW;
+        const u = ((idx % 100) / 99) * 2.0 - 1.0;
+        const depthCurve = Math.cos(u * (Math.PI * 0.48));
+        const zTorso = ((idx % 9) / 8 - 0.5) * 1.4 + depthCurve * 1.5;
 
-        const curveFactor = Math.max(0.0, 1.0 - (sx * sx) / 9.5 - (sy * sy) / 16.0);
-        sz = curveFactor * 0.8;
-        if (Math.abs(uVal) > 0.8) {
-          sz += 0.25;
-        }
-      } else if (i < 15000) {
-        // Padlock Body
-        const pX = ((i % 50) / 49 - 0.5) * 2.0 * 1.0;
-        const pY = -0.7 + ((Math.floor(i / 50) % 40) / 39) * 1.1;
-        const pZ = 1.0 + ((i % 7) / 6 - 0.5) * 0.6;
-
-        const isKeyhole = (Math.abs(pX) < 0.18 && pY < 0.0 && pY > -0.5) ||
-                          (pX * pX + (pY + 0.05) * (pY + 0.05) < 0.06);
-        if (isKeyhole) {
-          sx = pX * 1.6;
-          sy = pY;
-          sz = 0.7;
+        const isCenterAiry = Math.abs(u) < 0.55 && yTorso < 0.2 && yTorso > -2.8;
+        if (isCenterAiry && (idx % 3 !== 0)) {
+          const pushSign = (u < 0) ? -1.0 : 1.0;
+          hx = pushSign * (shoulderW * (0.65 + Math.abs(u) * 0.35));
+          hy = yTorso;
+          hz = zTorso * 0.6;
         } else {
-          sx = pX;
-          sy = pY;
-          sz = pZ;
+          hx = u * shoulderW;
+          hy = yTorso;
+          hz = zTorso;
         }
       } else {
-        // Padlock Shackle
-        const t = (i - 15000) / 3000;
-        const theta = t * Math.PI;
-        const archR = 0.72;
-        const tubeR = 0.18;
-        const tubeTheta = i * goldenAngle;
+        // Flowing Neural Ribbon Fibers Flanking the Silhouette (2500 particles)
+        const idx = i - 15500;
+        const t = idx / 2500;
+        const side = (idx % 2 === 0) ? -1.0 : 1.0;
+        const curveT = t * Math.PI * 2.0;
+        const xFiber = side * (3.8 + t * 2.8 + Math.sin(curveT * 3.0) * 0.4);
+        const yFiber = 3.2 - t * 6.5;
+        const zFiber = Math.sin(curveT * 2.0) * 1.2;
 
-        const arcX = Math.cos(theta) * archR;
-        const arcY = 0.4 + Math.sin(theta) * archR * 1.15;
-        sx = arcX + Math.cos(tubeTheta) * tubeR;
-        sy = arcY;
-        sz = 1.0 + Math.sin(tubeTheta) * tubeR;
+        hx = xFiber;
+        hy = yFiber;
+        hz = zFiber;
       }
-      posPrivacy[i3]     = sx;
-      posPrivacy[i3 + 1] = sy;
-      posPrivacy[i3 + 2] = sz;
+      posAudience[i3]     = hx;
+      posAudience[i3 + 1] = hy;
+      posAudience[i3 + 2] = hz;
 
       // ====================================================================
-      // SECTION OBJECT 3: 3D НЕЙРОННЫЙ МОЗГ И РАЗУМ («ДЛЯ КОГО»)
-      // ====================================================================
-      let bx = 0, by = 0, bz = 0;
-      if (i < 13500) {
-        const side = (i % 2 === 0) ? 1.0 : -1.0;
-        const t = i / 13500;
-        const phi = Math.acos(1.0 - 2.0 * t);
-        const theta = i * goldenAngle;
-
-        const rx = 1.65;
-        const ry = 1.95;
-        const rz = 2.45;
-
-        const gyri = 0.14 * Math.sin(theta * 9.0) * Math.cos(phi * 8.0) +
-                     0.08 * Math.sin(theta * 18.0) +
-                     0.06 * Math.cos(phi * 14.0);
-
-        const rMod = 1.0 + gyri;
-        bx = side * (0.45 + Math.sin(phi) * Math.abs(Math.cos(theta)) * rx * rMod);
-        by = 0.4 + Math.cos(phi) * ry * rMod;
-        bz = Math.sin(phi) * Math.sin(theta) * rz * rMod;
-
-        if (by < 0.0 && bz > 0.0) {
-          bx *= 0.9;
-        }
-      } else if (i < 16000) {
-        const t = (i - 13500) / 2500;
-        if (t < 0.6) {
-          const side = (i % 2 === 0) ? 1.0 : -1.0;
-          const theta = i * goldenAngle;
-          const crR = 0.85;
-          bx = side * (0.6 + Math.cos(theta) * crR * 0.6);
-          by = -1.2 + Math.sin(theta) * crR * 0.5;
-          bz = -1.2 + Math.sin(theta * 2.0) * crR * 0.5;
-        } else {
-          const stemT = (t - 0.6) / 0.4;
-          const theta = i * goldenAngle;
-          bx = Math.cos(theta) * 0.35;
-          by = -1.2 - stemT * 1.8;
-          bz = -0.4 + Math.sin(theta) * 0.35;
-        }
-      } else {
-        const t = (i - 16000) / 2000;
-        const angle = t * Math.PI * 8.0;
-        const rOrbit = 2.8 + Math.sin(i * 3.1) * 0.6;
-        bx = Math.cos(angle) * rOrbit;
-        by = 0.4 + Math.sin(i * 1.7) * 2.2;
-        bz = Math.sin(angle) * rOrbit;
-      }
-      posAudience[i3]     = bx;
-      posAudience[i3 + 1] = by;
-      posAudience[i3 + 2] = bz;
-
-      // ====================================================================
-      // SECTION OBJECT 4: 3D СТРЕЛКА СКАЧИВАНИЯ И ДОК-СТАНЦИЯ («СКАЧАТЬ»)
+      // SECTION OBJECT 4: БОЛЬШАЯ 3D СТРЕЛКА СКАЧИВАНИЯ И ДОК-СТАНЦИЯ («СКАЧАТЬ»)
       // ====================================================================
       let dx = 0, dy = 0, dz = 0;
-      if (i < 11000) {
-        const t = i / 11000;
-        const depth = ((i % 16) / 15 - 0.5) * 1.4;
+      if (i < 4500) {
+        // Massive Arrow Shaft (Стержень стрелки) - 4500 particles
+        const u = ((i % 50) / 49) * 2.0 - 1.0;
+        const v = Math.floor(i / 50) / 89;
+        const w = ((i % 10) / 9 - 0.5) * 1.7;
 
-        if (t < 0.45) {
-          const stemT = t / 0.45;
-          const stemX = ((i % 30) / 29 - 0.5) * 2.0 * 0.85;
-          dx = stemX;
-          dy = 0.6 + stemT * 2.6;
-          dz = depth;
+        dx = u * 1.35;
+        dy = 1.5 + v * 4.5;
+        dz = w;
+      } else if (i < 11500) {
+        // Aerodynamic 3D Chevron Arrowhead (7000 particles)
+        const idx = i - 4500;
+        const t = idx / 7000;
+        const v = Math.pow(t, 0.85);
+        const yHead = 1.5 - v * 2.5;
+        const wingW = 4.8 * (1.0 - v);
+        const u = ((idx % 70) / 69) * 2.0 - 1.0;
+        const w = ((idx % 12) / 11 - 0.5) * 1.8 * (1.0 - v * 0.35);
+
+        dx = u * wingW;
+        dy = yHead;
+        dz = w;
+      } else if (i < 16500) {
+        // Monumental Receiving Dock Cradle (5000 particles)
+        const idx = i - 11500;
+        const t = idx / 5000;
+        if (t < 0.65) {
+          const segT = t / 0.65;
+          const u = segT * 2.0 - 1.0;
+          const curveSag = Math.cos(u * Math.PI * 0.5) * 0.4;
+          const barY = -3.5 - curveSag + ((idx % 16) / 15) * 0.9;
+          const barZ = ((idx % 10) / 9 - 0.5) * 2.2;
+
+          dx = u * 6.2;
+          dy = barY;
+          dz = barZ;
         } else {
-          const headT = (t - 0.45) / 0.55;
-          const yHead = 0.6 - headT * 1.8;
-          const wingW = 2.5 * (1.0 - headT);
-          const uVal = ((i % 40) / 39 - 0.5) * 2.0;
-          dx = uVal * wingW;
-          dy = yHead;
-          dz = depth * (1.0 - headT * 0.3);
+          const armT = (t - 0.65) / 0.35;
+          const isLeft = (idx % 2 === 0);
+          const sign = isLeft ? -1.0 : 1.0;
+          const armY = -2.8 + armT * 2.4;
+          const armX = sign * (5.6 + ((idx % 6) / 5) * 0.6);
+          const armZ = ((idx % 8) / 7 - 0.5) * 2.0;
+
+          dx = armX;
+          dy = armY;
+          dz = armZ;
         }
       } else {
-        const t = (i - 11000) / 7000;
-        if (t < 0.65) {
-          const ringIdx = i % 4;
-          const rRing = 0.8 + ringIdx * 0.85;
-          const theta = (t / 0.65) * Math.PI * 2.0 + (i % 5);
-          dx = Math.cos(theta) * rRing;
-          dy = -2.6 + Math.sin(theta * 4.0) * 0.08;
-          dz = Math.sin(theta) * rRing * 0.75;
-        } else {
-          const bracketIdx = i % 2;
-          const sign = (bracketIdx === 0) ? -1.0 : 1.0;
-          const prog = (t - 0.65) / 0.35;
-          const bTheta = (prog - 0.5) * (Math.PI * 0.6);
-          dx = sign * (3.3 + Math.cos(bTheta) * 0.4);
-          dy = -2.6 + prog * 1.4;
-          dz = Math.sin(bTheta) * 2.2;
-        }
+        // Concentric Holographic Dock Radar Rings (1500 particles)
+        const idx = i - 16500;
+        const ringIdx = idx % 3;
+        const rRing = 1.8 + ringIdx * 1.5;
+        const theta = (idx * goldenAngle);
+        dx = Math.cos(theta) * rRing;
+        dy = -3.2 + Math.sin(theta * 3.0) * 0.12;
+        dz = Math.sin(theta) * rRing * 0.65;
       }
       posDownload[i3]     = dx;
       posDownload[i3 + 1] = dy;
@@ -1245,11 +1358,15 @@
   }
 
   const clock = new THREE.Clock();
+  let meshSpinY = 0.0;
+  let lastClockTime = 0.0;
 
   function animate() {
     requestAnimationFrame(animate);
 
     const elapsedTime = clock.getElapsedTime();
+    const dt = Math.min(0.05, Math.max(0.001, elapsedTime - lastClockTime));
+    lastClockTime = elapsedTime;
 
     smoothProgress += (targetProgress - smoothProgress) * 0.065;
     currentCamX += (targetCamX - currentCamX) * 0.05;
@@ -1392,8 +1509,29 @@
     camera.lookAt(currentLookAt);
 
     if (wavePoints) {
-      wavePoints.rotation.y = elapsedTime * 0.12 + currentCamX * 0.04;
-      wavePoints.rotation.x = currentCamY * 0.025;
+      const totalMorph = currentMorphAbout + currentMorphPrivacy + currentMorphAudience + currentMorphDownload;
+      const morphFactor = Math.min(1.0, totalMorph);
+
+      if (morphFactor < 0.001) {
+        meshSpinY += dt * 0.10;
+        wavePoints.rotation.y = meshSpinY + currentCamX * 0.04;
+        wavePoints.rotation.x = currentCamY * 0.025;
+      } else {
+        const nearestFront = Math.round(meshSpinY / (Math.PI * 2.0)) * (Math.PI * 2.0);
+        meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 3.5);
+
+        // Gentle organic 3D rocking / swaying when in 3D object form
+        const objRockY = Math.sin(elapsedTime * 0.85) * 0.11;
+        const objRockX = Math.cos(elapsedTime * 0.65) * 0.05;
+
+        const blendY = (meshSpinY + currentCamX * 0.04) * (1.0 - morphFactor) +
+                       (nearestFront + objRockY + currentCamX * 0.05) * morphFactor;
+        const blendX = (currentCamY * 0.025) * (1.0 - morphFactor) +
+                       (objRockX + currentCamY * 0.03) * morphFactor;
+
+        wavePoints.rotation.y = blendY;
+        wavePoints.rotation.x = blendX;
+      }
     }
 
     let rippleStrength = 0.0;
