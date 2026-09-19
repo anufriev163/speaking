@@ -63,6 +63,96 @@
   const screenPosOut = { x: 0, y: 0, visible: true };
   let isTouchDevice = false;
 
+  // ── 3D SPATIAL ORBIT FLIGHT & SECTION WARP ENGINE ──
+  let flightState = 'timeline'; // 'timeline' | 'warping_out' | 'in_section' | 'warping_in'
+  let activeSection = null;
+  let flightStartTime = 0;
+  let sectionEnterTime = 0;
+  const FLIGHT_DURATION = 1150; // ms
+  let warpSpeed = 0.0;
+  const camFlightStartPos = new THREE.Vector3();
+  const camFlightStartLook = new THREE.Vector3();
+  const camFlightEndPos = new THREE.Vector3();
+  const camFlightEndLook = new THREE.Vector3();
+  const currentLookAt = new THREE.Vector3(0, -0.4, 0);
+  const timelineTargetPos = new THREE.Vector3();
+  const timelineTargetLook = new THREE.Vector3();
+  let flightStartAngle = 0;
+  let flightStartRadius = 17.5;
+  let flightTargetAngle = 0;
+  let flightTargetRadius = 10.0;
+
+  const SECTION_TARGETS = {
+    about: {
+      pos: new THREE.Vector3(5.5, 3.2, 8.5),
+      look: new THREE.Vector3(0.0, 0.4, 0.0),
+      radius: 10.2,
+      height: 3.2,
+      baseAngle: 0.98,
+      orbitSpeed: 0.11
+    },
+    privacy: {
+      pos: new THREE.Vector3(-12.5, 7.0, 9.5),
+      look: new THREE.Vector3(0.0, 0.6, 0.0),
+      radius: 15.7,
+      height: 7.0,
+      baseAngle: 3.96,
+      orbitSpeed: 0.08
+    },
+    audience: {
+      pos: new THREE.Vector3(13.5, 5.2, 9.0),
+      look: new THREE.Vector3(0.0, 0.3, 0.0),
+      radius: 16.2,
+      height: 5.2,
+      baseAngle: 0.99,
+      orbitSpeed: 0.09
+    },
+    download: {
+      pos: new THREE.Vector3(0.0, 11.5, 21.0),
+      look: new THREE.Vector3(0.0, -1.2, 0.0),
+      radius: 21.0,
+      height: 11.5,
+      baseAngle: 0.0,
+      orbitSpeed: 0.06
+    }
+  };
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function getTimelineCamera(p, outPos, outLook) {
+    let targetZ = 17.5;
+    let targetY = 0.5;
+    let targetX = 0.0;
+    let lookY = -0.4;
+
+    if (p < 1.0) {
+      const t = p;
+      const zoomArch = Math.sin(t * Math.PI) * 9.0;
+      targetZ = 17.5 + zoomArch;
+      targetY = 0.5 + Math.sin(t * Math.PI * 0.5) * 2.0;
+      targetX = Math.sin(t * Math.PI * 0.5) * 2.5;
+      lookY = -0.4 + t * 0.9;
+    } else if (p < 2.0) {
+      const t = p - 1.0;
+      const zoomArch = Math.sin(t * Math.PI) * 9.0;
+      targetZ = 17.5 + zoomArch - t * 4.0;
+      targetY = 2.5 - t * 1.5;
+      targetX = 2.5 * (1.0 - t) - t * 2.0;
+      lookY = 0.5 - t * 0.5;
+    } else {
+      const t = p - 2.0;
+      targetZ = 13.5 + t * 12.5;
+      targetY = 1.0 - t * 0.8;
+      targetX = -2.0 * (1.0 - t);
+      lookY = 0.0;
+    }
+
+    outPos.set(targetX, targetY, targetZ);
+    outLook.set(0, lookY, 0);
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     initScene();
     setupGeometry();
@@ -190,6 +280,7 @@
       uniform float uRippleStrength;
       uniform float uPixelRatio;
       uniform float uMicEnergy;
+      uniform float uWarpSpeed;
 
       varying vec3 vColor;
       varying float vAlpha;
@@ -223,6 +314,12 @@
         float voicePulse = wave * (uMicEnergy * 0.9);
         p.y += wave + pulse + voicePulse;
 
+        // Hyperspace warp effect during 3D section transition
+        if (uWarpSpeed > 0.001) {
+          p.z += sin(p.x * 2.5 + p.y * 1.5 + uTime * 10.0) * (uWarpSpeed * 4.0);
+          p.x += (p.x * 0.12) * uWarpSpeed;
+        }
+
         if (uRippleStrength > 0.001) {
           float dist = length(p.xz - uRipplePos);
           float rip = sin(dist * 1.1 - uRippleTime * 4.0) * exp(-dist * 0.3) * uRippleStrength * 0.25;
@@ -232,8 +329,8 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25);
-        gl_PointSize = clamp(size, 2.5, 54.0);
+        float size = (38.0 / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8);
+        gl_PointSize = clamp(size, 2.5, 68.0);
 
         vec3 cDeep  = vec3(0.008, 0.518, 0.780); // #0284C7
         vec3 cSky   = vec3(0.220, 0.741, 0.973); // #38BDF8
@@ -249,6 +346,10 @@
 
         if (uMicEnergy > 0.01) {
           vColor = mix(vColor, cVoice, clamp(uMicEnergy * 0.65, 0.0, 0.75));
+        }
+
+        if (uWarpSpeed > 0.01) {
+          vColor = mix(vColor, vec3(0.08, 0.85, 1.0), clamp(uWarpSpeed * 0.65, 0.0, 0.75));
         }
 
         float distFog = clamp((-mvPosition.z - 10.0) / 38.0, 0.0, 1.0);
@@ -280,7 +381,8 @@
         uRipplePos:      { value: new THREE.Vector2(0, 0) },
         uRippleStrength: { value: 0.0 },
         uPixelRatio:     { value: Math.min(window.devicePixelRatio || 1, 2) },
-        uMicEnergy:      { value: 0.0 }
+        uMicEnergy:      { value: 0.0 },
+        uWarpSpeed:      { value: 0.0 }
       },
       transparent: true,
       blending: THREE.NormalBlending,
@@ -330,71 +432,78 @@
 
   // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
   function updateSpatialCallouts(p) {
+    const isWarpingOrSection = flightState !== 'timeline';
+
     callouts.forEach((el, idx) => {
       let opacity = 0;
       let exitFraction = 0;
 
-      if (idx === 0) {
-        // Hero stage: 100% visible right from p = 0.0!
-        if (p <= 0.35) {
-          opacity = 1.0;
-          exitFraction = 0.0;
-        } else if (p <= 0.65) {
-          const t = (p - 0.35) / 0.30;
-          exitFraction = t;
-          opacity = Math.max(0.0, 1.0 - t * 1.5);
-        } else {
-          opacity = 0;
-          exitFraction = 1.0;
-        }
-      } else if (idx === 1) {
-        // Stage 1 (Sphere): enters 0.65..0.95, stays 0.95..1.35, exits 1.35..1.65
-        if (p >= 0.65 && p <= 1.65) {
-          if (p < 0.95) {
-            const t = (p - 0.65) / 0.30;
-            opacity = t;
-            exitFraction = 1.0 - t;
-          } else if (p <= 1.35) {
+      if (!isWarpingOrSection) {
+        if (idx === 0) {
+          // Hero stage: 100% visible right from p = 0.0!
+          if (p <= 0.35) {
             opacity = 1.0;
             exitFraction = 0.0;
-          } else {
-            const t = (p - 1.35) / 0.30;
+          } else if (p <= 0.65) {
+            const t = (p - 0.35) / 0.30;
             exitFraction = t;
             opacity = Math.max(0.0, 1.0 - t * 1.5);
+          } else {
+            opacity = 0;
+            exitFraction = 1.0;
+          }
+        } else if (idx === 1) {
+          // Stage 1 (Sphere): enters 0.65..0.95, stays 0.95..1.35, exits 1.35..1.65
+          if (p >= 0.65 && p <= 1.65) {
+            if (p < 0.95) {
+              const t = (p - 0.65) / 0.30;
+              opacity = t;
+              exitFraction = 1.0 - t;
+            } else if (p <= 1.35) {
+              opacity = 1.0;
+              exitFraction = 0.0;
+            } else {
+              const t = (p - 1.35) / 0.30;
+              exitFraction = t;
+              opacity = Math.max(0.0, 1.0 - t * 1.5);
+            }
+          } else {
+            opacity = 0;
+            exitFraction = 1.0;
+          }
+        } else if (idx === 2) {
+          // Stage 2 (Helix): enters 1.65..1.95, stays 1.95..2.25, exits 2.25..2.55
+          if (p >= 1.65 && p <= 2.55) {
+            if (p < 1.95) {
+              const t = (p - 1.65) / 0.30;
+              opacity = t;
+              exitFraction = 1.0 - t;
+            } else if (p <= 2.25) {
+              opacity = 1.0;
+              exitFraction = 0.0;
+            } else {
+              const t = (p - 2.25) / 0.30;
+              exitFraction = t;
+              opacity = Math.max(0.0, 1.0 - t * 1.5);
+            }
+          } else {
+            opacity = 0;
+            exitFraction = 1.0;
           }
         } else {
-          opacity = 0;
-          exitFraction = 1.0;
-        }
-      } else if (idx === 2) {
-        // Stage 2 (Helix): enters 1.65..1.95, stays 1.95..2.25, exits 2.25..2.55
-        if (p >= 1.65 && p <= 2.55) {
-          if (p < 1.95) {
-            const t = (p - 1.65) / 0.30;
+          // Stage 3 (Finale): enters from 2.30, fully solid at 2.65, stays 100% to end
+          if (p >= 2.30) {
+            const t = Math.min(1.0, (p - 2.30) / 0.35);
             opacity = t;
             exitFraction = 1.0 - t;
-          } else if (p <= 2.25) {
-            opacity = 1.0;
-            exitFraction = 0.0;
           } else {
-            const t = (p - 2.25) / 0.30;
-            exitFraction = t;
-            opacity = Math.max(0.0, 1.0 - t * 1.5);
+            opacity = 0;
+            exitFraction = 1.0;
           }
-        } else {
-          opacity = 0;
-          exitFraction = 1.0;
         }
       } else {
-        // Stage 3 (Finale): enters from 2.30, fully solid at 2.65, stays 100% to end
-        if (p >= 2.30) {
-          const t = Math.min(1.0, (p - 2.30) / 0.35);
-          opacity = t;
-          exitFraction = 1.0 - t;
-        } else {
-          opacity = 0;
-          exitFraction = 1.0;
-        }
+        opacity = 0;
+        exitFraction = 1.0;
       }
 
       // Base 3D target coordinates (fully adaptive, zero layout thrashing)
@@ -463,13 +572,18 @@
       let micOpacity = 0;
       let micExitFraction = 0;
 
-      if (p <= 0.35) {
-        micOpacity = 1.0;
-        micExitFraction = 0.0;
-      } else if (p <= 0.65) {
-        const t = (p - 0.35) / 0.30;
-        micExitFraction = t;
-        micOpacity = Math.max(0.0, 1.0 - t * 1.5);
+      if (!isWarpingOrSection) {
+        if (p <= 0.35) {
+          micOpacity = 1.0;
+          micExitFraction = 0.0;
+        } else if (p <= 0.65) {
+          const t = (p - 0.35) / 0.30;
+          micExitFraction = t;
+          micOpacity = Math.max(0.0, 1.0 - t * 1.5);
+        } else {
+          micOpacity = 0;
+          micExitFraction = 1.0;
+        }
       } else {
         micOpacity = 0;
         micExitFraction = 1.0;
@@ -498,6 +612,79 @@
       micHintEl.style.letterSpacing = letterSpacePx > 0.2 ? `${letterSpacePx}px` : '0.02em';
       micHintEl.style.transform = `translate3d(${Math.round(smoothMicHint.x)}px, ${Math.round(smoothMicHint.y + waveSinkY)}px, 0) rotate(-3deg)`;
       micHintEl.style.pointerEvents = micOpacity > 0.08 ? 'auto' : 'none';
+    }
+  }
+
+  // ── 3D SPATIAL ORBIT NAVIGATION CONTROLS ──
+  function openSection(sectionKey) {
+    if (!SECTION_TARGETS[sectionKey]) return;
+
+    if (flightState === 'in_section' && activeSection === sectionKey) {
+      closeSection();
+      return;
+    }
+
+    const target = SECTION_TARGETS[sectionKey];
+    activeSection = sectionKey;
+
+    camFlightStartPos.copy(camera.position);
+    camFlightStartLook.copy(currentLookAt);
+
+    camFlightEndPos.copy(target.pos);
+    camFlightEndLook.copy(target.look);
+
+    flightStartAngle = Math.atan2(camFlightStartPos.x, camFlightStartPos.z);
+    flightStartRadius = Math.sqrt(camFlightStartPos.x * camFlightStartPos.x + camFlightStartPos.z * camFlightStartPos.z);
+
+    flightTargetAngle = Math.atan2(target.pos.x, target.pos.z);
+    flightTargetRadius = Math.sqrt(target.pos.x * target.pos.x + target.pos.z * target.pos.z);
+
+    flightStartTime = performance.now();
+    flightState = 'warping_out';
+
+    // Update active nav pill
+    document.querySelectorAll('.nav-pill').forEach(pill => {
+      if (pill.getAttribute('data-section') === sectionKey) {
+        pill.classList.add('is-active');
+      } else {
+        pill.classList.remove('is-active');
+      }
+    });
+
+    // Show spatial overlay and active card
+    const overlay = document.getElementById('section-overlay');
+    if (overlay) {
+      overlay.classList.add('is-active');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.querySelectorAll('.section-card').forEach(card => card.classList.remove('is-active'));
+      const targetCard = document.getElementById(`card-${sectionKey}`);
+      if (targetCard) targetCard.classList.add('is-active');
+    }
+  }
+
+  function closeSection() {
+    if (flightState === 'timeline' || flightState === 'warping_in') return;
+
+    camFlightStartPos.copy(camera.position);
+    camFlightStartLook.copy(currentLookAt);
+
+    getTimelineCamera(smoothProgress, camFlightEndPos, camFlightEndLook);
+
+    flightStartAngle = Math.atan2(camFlightStartPos.x, camFlightStartPos.z);
+    flightStartRadius = Math.sqrt(camFlightStartPos.x * camFlightStartPos.x + camFlightStartPos.z * camFlightStartPos.z);
+
+    flightTargetAngle = Math.atan2(camFlightEndPos.x, camFlightEndPos.z);
+    flightTargetRadius = Math.sqrt(camFlightEndPos.x * camFlightEndPos.x + camFlightEndPos.z * camFlightEndPos.z);
+
+    flightStartTime = performance.now();
+    flightState = 'warping_in';
+
+    document.querySelectorAll('.nav-pill').forEach(pill => pill.classList.remove('is-active'));
+
+    const overlay = document.getElementById('section-overlay');
+    if (overlay) {
+      overlay.classList.remove('is-active');
+      overlay.setAttribute('aria-hidden', 'true');
     }
   }
 
@@ -545,10 +732,18 @@
     }, { passive: true });
 
     window.addEventListener('pointerdown', (e) => {
+      // Don't trigger ripple if clicking nav or card
+      if (e.target.closest('.site-header') || e.target.closest('.spatial-section-overlay')) return;
       triggerCalmRipple(e.clientX, e.clientY);
     });
 
     window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape' && flightState !== 'timeline') {
+        e.preventDefault();
+        closeSection();
+        return;
+      }
+
       // Ctrl + ~ / Cmd + ~ on macOS / Ctrl + ё
       const isModKey = e.ctrlKey || e.metaKey;
       if (isModKey && (e.code === 'Backquote' || e.key === '`' || e.key === '~' || e.key === 'ё' || e.key === 'Ё' || e.keyCode === 192)) {
@@ -562,6 +757,42 @@
         triggerCalmRipple(W * 0.5, H * 0.5);
       }
     });
+
+    // Nav pills click handlers
+    document.querySelectorAll('.nav-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        const secKey = pill.getAttribute('data-section');
+        openSection(secKey);
+      });
+    });
+
+    // Section Back button handler
+    const backBtn = document.getElementById('section-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeSection();
+      });
+    }
+
+    // Backdrop click on overlay
+    const overlay = document.getElementById('section-overlay');
+    if (overlay) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeSection();
+        }
+      });
+    }
+
+    // Section Download Cards Buttons
+    const sWin = document.getElementById('sec-dl-win');
+    if (sWin) sWin.addEventListener('click', (e) => { e.preventDefault(); showToast('загрузка «говори» для windows начнется через секунду'); });
+    const sMac = document.getElementById('sec-dl-mac');
+    if (sMac) sMac.addEventListener('click', (e) => { e.preventDefault(); showToast('загрузка «говори» для macos начнется через секунду'); });
+    const sLinux = document.getElementById('sec-dl-linux');
+    if (sLinux) sLinux.addEventListener('click', (e) => { e.preventDefault(); showToast('загрузка «говори» для linux начнется через секунду'); });
 
     const micHint = document.getElementById('mic-hint');
     if (micHint) {
@@ -703,38 +934,100 @@
 
     const p = Math.max(0.0, Math.min(3.0, smoothProgress));
 
-    // Dynamic Camera Zoom-in / Zoom-out
-    let targetZ = 17.5;
-    let targetY = 0.5;
-    let targetX = 0.0;
-    let lookY = -0.4;
+    // ── CAMERA POSITIONING & ORBITAL FLIGHT STATE MACHINE ──
+    if (flightState === 'timeline') {
+      getTimelineCamera(p, timelineTargetPos, timelineTargetLook);
 
-    if (p < 1.0) {
-      const t = p;
-      const zoomArch = Math.sin(t * Math.PI) * 9.0;
-      targetZ = 17.5 + zoomArch;
-      targetY = 0.5 + Math.sin(t * Math.PI * 0.5) * 2.0;
-      targetX = Math.sin(t * Math.PI * 0.5) * 2.5;
-      lookY = -0.4 + t * 0.9;
-    } else if (p < 2.0) {
-      const t = p - 1.0;
-      const zoomArch = Math.sin(t * Math.PI) * 9.0;
-      targetZ = 17.5 + zoomArch - t * 4.0;
-      targetY = 2.5 - t * 1.5;
-      targetX = 2.5 * (1.0 - t) - t * 2.0;
-      lookY = 0.5 - t * 0.5;
-    } else {
-      const t = p - 2.0;
-      targetZ = 13.5 + t * 12.5;
-      targetY = 1.0 - t * 0.8;
-      targetX = -2.0 * (1.0 - t);
-      lookY = 0.0;
+      camera.position.x = timelineTargetPos.x + currentCamX;
+      camera.position.y = timelineTargetPos.y + currentCamY;
+      camera.position.z = timelineTargetPos.z;
+      currentLookAt.copy(timelineTargetLook);
+      camera.lookAt(currentLookAt);
+      warpSpeed = 0.0;
+    } else if (flightState === 'warping_out') {
+      const elapsed = performance.now() - flightStartTime;
+      const rawT = Math.min(1.0, elapsed / FLIGHT_DURATION);
+      const easeT = easeInOutCubic(rawT);
+      warpSpeed = Math.sin(rawT * Math.PI);
+
+      let dTheta = flightTargetAngle - flightStartAngle;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+
+      const currentTheta = flightStartAngle + dTheta * easeT;
+      const arcBoostR = Math.sin(rawT * Math.PI) * 4.0;
+      const currentR = (flightStartRadius + (flightTargetRadius - flightStartRadius) * easeT) + arcBoostR;
+
+      const arcBoostY = Math.sin(rawT * Math.PI) * 2.8;
+      const currentY = (camFlightStartPos.y + (camFlightEndPos.y - camFlightStartPos.y) * easeT) + arcBoostY;
+
+      camera.position.x = Math.sin(currentTheta) * currentR + currentCamX * 0.3;
+      camera.position.y = currentY + currentCamY * 0.3;
+      camera.position.z = Math.cos(currentTheta) * currentR;
+
+      currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
+      camera.lookAt(currentLookAt);
+
+      if (rawT >= 1.0) {
+        flightState = 'in_section';
+        sectionEnterTime = performance.now();
+        warpSpeed = 0.0;
+      }
+    } else if (flightState === 'in_section') {
+      warpSpeed = 0.0;
+      const target = SECTION_TARGETS[activeSection];
+      if (target) {
+        const inSecTime = (performance.now() - sectionEnterTime) * 0.001;
+        const orbitAngle = target.baseAngle + inSecTime * target.orbitSpeed;
+        const curR = target.radius + Math.sin(inSecTime * 0.5) * 0.8;
+        const curY = target.height + Math.cos(inSecTime * 0.4) * 0.5;
+
+        camera.position.x = Math.sin(orbitAngle) * curR + currentCamX * 0.5;
+        camera.position.y = curY + currentCamY * 0.5;
+        camera.position.z = Math.cos(orbitAngle) * curR;
+
+        currentLookAt.set(
+          target.look.x + currentCamX * 0.15,
+          target.look.y + currentCamY * 0.15,
+          target.look.z
+        );
+        camera.lookAt(currentLookAt);
+      }
+    } else if (flightState === 'warping_in') {
+      const elapsed = performance.now() - flightStartTime;
+      const rawT = Math.min(1.0, elapsed / FLIGHT_DURATION);
+      const easeT = easeInOutCubic(rawT);
+      warpSpeed = Math.sin(rawT * Math.PI);
+
+      // Re-evaluate latest smooth timeline target position
+      getTimelineCamera(p, camFlightEndPos, camFlightEndLook);
+      flightTargetAngle = Math.atan2(camFlightEndPos.x, camFlightEndPos.z);
+      flightTargetRadius = Math.sqrt(camFlightEndPos.x * camFlightEndPos.x + camFlightEndPos.z * camFlightEndPos.z);
+
+      let dTheta = flightTargetAngle - flightStartAngle;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+
+      const currentTheta = flightStartAngle + dTheta * easeT;
+      const arcBoostR = Math.sin(rawT * Math.PI) * 4.0;
+      const currentR = (flightStartRadius + (flightTargetRadius - flightStartRadius) * easeT) + arcBoostR;
+
+      const arcBoostY = Math.sin(rawT * Math.PI) * 2.8;
+      const currentY = (camFlightStartPos.y + (camFlightEndPos.y - camFlightStartPos.y) * easeT) + arcBoostY;
+
+      camera.position.x = Math.sin(currentTheta) * currentR + currentCamX * 0.3;
+      camera.position.y = currentY + currentCamY * 0.3;
+      camera.position.z = Math.cos(currentTheta) * currentR;
+
+      currentLookAt.lerpVectors(camFlightStartLook, camFlightEndLook, easeT);
+      camera.lookAt(currentLookAt);
+
+      if (rawT >= 1.0) {
+        flightState = 'timeline';
+        activeSection = null;
+        warpSpeed = 0.0;
+      }
     }
-
-    camera.position.x = targetX + currentCamX;
-    camera.position.y = targetY + currentCamY;
-    camera.position.z = targetZ;
-    camera.lookAt(0, lookY, 0);
 
     if (wavePoints) {
       wavePoints.rotation.y = elapsedTime * 0.12 + currentCamX * 0.04;
@@ -804,6 +1097,7 @@
       waveMaterial.uniforms.uRipplePos.value.set(rippleOriginX, rippleOriginZ);
       waveMaterial.uniforms.uRippleStrength.value = rippleStrength;
       waveMaterial.uniforms.uMicEnergy.value = micEnergy;
+      waveMaterial.uniforms.uWarpSpeed.value = warpSpeed;
     }
 
     // Update Wave-Dissolving Callouts
