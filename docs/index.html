@@ -2,13 +2,28 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>говори — печатайте со скоростью голоса</title>
-  <meta name="description" content="умный голосовой ввод для windows. превращает речь в идеальный текст в 4 раза быстрее печати.">
+  <meta name="description" content="умный голосовой ввод для windows, macos и linux. превращает речь в идеальный текст в 4 раза быстрее печати.">
+  
+  <!-- Open Graph / Facebook / Telegram -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="говори — печатайте со скоростью голоса">
+  <meta property="og:description" content="умный голосовой ввод для windows, macos и linux. превращает речь в идеальный текст со скоростью мысли.">
+  <meta property="og:locale" content="ru_RU">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="говори — печатайте со скоростью голоса">
+  <meta name="twitter:description" content="умный голосовой ввод для windows, macos и linux. превращает речь в идеальный текст со скоростью мысли.">
+
+  <!-- Crisp Modern Vector Favicon (Zero 404) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230284C7'/><path d='M16 6a4 4 0 00-4 4v6a4 4 0 008 0v-6a4 4 0 00-4-4zm-7 10a7 7 0 0014 0h-2a5 5 0 01-10 0H9zm6 8v3h2v-3h-2z' fill='white'/></svg>">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Wix+Madefor+Display:wght@700;800&family=Wix+Madefor+Text:wght@500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=28">
+  <link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 
@@ -22,7 +37,7 @@
   <div class="narrative-overlay" id="narrative-overlay">
 
     <!-- Handwritten Cursive Mic Shortcut Note (3D Anchored to Stage 0 Wave) -->
-    <div class="mic-hint-note" id="mic-hint" title="нажмите ctrl + ~ для голосовой анимации">(нажми ctrl + ~)</div>
+    <div class="mic-hint-note" id="mic-hint" role="button" tabindex="0" title="нажмите ctrl + ~ для голосовой анимации">(нажми ctrl + ~)</div>
 
     <!-- ── STAGE 0: HERO VOICE WAVE ── -->
     <div class="spatial-callout stage-0" id="callout-0">
@@ -109,6 +124,6 @@
 
   <!-- Scripts -->
   <script src="three.min.js"></script>
-  <script src="app.js?v=28"></script>
+  <script src="app.js?v=29"></script>
 </body>
 </html>

@@ -40,17 +40,28 @@
   let micEnergy = 0.0;
   let ambientRms = 0.003;
 
-  // Spatial Callout DOM elements & smoothed screen coords
+  // Spatial Callout DOM elements, cached dimensions & smoothed coords
   const callouts = [];
+  const calloutSizes = [
+    { width: 580, height: 120 },
+    { width: 520, height: 120 },
+    { width: 520, height: 120 },
+    { width: 280, height: 160 }
+  ];
   const smoothedCallouts = [
     { x: W * 0.5 - 290, y: 70 },
     { x: W * 0.65, y: 120 },
     { x: 100, y: 140 },
-    { x: W * 0.5 - 270, y: H * 0.5 - 130 }
+    { x: W * 0.5 - 140, y: H * 0.5 - 80 }
   ];
   let micHintEl = null;
   const smoothMicHint = { x: W * 0.75, y: H * 0.55 };
   const projVec = new THREE.Vector3();
+  const tempV1 = new THREE.Vector3(3.2, 1.6, 0);
+  const tempV2 = new THREE.Vector3(-3.0, 1.0, 0);
+  const tempV3 = new THREE.Vector3(7.0, -0.35, 0.5);
+  const screenPosOut = { x: 0, y: 0, visible: true };
+  let isTouchDevice = false;
 
   window.addEventListener('DOMContentLoaded', () => {
     initScene();
@@ -280,22 +291,41 @@
     scene.add(wavePoints);
   }
 
+  function measureCallouts() {
+    callouts.forEach((el, idx) => {
+      if (el) {
+        calloutSizes[idx].width = el.offsetWidth || calloutSizes[idx].width;
+        calloutSizes[idx].height = el.offsetHeight || calloutSizes[idx].height;
+      }
+    });
+  }
+
   function initCallouts() {
     for (let i = 0; i <= 3; i++) {
       const el = document.getElementById(`callout-${i}`);
       if (el) callouts.push(el);
     }
     micHintEl = document.getElementById('mic-hint');
+
+    isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (W < 768);
+    if (isTouchDevice && micHintEl) {
+      micHintEl.textContent = '(нажми сюда)';
+      micHintEl.title = 'нажмите для голосовой анимации';
+    }
+
+    measureCallouts();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measureCallouts).catch(() => {});
+    }
   }
 
   function toScreenPosition(worldPos) {
     projVec.copy(worldPos);
     projVec.project(camera);
-    return {
-      x: (projVec.x * 0.5 + 0.5) * W,
-      y: (-(projVec.y * 0.5) + 0.5) * H,
-      visible: projVec.z < 1.0
-    };
+    screenPosOut.x = (projVec.x * 0.5 + 0.5) * W;
+    screenPosOut.y = (-(projVec.y * 0.5) + 0.5) * H;
+    screenPosOut.visible = projVec.z < 1.0;
+    return screenPosOut;
   }
 
   // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
@@ -367,26 +397,43 @@
         }
       }
 
-      // Base 3D target coordinates
+      // Base 3D target coordinates (fully adaptive, zero layout thrashing)
       let targetX, targetY;
+      const isMobile = W < 768;
+
       if (idx === 0) {
-        // Centered hero text above lowered wave
-        targetX = (W * 0.5) - 290;
-        targetY = Math.max(45, Math.min(110, H * 0.12));
+        // Stage 0 (Hero): Centered horizontally
+        const cWidth = Math.min(calloutSizes[0].width, W - 32);
+        targetX = Math.max(16, (W - cWidth) * 0.5);
+        targetY = isMobile ? Math.max(20, H * 0.08) : Math.max(45, Math.min(110, H * 0.12));
       } else if (idx === 1) {
-        const pos = toScreenPosition(new THREE.Vector3(3.2, 1.6, 0));
-        targetX = Math.min(W - 520, pos.x + 20);
-        targetY = Math.max(60, pos.y - 100);
+        // Stage 1 (Sphere): Clean right placement on desktop, centered on mobile
+        if (isMobile) {
+          const cWidth = Math.min(calloutSizes[1].width, W - 32);
+          targetX = Math.max(16, (W - cWidth) * 0.5);
+          targetY = Math.max(24, H * 0.09);
+        } else {
+          const pos = toScreenPosition(tempV1);
+          targetX = Math.min(W - calloutSizes[1].width - 24, Math.max(24, pos.x + 20));
+          targetY = Math.max(60, pos.y - 100);
+        }
       } else if (idx === 2) {
-        const pos = toScreenPosition(new THREE.Vector3(-3.0, 1.0, 0));
-        targetX = Math.max(50, pos.x - 480);
-        targetY = Math.max(60, pos.y - 90);
+        // Stage 2 (Helix): Clean left placement on desktop, centered on mobile
+        if (isMobile) {
+          const cWidth = Math.min(calloutSizes[2].width, W - 32);
+          targetX = Math.max(16, (W - cWidth) * 0.5);
+          targetY = Math.max(24, H * 0.09);
+        } else {
+          const pos = toScreenPosition(tempV2);
+          targetX = Math.max(24, Math.min(W - calloutSizes[2].width - 24, pos.x - 480));
+          targetY = Math.max(60, pos.y - 90);
+        }
       } else {
-        // Centered finale
-        const cw = el.offsetWidth || 280;
-        const ch = el.offsetHeight || 160;
-        targetX = (W * 0.5) - (cw * 0.5);
-        targetY = Math.max(30, (H * 0.5) - (ch * 0.5));
+        // Stage 3 (Finale): Perfectly centered horizontally and vertically
+        const cw = calloutSizes[3].width;
+        const ch = calloutSizes[3].height;
+        targetX = Math.max(16, (W - cw) * 0.5);
+        targetY = Math.max(24, (H - ch) * 0.5);
       }
 
       // Smooth coordinate damping
@@ -428,10 +475,16 @@
         micExitFraction = 1.0;
       }
 
-      // 3D Anchor projected cleanly above the right slope of the Stage 0 voice wave
-      const pos = toScreenPosition(new THREE.Vector3(7.0, -0.35, 0.5));
-      const targetX = Math.min(W - 220, Math.max(W * 0.60, pos.x));
-      const targetY = Math.max(80, Math.min(H - 140, pos.y - 45));
+      // Responsive 3D Anchor for mic note
+      let targetX, targetY;
+      if (W < 768) {
+        targetX = Math.max(16, (W - 170) * 0.5);
+        targetY = H - 75;
+      } else {
+        const pos = toScreenPosition(tempV3);
+        targetX = Math.min(W - 200, Math.max(W * 0.55, pos.x));
+        targetY = Math.max(80, Math.min(H - 120, pos.y - 45));
+      }
 
       smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
       smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
@@ -448,6 +501,23 @@
     }
   }
 
+  let toastTimer = null;
+  function showToast(msg) {
+    let toast = document.getElementById('app-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'app-toast';
+      toast.className = 'app-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2800);
+  }
+
   function bindEvents() {
     window.addEventListener('resize', () => {
       W = window.innerWidth;
@@ -455,6 +525,7 @@
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
       renderer.setSize(W, H);
+      measureCallouts();
       if (waveMaterial && waveMaterial.uniforms) {
         waveMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 2);
       }
@@ -478,8 +549,9 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      // Ctrl + ~ / Ctrl + ` / Ctrl + ё / Ctrl + Ё
-      if (e.ctrlKey && (e.code === 'Backquote' || e.key === '`' || e.key === '~' || e.key === 'ё' || e.key === 'Ё' || e.keyCode === 192)) {
+      // Ctrl + ~ / Cmd + ~ on macOS / Ctrl + ё
+      const isModKey = e.ctrlKey || e.metaKey;
+      if (isModKey && (e.code === 'Backquote' || e.key === '`' || e.key === '~' || e.key === 'ё' || e.key === 'Ё' || e.keyCode === 192)) {
         e.preventDefault();
         toggleMicrophone();
         return;
@@ -496,13 +568,19 @@
       micHint.addEventListener('click', () => {
         toggleMicrophone();
       });
+      micHint.addEventListener('keydown', (e) => {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          toggleMicrophone();
+        }
+      });
     }
 
     const dlWin = document.getElementById('dl-win');
     if (dlWin) {
       dlWin.addEventListener('click', (e) => {
         e.preventDefault();
-        alert('загрузка «говори» для windows начнется через секунду.');
+        showToast('загрузка «говори» для windows начнется через секунду');
       });
     }
 
@@ -510,7 +588,7 @@
     if (dlMac) {
       dlMac.addEventListener('click', (e) => {
         e.preventDefault();
-        alert('загрузка «говори» для macos начнется через секунду.');
+        showToast('загрузка «говори» для macos начнется через секунду');
       });
     }
 
@@ -518,7 +596,7 @@
     if (dlLinux) {
       dlLinux.addEventListener('click', (e) => {
         e.preventDefault();
-        alert('загрузка «говори» для linux начнется через секунду.');
+        showToast('загрузка «говори» для linux начнется через секунду');
       });
     }
   }
