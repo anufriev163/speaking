@@ -77,8 +77,8 @@
   const camFlightEndPos = new THREE.Vector3();
   const camFlightEndLook = new THREE.Vector3();
   const currentLookAt = new THREE.Vector3(0, -0.4, 0);
-  const currentBasePos = new THREE.Vector3(0, 0.5, 17.5);
-  const currentBaseLook = new THREE.Vector3(0, -0.4, 0);
+  const currentBasePos = new THREE.Vector3(0, 0.5, 24.5);
+  const currentBaseLook = new THREE.Vector3(0, -0.35, 0);
   const currentParallaxPosScale = { x: 1.0, y: 1.0 };
   const currentParallaxLookScale = { x: 0.0, y: 0.0 };
   const flightStartParallaxPos = { x: 1.0, y: 1.0 };
@@ -142,31 +142,36 @@
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
+  // Strictly monotonic forward camera progression (ZERO zoom-out bouncing)
+  // Continuous smooth approach: Z moves forward from 24.5 down to 14.5
   function getTimelineCamera(p, outPos, outLook) {
-    let targetZ = 17.5;
-    let targetY = 0.5;
-    let targetX = 0.0;
-    let lookY = -0.4;
+    const pClamped = Math.max(0.0, Math.min(3.0, p));
+    const s = pClamped / 3.0; // 0.0 to 1.0
 
-    if (p < 1.0) {
-      const t = p;
-      const zoomArch = Math.sin(t * Math.PI) * 9.0;
-      targetZ = 17.5 + zoomArch;
-      targetY = 0.5 + Math.sin(t * Math.PI * 0.5) * 2.0;
-      targetX = Math.sin(t * Math.PI * 0.5) * 2.5;
-      lookY = -0.4 + t * 0.9;
-    } else if (p < 2.0) {
-      const t = p - 1.0;
-      const zoomArch = Math.sin(t * Math.PI) * 9.0;
-      targetZ = 17.5 + zoomArch - t * 4.0;
-      targetY = 2.5 - t * 1.5;
-      targetX = 2.5 * (1.0 - t) - t * 2.0;
-      lookY = 0.5 - t * 0.5;
+    // Only forward approach - strictly decreasing Z
+    const targetZ = 24.5 - s * 10.0;
+
+    let targetX = 0.0;
+    let targetY = 0.5;
+    let lookY = -0.35;
+
+    if (pClamped < 1.0) {
+      const t = pClamped;
+      const easeT = t * t * (3.0 - 2.0 * t);
+      targetX = easeT * 0.4;
+      targetY = 0.5 + easeT * 0.3; // 0.5 -> 0.8
+      lookY = -0.35 + easeT * 0.35; // -0.35 -> 0.0
+    } else if (pClamped < 2.0) {
+      const t = pClamped - 1.0;
+      const easeT = t * t * (3.0 - 2.0 * t);
+      targetX = 0.4 - easeT * 0.8; // +0.4 -> -0.4
+      targetY = 0.8 - easeT * 0.2; // 0.8 -> 0.6
+      lookY = 0.0;
     } else {
-      const t = p - 2.0;
-      targetZ = 13.5 + t * 12.5;
-      targetY = 1.0 - t * 0.8;
-      targetX = -2.0 * (1.0 - t);
+      const t = pClamped - 2.0;
+      const easeT = t * t * (3.0 - 2.0 * t);
+      targetX = -0.4 + easeT * 0.4; // -0.4 -> 0.0
+      targetY = 0.6 - easeT * 0.4; // 0.6 -> 0.2
       lookY = 0.0;
     }
 
@@ -194,7 +199,7 @@
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 1000);
-    camera.position.set(0, 0.5, 17.5);
+    camera.position.set(0, 0.5, 24.5);
 
     renderer = new THREE.WebGLRenderer({
       powerPreference: 'high-performance',
@@ -293,8 +298,8 @@
         const u = (trackIdx / (numTracks - 1.0)) * 2.0 - 1.0; // u in [-1.0, +1.0] (Z)
         const t = (ptIdx / (ptsPerTrack - 1.0)) * 2.0 - 1.0;   // t in [-1.0, +1.0] (X)
 
-        // Размах по горизонтали на весь экран от края до края (X in [-32.0, +32.0])
-        const xSpan = t * 32.0;
+        // Размах по горизонтали на весь экран от края до края (X in [-16.5, +16.5])
+        const xSpan = t * 16.5;
 
         // Плавное затухание к самым краям экрана (edge fade)
         const edgeEnvelope = Math.pow(Math.max(0.0, 1.0 - Math.abs(t) * 0.94), 0.65);
@@ -315,11 +320,11 @@
 
         // Центральные дорожки имеют больший размах, боковые образуют реверберационный шлейф
         const trackSwell = Math.cos(u * Math.PI * 0.48);
-        const yBase = 1.9 + (trackSwell - 0.5) * 0.6;
-        const yVal = yBase + waveSignal * (0.65 + trackSwell * 0.95);
+        const yBase = 1.55 + (trackSwell - 0.5) * 0.42;
+        const yVal = yBase + waveSignal * (0.60 + trackSwell * 0.85);
 
         // Стерео-глубина Z: объемный рельеф звукового ландшафта
-        const zVal = u * 6.5 + Math.sin(t * 5.0 + u) * 0.55 * edgeEnvelope;
+        const zVal = u * 4.6 + Math.sin(t * 5.0 + u) * 0.40 * edgeEnvelope;
 
         wX = xSpan;
         wY = yVal;
@@ -332,10 +337,10 @@
         const trackFrac = Math.floor(pIdx / 100) / 24.0;
         const u = trackFrac * 2.0 - 1.0;
 
-        const xSpan = t * 29.0;
+        const xSpan = t * 15.0;
         const env = Math.exp(-t * t * 2.4);
-        const pY = 1.9 + (Math.sin(pIdx * 1.618) * 1.8 + Math.cos(t * 12.0) * 0.5) * env;
-        const pZ = u * 7.5 + Math.sin(pIdx * 2.7) * 1.1;
+        const pY = 1.55 + (Math.sin(pIdx * 1.618) * 1.4 + Math.cos(t * 12.0) * 0.4) * env;
+        const pZ = u * 5.2 + Math.sin(pIdx * 2.7) * 0.8;
 
         wX = xSpan;
         wY = pY;
@@ -888,9 +893,9 @@
         float stage3Wave = 0.0;
         if (pVal > 1.95 && morphFactor < 0.1) {
           float t3 = clamp((pVal - 1.95) / 0.7, 0.0, 1.0);
-          float envX = exp(-pow(p.x / 24.0, 2.0));
-          float waveRun = sin(p.x * 0.38 - uTime * 2.8 + p.z * 0.25) * 0.38;
-          float harmonics = sin(p.x * 0.95 + uTime * 3.8) * cos(p.z * 0.75 + uTime * 1.6) * 0.22;
+          float envX = exp(-pow(p.x / 13.0, 2.0));
+          float waveRun = sin(p.x * 0.70 - uTime * 2.8 + p.z * 0.35) * 0.28;
+          float harmonics = sin(p.x * 1.6 + uTime * 3.8) * cos(p.z * 0.85 + uTime * 1.6) * 0.15;
           stage3Wave = (waveRun + harmonics) * envX * t3;
         }
 
