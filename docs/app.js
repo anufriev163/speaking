@@ -57,9 +57,9 @@
   let micHintEl = null;
   const smoothMicHint = { x: W * 0.75, y: H * 0.55 };
   const projVec = new THREE.Vector3();
-  const tempV1 = new THREE.Vector3(3.2, 1.6, 0);
-  const tempV2 = new THREE.Vector3(-3.0, 1.0, 0);
-  const tempV3 = new THREE.Vector3(7.0, -0.35, 0.5);
+  const tempV1 = new THREE.Vector3(4.8, 1.8, 0);
+  const tempV2 = new THREE.Vector3(-4.2, 1.2, 0);
+  const tempV3 = new THREE.Vector3(9.5, -0.6, 0.5);
   const screenPosOut = { x: 0, y: 0, visible: true };
   let isTouchDevice = false;
 
@@ -77,7 +77,7 @@
   const camFlightEndPos = new THREE.Vector3();
   const camFlightEndLook = new THREE.Vector3();
   const currentLookAt = new THREE.Vector3(0, -0.4, 0);
-  const currentBasePos = new THREE.Vector3(0, 0.5, 24.5);
+  const currentBasePos = new THREE.Vector3(0, 0.5, 42.0);
   const currentBaseLook = new THREE.Vector3(0, -0.35, 0);
   const currentParallaxPosScale = { x: 1.0, y: 1.0 };
   const currentParallaxLookScale = { x: 0.0, y: 0.0 };
@@ -143,13 +143,14 @@
   }
 
   // Strictly monotonic forward camera progression (ZERO zoom-out bouncing)
-  // Continuous smooth approach: Z moves forward from 24.5 down to 14.5
+  // Continuous smooth deep dive: Z moves forward from 42.0 down to 10.5
+  // Travel distance: 31.5 units (over 3x farther than before!)
   function getTimelineCamera(p, outPos, outLook) {
     const pClamped = Math.max(0.0, Math.min(3.0, p));
     const s = pClamped / 3.0; // 0.0 to 1.0
 
     // Only forward approach - strictly decreasing Z
-    const targetZ = 24.5 - s * 10.0;
+    const targetZ = 42.0 - s * 31.5;
 
     let targetX = 0.0;
     let targetY = 0.5;
@@ -158,19 +159,19 @@
     if (pClamped < 1.0) {
       const t = pClamped;
       const easeT = t * t * (3.0 - 2.0 * t);
-      targetX = easeT * 0.4;
+      targetX = easeT * 0.7;
       targetY = 0.5 + easeT * 0.3; // 0.5 -> 0.8
       lookY = -0.35 + easeT * 0.35; // -0.35 -> 0.0
     } else if (pClamped < 2.0) {
       const t = pClamped - 1.0;
       const easeT = t * t * (3.0 - 2.0 * t);
-      targetX = 0.4 - easeT * 0.8; // +0.4 -> -0.4
+      targetX = 0.7 - easeT * 1.4; // +0.7 -> -0.7
       targetY = 0.8 - easeT * 0.2; // 0.8 -> 0.6
       lookY = 0.0;
     } else {
       const t = pClamped - 2.0;
       const easeT = t * t * (3.0 - 2.0 * t);
-      targetX = -0.4 + easeT * 0.4; // -0.4 -> 0.0
+      targetX = -0.7 + easeT * 0.7; // -0.7 -> 0.0
       targetY = 0.6 - easeT * 0.4; // 0.6 -> 0.2
       lookY = 0.0;
     }
@@ -199,7 +200,7 @@
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 1000);
-    camera.position.set(0, 0.5, 24.5);
+    camera.position.set(0, 0.5, 42.0);
 
     renderer = new THREE.WebGLRenderer({
       powerPreference: 'high-performance',
@@ -238,10 +239,10 @@
       const u = (col / (cols - 1)) * 2.0 - 1.0;
       const v = (row / (rows - 1)) * 2.0 - 1.0;
 
-      const x0 = u * 25.0;
-      const z0 = v * 12.0;
-      const env = Math.exp(-u * u * 2.0 - v * v * 2.4);
-      const y0 = -1.5 + Math.sin(u * 6.5) * Math.cos(v * 4.0) * 3.2 * env;
+      const x0 = u * 34.0;
+      const z0 = v * 18.0;
+      const env = Math.exp(-u * u * 1.8 - v * v * 2.2);
+      const y0 = -1.2 + Math.sin(u * 6.5) * Math.cos(v * 4.0) * 4.0 * env;
 
       pos0[i3]     = x0;
       pos0[i3 + 1] = y0;
@@ -254,16 +255,16 @@
         const t = i / 13000;
         const phi = Math.acos(1.0 - 2.0 * t);
         const theta = i * goldenAngle;
-        const r = 5.2 + Math.sin(phi * 6.0 + theta * 3.0) * 0.45;
+        const r = 7.2 + Math.sin(phi * 6.0 + theta * 3.0) * 0.65;
         pos1[i3]     = Math.sin(phi) * Math.cos(theta) * r;
         pos1[i3 + 1] = Math.cos(phi) * r;
         pos1[i3 + 2] = Math.sin(phi) * Math.sin(theta) * r;
       } else {
         const t = (i - 13000) / 5000;
         const theta = t * Math.PI * 2.0;
-        const ringR = 7.5 + (Math.sin(i * 1.7) * 0.5) * 0.6;
+        const ringR = 10.2 + (Math.sin(i * 1.7) * 0.5) * 0.8;
         pos1[i3]     = Math.cos(theta) * ringR;
-        pos1[i3 + 1] = Math.sin(theta * 3.0) * 0.6;
+        pos1[i3 + 1] = Math.sin(theta * 3.0) * 0.8;
         pos1[i3 + 2] = Math.sin(theta) * ringR;
       }
 
@@ -272,10 +273,10 @@
       // ====================================================================
       const tHelix = (i / N) * Math.PI * 8.0 - Math.PI * 4.0;
       const strand = (i % 2 === 0) ? 1.0 : -1.0;
-      const helixRadius = 3.6;
-      const x2 = tHelix * 1.8;
-      const y2 = Math.sin(tHelix + (strand > 0 ? 0 : Math.PI)) * helixRadius + ((i % 16) / 16 - 0.5) * 1.2;
-      const z2 = Math.cos(tHelix + (strand > 0 ? 0 : Math.PI)) * helixRadius + ((i % 16) / 16 - 0.5) * 1.2;
+      const helixRadius = 4.2;
+      const x2 = tHelix * 2.2;
+      const y2 = Math.sin(tHelix + (strand > 0 ? 0 : Math.PI)) * helixRadius + ((i % 16) / 16 - 0.5) * 1.4;
+      const z2 = Math.cos(tHelix + (strand > 0 ? 0 : Math.PI)) * helixRadius + ((i % 16) / 16 - 0.5) * 1.4;
 
       pos2[i3]     = x2;
       pos2[i3 + 1] = y2;
@@ -870,28 +871,26 @@
           pTimeline = mix(pos2, pos3, t);
         }
 
-        // 3D Thematic Section Object Morphing
+        // 3D Thematic Section Object Morphing (100% C1 continuous, ZERO seam/pop)
         float totalMorph = uMorphAbout + uMorphPrivacy + uMorphAudience + uMorphDownload;
-        vec3 pObject = posAbout * uMorphAbout +
-                       posPrivacy * uMorphPrivacy +
-                       posAudience * uMorphAudience +
-                       posDownload * uMorphDownload;
-
-        if (totalMorph > 0.001) {
-          pObject /= totalMorph;
-        }
+        float safeMorph = max(totalMorph, 0.00001);
+        vec3 pObject = (posAbout * uMorphAbout +
+                        posPrivacy * uMorphPrivacy +
+                        posAudience * uMorphAudience +
+                        posDownload * uMorphDownload) / safeMorph;
 
         float morphFactor = clamp(totalMorph, 0.0, 1.0);
-        vec3 p = mix(pTimeline, pObject, morphFactor);
+        float sMorph = morphFactor * morphFactor * (3.0 - 2.0 * morphFactor);
+        vec3 p = mix(pTimeline, pObject, sMorph);
 
         // Hero wave motion in Stage 0
-        float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - morphFactor * 0.85);
+        float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - sMorph * 0.9);
         float heroWave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * heroWaveFactor;
-        float pulse = sin(uTime * 1.8 + length(p) * 0.5) * (0.08 + 0.06 * morphFactor);
+        float pulse = sin(uTime * 1.8 + length(p) * 0.5) * (0.08 + 0.06 * sMorph);
 
         // Stage 3: Dynamic travelling voice frequencies across panoramic waveform
         float stage3Wave = 0.0;
-        if (pVal > 1.95 && morphFactor < 0.1) {
+        if (pVal > 1.95 && sMorph < 0.1) {
           float t3 = clamp((pVal - 1.95) / 0.7, 0.0, 1.0);
           float envX = exp(-pow(p.x / 13.0, 2.0));
           float waveRun = sin(p.x * 0.70 - uTime * 2.8 + p.z * 0.35) * 0.28;
@@ -903,10 +902,11 @@
         float voicePulse = (heroWave + sin(uTime * 3.5 + p.y * 1.8) * 0.18) * (uMicEnergy * 1.1);
         p.y += heroWave + pulse + voicePulse + stage3Wave;
 
-        // Hyperspace warp effect during 3D section transition
+        // Hyperspace / scroll depth warp streak effect
         if (uWarpSpeed > 0.001) {
-          p.z += sin(p.x * 2.5 + p.y * 1.5 + uTime * 10.0) * (uWarpSpeed * 4.0);
-          p.x += (p.x * 0.12) * uWarpSpeed;
+          p.z += sin(p.x * 2.5 + p.y * 1.5 + uTime * 9.0) * (uWarpSpeed * 3.5);
+          p.z -= (42.0 - p.z) * (uWarpSpeed * 0.08);
+          p.x += (p.x * 0.08) * uWarpSpeed;
         }
 
         if (uRippleStrength > 0.001) {
@@ -918,9 +918,9 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float baseScale = (morphFactor > 0.01) ? 58.0 : ((pVal > 2.0) ? 46.0 : 42.0);
-        float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8);
-        gl_PointSize = clamp(size, 3.2, 72.0);
+        float baseScale = mix((pVal > 2.0 ? 48.0 : 44.0), 58.0, sMorph);
+        float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.85);
+        gl_PointSize = clamp(size, 2.5, 75.0);
 
         // Rich high-contrast celestial blue palette - never fading to white!
         vec3 cDeepNavy  = vec3(0.012, 0.380, 0.700); // #0361B3
@@ -937,29 +937,29 @@
         }
 
         // Extra luminous neon cyan highlights on Stage 3 waveform peaks
-        if (pVal > 2.0 && morphFactor < 0.05) {
+        if (pVal > 2.0 && sMorph < 0.05) {
           float crest = clamp((p.y - 1.5) / 2.6, 0.0, 1.0);
           float t3 = clamp(pVal - 2.0, 0.0, 1.0);
           vColor = mix(vColor, cNeonCyan, crest * 0.60 * t3);
         }
 
-        if (morphFactor > 0.01) {
+        if (sMorph > 0.001) {
           // Boost 3D object saturation and contrast
           float zHighlight = clamp((p.z + 1.5) / 3.0, 0.0, 1.0);
           vec3 objColor = mix(cCerulean, cNeonCyan, zHighlight * 0.7 + 0.3);
-          vColor = mix(vColor, objColor, morphFactor * 0.85);
+          vColor = mix(vColor, objColor, sMorph * 0.85);
         }
 
         if (uMicEnergy > 0.01) {
           vColor = mix(vColor, cVoice, clamp(uMicEnergy * 0.75, 0.0, 0.85));
         }
 
-        if (uWarpSpeed > 0.01) {
-          vColor = mix(vColor, vec3(0.02, 0.92, 1.0), clamp(uWarpSpeed * 0.65, 0.0, 0.75));
+        if (uWarpSpeed > 0.005) {
+          vColor = mix(vColor, vec3(0.0, 0.95, 1.0), clamp(uWarpSpeed * 0.75, 0.0, 0.85));
         }
 
         float distFog = clamp((-mvPosition.z - 12.0) / 45.0, 0.0, 1.0);
-        vAlpha = (1.0 - distFog * 0.55) * (0.92 + morphFactor * 0.08);
+        vAlpha = (1.0 - distFog * 0.55) * (0.92 + sMorph * 0.08);
       }
     `;
 
@@ -1733,39 +1733,40 @@
       const totalMorph = currentMorphAbout + currentMorphPrivacy + currentMorphAudience + currentMorphDownload;
       const morphFactor = Math.min(1.0, totalMorph);
 
-      if (morphFactor < 0.001) {
-        if (p > 1.95) {
-          // In Stage 3, smoothly steer rotation towards front-facing horizon (0.0 rad)
-          const tStage3 = Math.min(1.0, (p - 1.95) / 0.7);
-          const nearestFront = Math.round(meshSpinY / (Math.PI * 2.0)) * (Math.PI * 2.0);
-          meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 4.0 * tStage3);
-          meshSpinY += dt * 0.10 * (1.0 - tStage3);
-
-          // Subtle, elegant top-down perspective tilt (+0.10 rad) to reveal panoramic audio ribbon depth
-          const tiltX = tStage3 * 0.10;
-          wavePoints.rotation.y = meshSpinY + currentCamX * 0.035;
-          wavePoints.rotation.x = currentCamY * 0.020 + tiltX;
-        } else {
-          meshSpinY += dt * 0.10;
-          wavePoints.rotation.y = meshSpinY + currentCamX * 0.04;
-          wavePoints.rotation.x = currentCamY * 0.025;
-        }
-      } else {
+      // Unified continuous rotation: zero snapping across section open/close
+      let timelineRotY, timelineRotX;
+      if (p > 1.95) {
+        // In Stage 3, smoothly steer rotation towards front-facing horizon (0.0 rad)
+        const tStage3 = Math.min(1.0, (p - 1.95) / 0.7);
         const nearestFront = Math.round(meshSpinY / (Math.PI * 2.0)) * (Math.PI * 2.0);
-        meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 3.5);
+        meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 4.0 * tStage3);
+        meshSpinY += dt * 0.10 * (1.0 - tStage3);
 
-        // Gentle organic 3D rocking / swaying when in 3D object form
-        const objRockY = Math.sin(elapsedTime * 0.85) * 0.11;
-        const objRockX = Math.cos(elapsedTime * 0.65) * 0.05;
-
-        const blendY = (meshSpinY + currentCamX * 0.04) * (1.0 - morphFactor) +
-                       (nearestFront + objRockY + currentCamX * 0.05) * morphFactor;
-        const blendX = (currentCamY * 0.025) * (1.0 - morphFactor) +
-                       (objRockX + currentCamY * 0.03) * morphFactor;
-
-        wavePoints.rotation.y = blendY;
-        wavePoints.rotation.x = blendX;
+        // Subtle, elegant top-down perspective tilt (+0.10 rad) to reveal panoramic audio ribbon depth
+        const tiltX = tStage3 * 0.10;
+        timelineRotY = meshSpinY + currentCamX * 0.035;
+        timelineRotX = currentCamY * 0.020 + tiltX;
+      } else {
+        meshSpinY += dt * 0.10;
+        timelineRotY = meshSpinY + currentCamX * 0.04;
+        timelineRotX = currentCamY * 0.025;
       }
+
+      // Smoothly steer spin toward front-facing when object is active
+      const nearestFront = Math.round(meshSpinY / (Math.PI * 2.0)) * (Math.PI * 2.0);
+      if (morphFactor > 0.0001) {
+        meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 3.5 * morphFactor);
+      }
+
+      // Gentle organic 3D rocking / swaying when in 3D object form
+      const objRockY = Math.sin(elapsedTime * 0.85) * 0.11;
+      const objRockX = Math.cos(elapsedTime * 0.65) * 0.05;
+      const objectRotY = nearestFront + objRockY + currentCamX * 0.05;
+      const objectRotX = objRockX + currentCamY * 0.03;
+
+      const sMorph = morphFactor * morphFactor * (3.0 - 2.0 * morphFactor);
+      wavePoints.rotation.y = (1.0 - sMorph) * timelineRotY + sMorph * objectRotY;
+      wavePoints.rotation.x = (1.0 - sMorph) * timelineRotX + sMorph * objectRotX;
     }
 
     let rippleStrength = 0.0;
@@ -1835,7 +1836,12 @@
       waveMaterial.uniforms.uRipplePos.value.set(rippleOriginX, rippleOriginZ);
       waveMaterial.uniforms.uRippleStrength.value = rippleStrength;
       waveMaterial.uniforms.uMicEnergy.value = micEnergy;
-      waveMaterial.uniforms.uWarpSpeed.value = warpSpeed;
+
+      // Dynamic scroll velocity warp streak effect (visual depth sensation during fast navigation)
+      const scrollDelta = Math.abs(targetProgress - smoothProgress);
+      const scrollWarp = Math.min(0.50, scrollDelta * 2.8);
+      const effectiveWarp = Math.max(warpSpeed, scrollWarp);
+      waveMaterial.uniforms.uWarpSpeed.value = effectiveWarp;
     }
 
     // Update Wave-Dissolving Callouts
