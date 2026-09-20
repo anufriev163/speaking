@@ -1044,22 +1044,28 @@
 
   // ── PRECISE MULTI-STAGE WAVE-DISSOLVING TEXT ENGINE ──
   function updateSpatialCallouts(p) {
-    // If not on timeline (opening section, in section, or switching sections), hide ALL narrative callouts immediately
-    if (flightState !== 'timeline') {
-      callouts.forEach(el => {
-        if (el) {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-        }
-      });
-      if (micHintEl) {
-        micHintEl.style.opacity = '0';
-        micHintEl.style.pointerEvents = 'none';
-      }
-      return;
-    }
+    // Dynamic continuous timeline alpha across spatial flight states
+    let timelineAlpha = 1.0;
 
-    const timelineAlpha = 1.0;
+    if (flightState === 'in_section') {
+      timelineAlpha = 0.0;
+    } else if (flightState === 'warping_out') {
+      // Smooth fade-out in first 35% of flight to section
+      const elapsed = performance.now() - flightStartTime;
+      const rawT = Math.min(1.0, elapsed / (flightDuration * 0.35));
+      timelineAlpha = Math.max(0.0, 1.0 - smootherstep(rawT));
+    } else if (flightState === 'warping_in') {
+      // Gentle, buttery smooth fade-in during second half of return flight to timeline
+      const elapsed = performance.now() - flightStartTime;
+      const rawT = Math.min(1.0, elapsed / flightDuration);
+      const fadeStart = 0.35;
+      if (rawT < fadeStart) {
+        timelineAlpha = 0.0;
+      } else {
+        const normT = (rawT - fadeStart) / (1.0 - fadeStart);
+        timelineAlpha = smootherstep(normT);
+      }
+    }
 
     callouts.forEach((el, idx) => {
       let baseOpacity = 0;
@@ -1129,7 +1135,6 @@
       }
 
       const opacity = baseOpacity * timelineAlpha;
-      const exitFraction = Math.max(baseExit, 1.0 - timelineAlpha);
 
       // Base 3D target coordinates (fully adaptive, zero layout thrashing)
       let targetX, targetY;
@@ -1176,13 +1181,14 @@
       smooth.y += (targetY - smooth.y) * 0.12;
 
       // Clean GPU-composited exit: smooth sink + subtle scale dampening (zero layout reflows!)
-      const waveSinkY = exitFraction * 30.0;
-      const scale = (1.0 - exitFraction * 0.04).toFixed(3);
+      const returnSinkY = (1.0 - timelineAlpha) * 14.0;
+      const waveSinkY = baseExit * 30.0 + returnSinkY;
+      const scale = (1.0 - baseExit * 0.04).toFixed(3);
 
       el.style.opacity = opacity.toFixed(3);
       el.style.transform = `translate3d(${smooth.x.toFixed(1)}px, ${(smooth.y + waveSinkY).toFixed(1)}px, 0) scale(${scale})`;
 
-      if (opacity > 0.05) {
+      if (flightState === 'timeline' && opacity > 0.05) {
         el.style.pointerEvents = idx === 3 ? 'auto' : 'none';
       } else {
         el.style.pointerEvents = 'none';
@@ -1207,7 +1213,6 @@
       }
 
       const micOpacity = baseMicOpacity * timelineAlpha;
-      const micExitFraction = Math.max(baseMicExit, 1.0 - timelineAlpha);
 
       // Responsive 3D Anchor for mic note
       let targetX, targetY;
@@ -1223,11 +1228,12 @@
       smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
       smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
 
-      const waveSinkY = micExitFraction * 26.0;
+      const returnSinkY = (1.0 - timelineAlpha) * 12.0;
+      const waveSinkY = baseMicExit * 26.0 + returnSinkY;
 
       micHintEl.style.opacity = micOpacity.toFixed(3);
       micHintEl.style.transform = `translate3d(${smoothMicHint.x.toFixed(1)}px, ${(smoothMicHint.y + waveSinkY).toFixed(1)}px, 0) rotate(-3deg)`;
-      micHintEl.style.pointerEvents = micOpacity > 0.08 ? 'auto' : 'none';
+      micHintEl.style.pointerEvents = (flightState === 'timeline' && micOpacity > 0.08) ? 'auto' : 'none';
     }
   }
 

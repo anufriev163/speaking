@@ -137,14 +137,9 @@ body {
   pointer-events: none;
 }
 
-/* Force-suppress all timeline overlays during section navigation & 3D object display */
-body.in-spatial-mode .narrative-overlay,
+/* Timeline overlays during section navigation: keep pointer-events disabled while in 3D modal */
 body.in-spatial-mode .spatial-callout,
-body.in-spatial-mode .spatial-callout.stage-3,
 body.in-spatial-mode #mic-hint {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
   pointer-events: none !important;
 }
 
