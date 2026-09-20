@@ -232,17 +232,59 @@
       const i3 = i * 3;
 
       // ====================================================================
-      // TIMELINE STAGE 0: ЖИВАЯ РЕЧЕВАЯ ВОЛНА
+      // TIMELINE STAGE 0: МНОГОСЛОЙНЫЙ ПАНОРАМНЫЙ ОКЕАН АУДИОВОЛН («ГОВОРИ»)
+      // Заполняет всё 3D-пространство экрана: без пустых кусков снизу, сверху и по бокам!
       // ====================================================================
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const u = (col / (cols - 1)) * 2.0 - 1.0;
-      const v = (row / (rows - 1)) * 2.0 - 1.0;
+      let x0 = 0, y0 = 0, z0 = 0;
 
-      const x0 = u * 34.0;
-      const z0 = v * 18.0;
-      const env = Math.exp(-u * u * 1.8 - v * v * 2.2);
-      const y0 = -1.2 + Math.sin(u * 6.5) * Math.cos(v * 4.0) * 4.0 * env;
+      if (i < 11000) {
+        // СЛОЙ 1: Грандиозный рельеф речевых волн (11000 частиц)
+        // 110 параллельных частотных дорожек x 100 точек, от края до края экрана и вглубь
+        const numTracks = 110;
+        const ptsPerTrack = 100;
+        const col0 = i % ptsPerTrack;
+        const row0 = Math.floor(i / ptsPerTrack);
+        const u = (col0 / (ptsPerTrack - 1.0)) * 2.0 - 1.0; // по ширине [-1, 1]
+        const v = (row0 / (numTracks - 1.0)) * 2.0 - 1.0;   // по глубине [-1, 1]
+
+        x0 = u * 50.0; // широкий размах от края до края экрана
+        z0 = v * 30.0; // глубокое погружение в пространство
+
+        // Перспективный каскад: передние волны заполняют весь низ экрана, дальние уходят к горизонту
+        const yBase = -3.8 - v * 5.2;
+
+        // Многочастотная интерференция живого звука речи
+        const w1 = Math.sin(u * 5.2 + v * 2.6) * 3.6;
+        const w2 = Math.cos(u * 10.5 - v * 3.8) * 2.1;
+        const w3 = Math.sin(u * 21.0 + v * 5.5) * 0.75;
+        const edgeW = Math.pow(Math.max(0.0, 1.0 - Math.abs(u) * 0.88), 0.45);
+
+        y0 = yBase + (w1 + w2 + w3) * (0.80 + 0.35 * edgeW);
+      } else if (i < 15500) {
+        // СЛОЙ 2: Волновые переплетающиеся полосы и струны частот (4500 частиц)
+        // Заполняют среднюю высоту и ближний план, создавая объёмный рельеф
+        const pIdx = i - 11000;
+        const strand = pIdx % 45;
+        const pt = Math.floor(pIdx / 45);
+        const u = (pt / 99.0) * 2.0 - 1.0;
+        const v = (strand / 44.0) * 2.0 - 1.0;
+
+        x0 = u * 48.0;
+        z0 = v * 26.0 + Math.sin(u * 4.2) * 4.5;
+        y0 = -4.0 + v * 6.8 + Math.sin(u * 7.2 + v * 3.4) * 3.4 + Math.cos(u * 14.5) * 1.3;
+      } else {
+        // СЛОЙ 3: Парящие квантовые частицы и гармоники речи (2500 частиц)
+        // Заполняют весь 3D-объём воздуха, убирая любые пустоты вокруг волн
+        const pIdx = i - 15500;
+        const colA = pIdx % 50;
+        const rowA = Math.floor(pIdx / 50);
+        const u = (colA / 49.0) * 2.0 - 1.0;
+        const v = (rowA / 49.0) * 2.0 - 1.0;
+
+        x0 = u * 46.0;
+        z0 = v * 28.0;
+        y0 = -2.8 + Math.sin(u * 6.0 + v * 4.0) * 7.2 + Math.sin(pIdx * 1.618) * 2.2;
+      }
 
       pos0[i3]     = x0;
       pos0[i3 + 1] = y0;
@@ -883,9 +925,15 @@
         float sMorph = morphFactor * morphFactor * (3.0 - 2.0 * morphFactor);
         vec3 p = mix(pTimeline, pObject, sMorph);
 
-        // Hero wave motion in Stage 0
+        // Hero wave motion in Stage 0: rich, alive, multi-layered acoustic sea
         float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - sMorph * 0.9);
-        float heroWave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * heroWaveFactor;
+        float heroWave = 0.0;
+        if (heroWaveFactor > 0.001) {
+          float w1 = sin(p.x * 0.12 + uTime * 1.5 + p.z * 0.10) * 1.5;
+          float w2 = cos(p.x * 0.28 - uTime * 2.0 + p.z * 0.16) * 0.85;
+          float w3 = sin(p.x * 0.60 + uTime * 2.6) * cos(p.z * 0.30 + uTime * 1.2) * 0.45;
+          heroWave = (w1 + w2 + w3) * heroWaveFactor;
+        }
         float pulse = sin(uTime * 1.8 + length(p) * 0.5) * (0.08 + 0.06 * sMorph);
 
         // Stage 3: Dynamic travelling voice frequencies across panoramic waveform
@@ -929,7 +977,7 @@
         vec3 cNeonCyan  = vec3(0.000, 0.900, 1.000); // #00E5FF
         vec3 cVoice     = vec3(0.000, 0.950, 1.000); // Vibrant voice cyan
 
-        float h = clamp((p.y + 4.0) / 8.0, 0.0, 1.0);
+        float h = clamp((p.y + 12.0) / 22.0, 0.0, 1.0);
         if (h < 0.5) {
           vColor = mix(cDeepNavy, cCerulean, h * 2.0);
         } else {
@@ -958,8 +1006,8 @@
           vColor = mix(vColor, vec3(0.0, 0.95, 1.0), clamp(uWarpSpeed * 0.75, 0.0, 0.85));
         }
 
-        float distFog = clamp((-mvPosition.z - 12.0) / 45.0, 0.0, 1.0);
-        vAlpha = (1.0 - distFog * 0.55) * (0.92 + sMorph * 0.08);
+        float distFog = clamp((-mvPosition.z - 12.0) / 58.0, 0.0, 1.0);
+        vAlpha = (1.0 - distFog * 0.45) * (0.92 + sMorph * 0.08);
       }
     `;
 
