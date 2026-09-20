@@ -277,30 +277,74 @@
       pos2[i3 + 2] = z2;
 
       // ====================================================================
-      // TIMELINE STAGE 3: МНОГОСЛОЙНАЯ ГАРМОНИЧЕСКАЯ РЕЧЕВАЯ ВОЛНА
+      // TIMELINE STAGE 3: ШИРОКОЭКРАННЫЙ ПАНОРАМНЫЙ 3D WAVEFORM («ГОВОРИ»)
       // ====================================================================
-      const ribbonIdx = i % 7; // 7 harmonic voice ribbon layers
-      const strandFrac = ribbonIdx / 6.0; // 0..1
-      const tWave = (Math.floor(i / 7) / (N / 7)) * 2.0 - 1.0; // -1..1
-      const x3 = tWave * 13.5;
-      const gauss = Math.exp(-tWave * tWave * 2.8);
+      let wX = 0, wY = 0, wZ = 0;
 
-      // Natural speech resonance frequencies
-      const f1 = Math.sin(tWave * 7.5 + ribbonIdx * 0.9) * 0.95;
-      const f2 = Math.sin(tWave * 16.0 + ribbonIdx * 1.6) * 0.45;
-      const f3 = Math.cos(tWave * 28.0 + ribbonIdx * 2.2) * 0.22;
-      const voiceMod = (f1 + f2 + f3) * gauss;
+      if (i < 15500) {
+        // 1. Многослойная панорамная аудио-поверхность спектра (15500 частиц)
+        // 31 параллельная частотная дорожка, по 500 точек в каждой: от края до края экрана
+        const numTracks = 31;
+        const ptsPerTrack = 500;
+        const trackIdx = i % numTracks;
+        const ptIdx = Math.floor(i / numTracks);
 
-      // Center wave vertically in upper half (Y = 1.8 ± 0.6), floating safely above lowered text
-      const yBaseline = 1.8 + (strandFrac - 0.5) * 1.1;
-      const y3 = yBaseline + voiceMod * (0.8 + strandFrac * 0.5);
+        // Нормализованные координаты: u (глубина) и t (по горизонтали)
+        const u = (trackIdx / (numTracks - 1.0)) * 2.0 - 1.0; // u in [-1.0, +1.0] (Z)
+        const t = (ptIdx / (ptsPerTrack - 1.0)) * 2.0 - 1.0;   // t in [-1.0, +1.0] (X)
 
-      // Volumetric depth in Z
-      const z3 = (strandFrac - 0.5) * 3.6 + Math.cos(tWave * 5.0 + ribbonIdx) * 0.7 * gauss;
+        // Размах по горизонтали на весь экран от края до края (X in [-32.0, +32.0])
+        const xSpan = t * 32.0;
 
-      pos3[i3]     = x3;
-      pos3[i3 + 1] = y3;
-      pos3[i3 + 2] = z3;
+        // Плавное затухание к самым краям экрана (edge fade)
+        const edgeEnvelope = Math.pow(Math.max(0.0, 1.0 - Math.abs(t) * 0.94), 0.65);
+
+        // Реалистичная огибающая человеческой речи: ритмичные слоги и формантные всплески
+        const syll1 = Math.exp(-(t + 0.42) * (t + 0.42) * 8.0) * 1.55;
+        const syllCenter = Math.exp(-t * t * 15.0) * 2.10;
+        const syll2 = Math.exp(-(t - 0.40) * (t - 0.40) * 7.5) * 1.45;
+        const vocalPockets = (syll1 + syllCenter + syll2 + 0.32) * edgeEnvelope;
+
+        // Многочастотная интерференция голоса (гармоники живой речи)
+        const f0 = Math.sin(t * 16.0 + u * 1.5) * 0.85;   // Базовый тон
+        const f1 = Math.sin(t * 36.0 - u * 2.2) * 0.45;   // 1-я форманта
+        const f2 = Math.sin(t * 78.0 + u * 3.4) * 0.22;   // 2-я форманта
+        const f3 = Math.cos(t * 130.0) * 0.10;            // Высокие обертоны
+
+        const waveSignal = (f0 + f1 + f2 + f3) * vocalPockets;
+
+        // Центральные дорожки имеют больший размах, боковые образуют реверберационный шлейф
+        const trackSwell = Math.cos(u * Math.PI * 0.48);
+        const yBase = 1.9 + (trackSwell - 0.5) * 0.6;
+        const yVal = yBase + waveSignal * (0.65 + trackSwell * 0.95);
+
+        // Стерео-глубина Z: объемный рельеф звукового ландшафта
+        const zVal = u * 6.5 + Math.sin(t * 5.0 + u) * 0.55 * edgeEnvelope;
+
+        wX = xSpan;
+        wY = yVal;
+        wZ = zVal;
+      } else {
+        // 2. Искрящиеся гармоники и квантованные частотные частицы (2500 частиц)
+        // Парят над пиками волны, создавая сияние спектра речи
+        const pIdx = i - 15500;
+        const t = ((pIdx % 100) / 99.0) * 2.0 - 1.0;
+        const trackFrac = Math.floor(pIdx / 100) / 24.0;
+        const u = trackFrac * 2.0 - 1.0;
+
+        const xSpan = t * 29.0;
+        const env = Math.exp(-t * t * 2.4);
+        const pY = 1.9 + (Math.sin(pIdx * 1.618) * 1.8 + Math.cos(t * 12.0) * 0.5) * env;
+        const pZ = u * 7.5 + Math.sin(pIdx * 2.7) * 1.1;
+
+        wX = xSpan;
+        wY = pY;
+        wZ = pZ;
+      }
+
+      pos3[i3]     = wX;
+      pos3[i3 + 1] = wY;
+      pos3[i3 + 2] = wZ;
 
       // ====================================================================
       // SECTION OBJECT 1: ЧИСТАЯ 3D РАБОЧАЯ ПАПКА («О ПРОЕКТЕ»)
@@ -835,14 +879,24 @@
         float morphFactor = clamp(totalMorph, 0.0, 1.0);
         vec3 p = mix(pTimeline, pObject, morphFactor);
 
-        // Wave motion dampens when morphed into solid 3D objects, but preserves organic breathing
-        float waveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - morphFactor * 0.85);
-        float wave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * waveFactor;
+        // Hero wave motion in Stage 0
+        float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - morphFactor * 0.85);
+        float heroWave = sin(p.x * 0.28 + uTime * 1.4 + p.z * 0.18) * 0.45 * heroWaveFactor;
         float pulse = sin(uTime * 1.8 + length(p) * 0.5) * (0.08 + 0.06 * morphFactor);
 
+        // Stage 3: Dynamic travelling voice frequencies across panoramic waveform
+        float stage3Wave = 0.0;
+        if (pVal > 1.95 && morphFactor < 0.1) {
+          float t3 = clamp((pVal - 1.95) / 0.7, 0.0, 1.0);
+          float envX = exp(-pow(p.x / 24.0, 2.0));
+          float waveRun = sin(p.x * 0.38 - uTime * 2.8 + p.z * 0.25) * 0.38;
+          float harmonics = sin(p.x * 0.95 + uTime * 3.8) * cos(p.z * 0.75 + uTime * 1.6) * 0.22;
+          stage3Wave = (waveRun + harmonics) * envX * t3;
+        }
+
         // Voice reactivity: reacts in silence vs active speech
-        float voicePulse = (wave + sin(uTime * 3.5 + p.y * 1.8) * 0.18) * (uMicEnergy * 1.1);
-        p.y += wave + pulse + voicePulse;
+        float voicePulse = (heroWave + sin(uTime * 3.5 + p.y * 1.8) * 0.18) * (uMicEnergy * 1.1);
+        p.y += heroWave + pulse + voicePulse + stage3Wave;
 
         // Hyperspace warp effect during 3D section transition
         if (uWarpSpeed > 0.001) {
@@ -859,7 +913,7 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float baseScale = (morphFactor > 0.01) ? 58.0 : 42.0;
+        float baseScale = (morphFactor > 0.01) ? 58.0 : ((pVal > 2.0) ? 46.0 : 42.0);
         float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.8);
         gl_PointSize = clamp(size, 3.2, 72.0);
 
@@ -875,6 +929,13 @@
           vColor = mix(cDeepNavy, cCerulean, h * 2.0);
         } else {
           vColor = mix(cCerulean, cBrightSky, (h - 0.5) * 2.0);
+        }
+
+        // Extra luminous neon cyan highlights on Stage 3 waveform peaks
+        if (pVal > 2.0 && morphFactor < 0.05) {
+          float crest = clamp((p.y - 1.5) / 2.6, 0.0, 1.0);
+          float t3 = clamp(pVal - 2.0, 0.0, 1.0);
+          vColor = mix(vColor, cNeonCyan, crest * 0.60 * t3);
         }
 
         if (morphFactor > 0.01) {
@@ -1668,9 +1729,22 @@
       const morphFactor = Math.min(1.0, totalMorph);
 
       if (morphFactor < 0.001) {
-        meshSpinY += dt * 0.10;
-        wavePoints.rotation.y = meshSpinY + currentCamX * 0.04;
-        wavePoints.rotation.x = currentCamY * 0.025;
+        if (p > 1.95) {
+          // In Stage 3, smoothly steer rotation towards front-facing horizon (0.0 rad)
+          const tStage3 = Math.min(1.0, (p - 1.95) / 0.7);
+          const nearestFront = Math.round(meshSpinY / (Math.PI * 2.0)) * (Math.PI * 2.0);
+          meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 4.0 * tStage3);
+          meshSpinY += dt * 0.10 * (1.0 - tStage3);
+
+          // Subtle, elegant top-down perspective tilt (+0.10 rad) to reveal panoramic audio ribbon depth
+          const tiltX = tStage3 * 0.10;
+          wavePoints.rotation.y = meshSpinY + currentCamX * 0.035;
+          wavePoints.rotation.x = currentCamY * 0.020 + tiltX;
+        } else {
+          meshSpinY += dt * 0.10;
+          wavePoints.rotation.y = meshSpinY + currentCamX * 0.04;
+          wavePoints.rotation.x = currentCamY * 0.025;
+        }
       } else {
         const nearestFront = Math.round(meshSpinY / (Math.PI * 2.0)) * (Math.PI * 2.0);
         meshSpinY += (nearestFront - meshSpinY) * Math.min(1.0, dt * 3.5);

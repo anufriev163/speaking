@@ -336,55 +336,66 @@ body.in-spatial-mode #mic-hint {
   font-size: 1.05rem;
   font-weight: 500;
   color: var(--color-text-sub);
-  margin-top: 10px;
+  margin-top: 12px;
   margin-bottom: 0;
-  display: block;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   white-space: nowrap;
   text-shadow: 0 0 15px rgba(255, 255, 255, 0.95);
   letter-spacing: normal;
 }
 
-/* 3 Compact Minimalist OS Logos fitting right under 'говори' */
+/* 3 OS Logos spanning the EXACT width of 'говори' */
 .os-icons-trio {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  width: auto;
-  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  margin-top: 22px;
   padding: 0;
+  box-sizing: border-box;
 }
 
 .os-logo-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
   color: #1E293B;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(2, 132, 199, 0.18);
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  background: rgba(255, 255, 255, 0.90);
+  border: 1.5px solid rgba(2, 132, 199, 0.20);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
   cursor: pointer;
   pointer-events: auto;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.os-logo-btn svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.22s ease;
 }
 
 .os-logo-btn:hover {
   color: #0284C7;
   background: #FFFFFF;
   border-color: #0284C7;
-  transform: translateY(-3px) scale(1.04);
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.18);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(2, 132, 199, 0.20);
+}
+
+.os-logo-btn:hover svg {
+  transform: scale(1.12);
 }
 
 .os-logo-btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0);
 }
 
 .os-logo-btn:focus-visible,
