@@ -77,8 +77,8 @@
   const camFlightEndPos = new THREE.Vector3();
   const camFlightEndLook = new THREE.Vector3();
   const currentLookAt = new THREE.Vector3(0, -0.4, 0);
-  const currentBasePos = new THREE.Vector3(0, 0.5, 42.0);
-  const currentBaseLook = new THREE.Vector3(0, -0.35, 0);
+  const currentBasePos = new THREE.Vector3(0, 0.6, 36.0);
+  const currentBaseLook = new THREE.Vector3(0, -1.0, 0);
   const currentParallaxPosScale = { x: 1.0, y: 1.0 };
   const currentParallaxLookScale = { x: 0.0, y: 0.0 };
   const flightStartParallaxPos = { x: 1.0, y: 1.0 };
@@ -143,25 +143,24 @@
   }
 
   // Strictly monotonic forward camera progression (ZERO zoom-out bouncing)
-  // Continuous smooth deep dive: Z moves forward from 42.0 down to 10.5
-  // Travel distance: 31.5 units (over 3x farther than before!)
+  // Continuous smooth deep dive: Z moves forward from 36.0 down to 10.5
   function getTimelineCamera(p, outPos, outLook) {
     const pClamped = Math.max(0.0, Math.min(3.0, p));
     const s = pClamped / 3.0; // 0.0 to 1.0
 
     // Only forward approach - strictly decreasing Z
-    const targetZ = 42.0 - s * 31.5;
+    const targetZ = 36.0 - s * 25.5;
 
     let targetX = 0.0;
-    let targetY = 0.5;
-    let lookY = -0.35;
+    let targetY = 0.6;
+    let lookY = -1.0;
 
     if (pClamped < 1.0) {
       const t = pClamped;
       const easeT = t * t * (3.0 - 2.0 * t);
       targetX = easeT * 0.7;
-      targetY = 0.5 + easeT * 0.3; // 0.5 -> 0.8
-      lookY = -0.35 + easeT * 0.35; // -0.35 -> 0.0
+      targetY = 0.6 + easeT * 0.2; // 0.6 -> 0.8 (smooth transition to sphere level)
+      lookY = -1.0 + easeT * 1.0;  // -1.0 -> 0.0
     } else if (pClamped < 2.0) {
       const t = pClamped - 1.0;
       const easeT = t * t * (3.0 - 2.0 * t);
@@ -232,99 +231,71 @@
       const i3 = i * 3;
 
       // ====================================================================
-      // TIMELINE STAGE 0: МОНУМЕНТАЛЬНЫЙ ОБЪЕМНЫЙ 3D АУДИО-ЛАНДШАФТ НА ВЕСЬ ЭКРАН
-      // 4 многослойных пространственных звуковых полотна (18 000 частиц):
-      // - Ribbon 0 (0..5999): Центральная вокальная 3D-волна речи (Y in [-7.8, +6.2], Z in [-2.5, +2.5])
-      // - Ribbon 1 (6000..9999): Верхнее формантное полотно в глубине (Y in [+1.5, +9.8], Z in [-7, -3])
-      // - Ribbon 2 (10000..13999): Передний басовый гребень у камеры (Y in [-11.5, -3.5], Z in [+5.5, +10.5])
-      // - Ribbon 3 (14000..17999): Глубокий реверберационный горизонт (Y in [-4.5, +4.0], Z in [-13.5, -7.5])
-      // Покрывает экран на 100%: X in [-34, +34], Y in [-11.5, +9.8], Z in [-13.5, +10.5]
+      // TIMELINE STAGE 0: ОБЪЕМНАЯ ШЕЛКОВАЯ 3D-ВОЛНА ЗВУКА (SILK AUDIO RIBBON)
+      // Единая, цельная монументальная 3D-скульптура звука на весь экран
+      // 16 000 частиц образуют единое сверхплотное шелковое полотно
+      // 2 000 частиц парят вокруг как квантовая аура сияния речи
       // ====================================================================
-      if (i < 6000) {
-        // ── 1. ЦЕНТРАЛЬНАЯ ВОКАЛЬНАЯ ВОЛНА РЕЧИ (6000 частиц: 12 дорожек x 500 точек) ──
-        const trackIdx = i % 12;
-        const ptIdx = Math.floor(i / 12);
-        const t = (ptIdx / 499.0) * 2.0 - 1.0;  // X [-1, +1]
-        const u = (trackIdx / 11.0) * 2.0 - 1.0; // Z [-1, +1]
+      if (i < 16000) {
+        // Единое непрерывное 3D-полотно шелковой волны (320 шагов x 50 полос)
+        const numL = 320;
+        const numW = 50;
+        const lIdx = Math.floor(i / numW);
+        const wIdx = i % numW;
 
-        const x0 = t * 34.0;
-        const z0 = u * 2.4 + Math.sin(t * 2.8) * 0.9;
+        // Стратифицированное органическое распределение (ноль жесткой сетки)
+        const jitterT = (Math.sin(i * 78.233) * 0.5 + 0.5);
+        const jitterU = (Math.cos(i * 12.9898) * 0.5 + 0.5);
+        const t = ((lIdx + jitterT) / numL) * 2.0 - 1.0; // t in [-1, +1]
+        const u = ((wIdx + jitterU) / numW) * 2.0 - 1.0; // u in [-1, +1]
 
-        // Мощный речевой импульс: слоги «ГО - ВО - РИ»
-        const s1 = Math.exp(-Math.pow((t + 0.38) * 4.5, 2.0)) * 3.4;
-        const sCenter = Math.exp(-Math.pow(t * 4.0, 2.0)) * 4.8;
-        const s2 = Math.exp(-Math.pow((t - 0.36) * 4.8, 2.0)) * 3.2;
-        const baseBed = 0.45 + 0.15 * Math.cos(t * Math.PI);
-        const env = s1 + sCenter + s2 + baseBed;
+        // Мягкое изящное утончение к краям экрана без резких срезов
+        const edgeTaper = Math.pow(Math.max(0.0, 1.0 - Math.abs(t) * 0.95), 0.55);
+        const edgeDamp = 0.22 + 0.78 * edgeTaper;
 
-        const f0 = Math.sin(t * 16.0 + u * 0.15);
-        const f1 = Math.sin(t * 34.0 - u * 0.10) * 0.45;
-        const f2 = Math.cos(t * 72.0) * 0.20;
-        const signal = (f0 + f1 + f2) * env;
+        // Размах по горизонтали на весь экран (X in [-28.5, +28.5])
+        const spineX = t * 28.5;
 
-        const trackSwell = Math.cos(u * Math.PI * 0.45);
-        const y0 = -1.2 + (trackSwell - 0.5) * 0.5 + signal * 1.1;
+        // Вертикальное наполнение: величественная вершина точно под стрелкой (Y = +2.2),
+        // ниспадающие складки шелка заполняют нижнюю половину экрана (Y до -8.5)
+        const centerCrest = Math.exp(-t * t * 9.5) * 4.6;
+        const flow1 = Math.sin(t * Math.PI * 1.15) * 4.6;
+        const flow2 = -Math.cos(t * Math.PI * 0.58) * 2.2;
+        const spineY = -2.5 + centerCrest + (flow1 + flow2) * edgeDamp;
 
-        pos0[i3]     = x0;
-        pos0[i3 + 1] = y0;
-        pos0[i3 + 2] = z0;
-      } else if (i < 10000) {
-        // ── 2. ВЕРХНЕЕ ФОРМАНТНОЕ ПОЛОТНО В ГЛУБИНЕ (4000 частиц: 8 дорожек x 500 точек) ──
-        const idx = i - 6000;
-        const trackIdx = idx % 8;
-        const ptIdx = Math.floor(idx / 8);
-        const t = (ptIdx / 499.0) * 2.0 - 1.0;
-        const u = (trackIdx / 7.0) * 2.0 - 1.0;
+        // Плавная глубина по Z без самопересечений и резких складок
+        const spineZ = Math.sin(t * Math.PI * 0.90) * 5.4 + Math.cos(t * Math.PI * 0.45) * 2.8;
 
-        const x0 = t * 33.0;
-        const z0 = -5.0 + u * 2.0 + Math.cos(t * 2.2) * 1.2;
+        // Объемная ширина шелкового полотна в 3D-пространстве (XZ с мягким рельефом по Y)
+        const ribWidth = (7.8 + Math.exp(-t * t * 3.5) * 2.6) * edgeDamp;
+        const angle = t * 0.45 + Math.sin(t * 1.5) * 0.12;
 
-        // Верхний волновой свод: мягкий прогиб в центре для текста, подъем по краям
-        const cradle = 1.0 - Math.exp(-t * t * 6.0) * 0.55;
-        const arch = (Math.sin((t + 0.5) * Math.PI) * 0.4 + 0.6) * cradle;
-        const harmonics = Math.sin(t * 24.0 + u * 0.2) * 1.3 + Math.cos(t * 54.0) * 0.5;
-        const y0 = 3.6 + arch * 4.2 + harmonics * 0.8;
+        const deltaX = -u * ribWidth * Math.sin(angle) * 0.22;
+        const deltaY =  u * ribWidth * Math.sin(angle * 1.5) * 0.32;
+        const deltaZ =  u * ribWidth * Math.cos(angle) * 1.15;
 
-        pos0[i3]     = x0;
-        pos0[i3 + 1] = y0;
-        pos0[i3 + 2] = z0;
-      } else if (i < 14000) {
-        // ── 3. ПЕРЕДНИЙ БАСОВЫЙ ГРЕБЕНЬ У КАМЕРЫ (4000 частиц: 8 дорожек x 500 точек) ──
-        const idx = i - 10000;
-        const trackIdx = idx % 8;
-        const ptIdx = Math.floor(idx / 8);
-        const t = (ptIdx / 499.0) * 2.0 - 1.0;
-        const u = (trackIdx / 7.0) * 2.0 - 1.0;
+        // Бархатная толщина и бегущая микро-рябь звука
+        const plush = ((wIdx % 3) - 1.0) * 0.28;
+        const ripple = Math.sin(t * 14.0 + u * 2.0) * 0.32 * Math.exp(-t * t * 2.2);
 
-        const x0 = t * 32.0;
-        // Находится на переднем плане у камеры (Z in [5.5, 10.5]), создавая огромный объем и параллакс
-        const z0 = 7.5 + u * 2.0 + Math.sin(t * 2.5) * 1.2;
-
-        const bassEnv = 0.7 + 0.3 * Math.cos(t * Math.PI * 0.8);
-        const bassWave = Math.sin(t * 10.0 + u * 0.2) * 2.4 + Math.sin(t * 22.0) * 0.9;
-        const y0 = -7.2 + bassWave * bassEnv;
-
-        pos0[i3]     = x0;
-        pos0[i3 + 1] = y0;
-        pos0[i3 + 2] = z0;
+        pos0[i3]     = spineX + deltaX;
+        pos0[i3 + 1] = spineY + deltaY + ripple + plush;
+        pos0[i3 + 2] = spineZ + deltaZ + plush * 0.8;
       } else {
-        // ── 4. ГЛУБОКИЙ РЕВЕРБЕРАЦИОННЫЙ ГОРИЗОНТ (4000 частиц: 8 дорожек x 500 точек) ──
-        const idx = i - 14000;
-        const trackIdx = idx % 8;
-        const ptIdx = Math.floor(idx / 8);
-        const t = (ptIdx / 499.0) * 2.0 - 1.0;
-        const u = (trackIdx / 7.0) * 2.0 - 1.0;
+        // Квантовая аура сияния речи (2000 частиц) вокруг единой скульптуры
+        const pIdx = i - 16000;
+        const tAura = ((pIdx % 100) / 99.0) * 2.0 - 1.0;
+        const angleAura = pIdx * goldenAngle;
+        const rAura = 1.3 + Math.sin(pIdx * 1.8) * 0.8 + ((pIdx % 8) / 7.0) * 2.4;
 
-        const x0 = t * 35.0;
-        // Глубокий задний план (Z in [-13.5, -7.5])
-        const z0 = -10.5 + u * 2.2 + Math.sin(t * 3.0) * 1.4;
+        const depthRecedeAura = Math.pow(Math.abs(tAura), 2.0) * 7.5;
+        const xAura = tAura * 29.0;
+        const envY = -2.5 + Math.exp(-tAura * tAura * 7.0) * 4.2 + Math.sin(tAura * Math.PI * 1.15) * 4.0;
+        const envZ = Math.sin(tAura * Math.PI * 1.10) * 6.5 - depthRecedeAura;
 
-        const reverbWave = Math.sin(t * 14.0 + u * 0.15) * 1.8 + Math.cos(t * 38.0) * 0.8;
-        const y0 = -0.8 + reverbWave * 1.2 + Math.cos(t * Math.PI * 0.5) * 2.2;
-
-        pos0[i3]     = x0;
-        pos0[i3 + 1] = y0;
-        pos0[i3 + 2] = z0;
+        pos0[i3]     = xAura + Math.cos(angleAura) * rAura * 0.7;
+        pos0[i3 + 1] = envY + Math.sin(angleAura) * rAura * 0.88;
+        pos0[i3 + 2] = envZ + Math.sin(angleAura * 2.0) * rAura * 1.15;
       }
 
       // ====================================================================
@@ -962,17 +933,15 @@
         float sMorph = morphFactor * morphFactor * (3.0 - 2.0 * morphFactor);
         vec3 p = mix(pTimeline, pObject, sMorph);
 
-        // Hero wave motion in Stage 0: pure, coherent travelling soundwave
+        // Stage 0: Dynamic travelling voice frequencies across panoramic soundscape
         float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - sMorph * 0.9);
         float heroWave = 0.0;
         if (heroWaveFactor > 0.001) {
-          float travellingSound = sin(p.x * 0.40 - uTime * 2.5) * 0.38 +
-                                  sin(p.x * 0.95 + uTime * 3.4) * 0.18 +
-                                  cos(p.x * 2.10 - uTime * 4.0) * 0.08;
-          float breath = sin(uTime * 1.5 + p.z * 0.15) * 0.15;
-          heroWave = (travellingSound + breath) * heroWaveFactor;
+          float waveRun = sin(p.x * 0.35 - uTime * 2.4 + p.z * 0.15) * 0.45;
+          float harmonics = sin(p.x * 0.90 + uTime * 3.2) * cos(p.z * 0.25 + uTime * 1.4) * 0.25;
+          heroWave = (waveRun + harmonics) * heroWaveFactor;
         }
-        float pulse = sin(uTime * 1.8 + p.x * 0.3) * (0.05 + 0.04 * sMorph);
+        float pulse = sin(uTime * 1.8 + p.x * 0.2) * (0.06 + 0.04 * sMorph);
 
         // Stage 3: Dynamic travelling voice frequencies across panoramic waveform
         float stage3Wave = 0.0;
@@ -1004,33 +973,33 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float baseScale = mix((pVal > 2.0 ? 44.0 : 40.0), 54.0, sMorph);
+        float baseScale = mix((pVal < 1.0 ? 56.0 : (pVal > 2.0 ? 44.0 : 40.0)), 54.0, sMorph);
         float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.85);
-        gl_PointSize = clamp(size, 2.5, 78.0);
+        gl_PointSize = clamp(size, 2.5, 80.0);
 
-        // Rich high-contrast celestial blue palette - never fading to white!
-        vec3 cDeepNavy  = vec3(0.012, 0.380, 0.700); // #0361B3
-        vec3 cCerulean  = vec3(0.020, 0.550, 0.880); // #058CE0
-        vec3 cBrightSky = vec3(0.050, 0.720, 0.980); // #0DB8FA
-        vec3 cNeonCyan  = vec3(0.000, 0.900, 1.000); // #00E5FF
-        vec3 cVoice     = vec3(0.000, 0.950, 1.000); // Vibrant voice cyan
+        // Rich high-contrast celestial blue palette for silk ribbon
+        vec3 cDeepNavy  = vec3(0.008, 0.320, 0.650); // #0252A6 - deep shadow in folds
+        vec3 cCerulean  = vec3(0.020, 0.550, 0.880); // #058CE0 - rich body of silk
+        vec3 cBrightSky = vec3(0.050, 0.720, 0.980); // #0DB8FA - mid-glow
+        vec3 cNeonCyan  = vec3(0.000, 0.940, 1.000); // #00F0FF - crests & highlights
+        vec3 cVoice     = vec3(0.000, 0.980, 1.000); // Vibrant voice cyan
 
-        float h = clamp((p.y + 11.5) / 21.0, 0.0, 1.0);
-        if (h < 0.40) {
-          vColor = mix(cDeepNavy, cCerulean, h / 0.40);
+        float h = (pVal < 1.0) ? clamp((p.y + 8.5) / 11.5, 0.0, 1.0) : clamp((p.y + 6.0) / 12.0, 0.0, 1.0);
+        if (h < 0.45) {
+          vColor = mix(cDeepNavy, cCerulean, h / 0.45);
         } else if (h < 0.75) {
-          vColor = mix(cCerulean, cBrightSky, (h - 0.40) / 0.35);
+          vColor = mix(cCerulean, cBrightSky, (h - 0.45) / 0.30);
         } else {
           vColor = mix(cBrightSky, cNeonCyan, (h - 0.75) / 0.25);
         }
 
-        // Luminous neon cyan crests on high-amplitude waveform peaks
-        float peakGlow = clamp((p.y - 1.0) / 4.0, 0.0, 1.0);
-        vColor = mix(vColor, cNeonCyan, peakGlow * 0.75);
+        // Luminous neon cyan highlights on wave peaks
+        float peakGlow = (pVal < 1.0) ? clamp((p.y - 0.5) / 2.5, 0.0, 1.0) : clamp((p.y - 1.5) / 3.5, 0.0, 1.0);
+        vColor = mix(vColor, cNeonCyan, peakGlow * 0.65);
 
-        // Foreground 3D volume luminance boost: particles closer to camera in Z get extra electric glow
+        // Foreground 3D volume boost for Stage 0 Silk Ribbon
         if (pVal < 0.8) {
-          float zGlow = clamp((p.z - 2.0) / 7.0, 0.0, 1.0);
+          float zGlow = clamp((p.z - 1.0) / 9.0, 0.0, 1.0);
           vColor = mix(vColor, cNeonCyan, zGlow * 0.40);
         }
 
@@ -1312,15 +1281,16 @@
 
       const micOpacity = baseMicOpacity * timelineAlpha;
 
-      // Responsive 3D Anchor for mic note
+      // Responsive Anchor for mic note beside downward arrow
       let targetX, targetY;
       if (W < 768) {
         targetX = Math.max(16, (W - 170) * 0.5);
         targetY = H - 75;
       } else {
-        const pos = toScreenPosition(tempV3);
-        targetX = Math.min(W - 200, Math.max(W * 0.55, pos.x));
-        targetY = Math.max(80, Math.min(H - 120, pos.y - 45));
+        const calloutY = smoothedCallouts[0].y;
+        const calloutH = calloutSizes[0].height || 180;
+        targetX = Math.min(W - 220, W * 0.5 + 46);
+        targetY = calloutY + calloutH - 26;
       }
 
       smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
@@ -1840,11 +1810,11 @@
       // Unified continuous rotation: zero snapping across section open/close
       let timelineRotY, timelineRotX;
       if (p < 0.65) {
-        // Stage 0: Front-facing crisp 3D audio ribbon (ZERO rotating sideways!)
+        // Stage 0: Front-facing panoramic 3D acoustic landscape with smooth parallax
         const frontTarget = 0.0;
         meshSpinY += (frontTarget - meshSpinY) * Math.min(1.0, dt * 4.0);
-        timelineRotY = meshSpinY + currentCamX * 0.035;
-        timelineRotX = currentCamY * 0.020 - 0.04;
+        timelineRotY = meshSpinY + currentCamX * 0.040;
+        timelineRotX = currentCamY * 0.025;
       } else if (p > 1.95) {
         // In Stage 3, smoothly steer rotation towards front-facing horizon (0.0 rad)
         const tStage3 = Math.min(1.0, (p - 1.95) / 0.7);
