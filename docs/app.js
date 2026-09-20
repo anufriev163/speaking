@@ -232,51 +232,100 @@
       const i3 = i * 3;
 
       // ====================================================================
-      // TIMELINE STAGE 0: СКУЛЬПТУРНЫЙ 3D WAVEFORM ГОЛОСА («ГОВОРИ»)
-      // Кристально четкая, выразительная форма звуковой волны речи
-      // 20 параллельных когерентных дорожек x 900 точек = 18 000 частиц
+      // TIMELINE STAGE 0: МОНУМЕНТАЛЬНЫЙ ОБЪЕМНЫЙ 3D АУДИО-ЛАНДШАФТ НА ВЕСЬ ЭКРАН
+      // 4 многослойных пространственных звуковых полотна (18 000 частиц):
+      // - Ribbon 0 (0..5999): Центральная вокальная 3D-волна речи (Y in [-7.8, +6.2], Z in [-2.5, +2.5])
+      // - Ribbon 1 (6000..9999): Верхнее формантное полотно в глубине (Y in [+1.5, +9.8], Z in [-7, -3])
+      // - Ribbon 2 (10000..13999): Передний басовый гребень у камеры (Y in [-11.5, -3.5], Z in [+5.5, +10.5])
+      // - Ribbon 3 (14000..17999): Глубокий реверберационный горизонт (Y in [-4.5, +4.0], Z in [-13.5, -7.5])
+      // Покрывает экран на 100%: X in [-34, +34], Y in [-11.5, +9.8], Z in [-13.5, +10.5]
       // ====================================================================
-      const numTracks0 = 20;
-      const ptsPerTrack0 = 900;
-      const trackIdx0 = i % numTracks0;
-      const ptIdx0 = Math.floor(i / numTracks0);
+      if (i < 6000) {
+        // ── 1. ЦЕНТРАЛЬНАЯ ВОКАЛЬНАЯ ВОЛНА РЕЧИ (6000 частиц: 12 дорожек x 500 точек) ──
+        const trackIdx = i % 12;
+        const ptIdx = Math.floor(i / 12);
+        const t = (ptIdx / 499.0) * 2.0 - 1.0;  // X [-1, +1]
+        const u = (trackIdx / 11.0) * 2.0 - 1.0; // Z [-1, +1]
 
-      // t0 - по горизонтали от края до края экрана [-1.0, +1.0]
-      // u0 - глубина стерео-ленты [-1.0, +1.0]
-      const t0 = (ptIdx0 / (ptsPerTrack0 - 1.0)) * 2.0 - 1.0;
-      const u0 = (trackIdx0 / (numTracks0 - 1.0)) * 2.0 - 1.0;
+        const x0 = t * 34.0;
+        const z0 = u * 2.4 + Math.sin(t * 2.8) * 0.9;
 
-      // Размах по ширине: покрывает экран от края до края (X in [-32.0, +32.0])
-      const x0 = t0 * 32.0;
+        // Мощный речевой импульс: слоги «ГО - ВО - РИ»
+        const s1 = Math.exp(-Math.pow((t + 0.38) * 4.5, 2.0)) * 3.4;
+        const sCenter = Math.exp(-Math.pow(t * 4.0, 2.0)) * 4.8;
+        const s2 = Math.exp(-Math.pow((t - 0.36) * 4.8, 2.0)) * 3.2;
+        const baseBed = 0.45 + 0.15 * Math.cos(t * Math.PI);
+        const env = s1 + sCenter + s2 + baseBed;
 
-      // Компактная, четкая глубина ленты в Z (без наслоения пыли)
-      const z0 = u0 * 1.8 + Math.sin(t0 * 2.5) * 0.6;
+        const f0 = Math.sin(t * 16.0 + u * 0.15);
+        const f1 = Math.sin(t * 34.0 - u * 0.10) * 0.45;
+        const f2 = Math.cos(t * 72.0) * 0.20;
+        const signal = (f0 + f1 + f2) * env;
 
-      // Четкая ритмическая форма речевых импульсов: 3 слога «ГО - ВО - РИ»
-      // Сильный контраст: выраженные пики и спокойные долины между словами
-      const syll1 = Math.exp(-Math.pow((t0 + 0.38) * 5.0, 2.0)) * 2.6; // «ГО»
-      const syll2 = Math.exp(-Math.pow(t0 * 4.5, 2.0)) * 3.8;          // «ВО» (главный пик)
-      const syll3 = Math.exp(-Math.pow((t0 - 0.36) * 5.2, 2.0)) * 2.4; // «РИ»
+        const trackSwell = Math.cos(u * Math.PI * 0.45);
+        const y0 = -1.2 + (trackSwell - 0.5) * 0.5 + signal * 1.1;
 
-      // Мягкая фоновая звуковая дорожка до самых краев экрана
-      const baseBed = 0.32 + 0.12 * Math.cos(t0 * Math.PI);
-      const vocalEnv = syll1 + syll2 + syll3 + baseBed;
+        pos0[i3]     = x0;
+        pos0[i3 + 1] = y0;
+        pos0[i3 + 2] = z0;
+      } else if (i < 10000) {
+        // ── 2. ВЕРХНЕЕ ФОРМАНТНОЕ ПОЛОТНО В ГЛУБИНЕ (4000 частиц: 8 дорожек x 500 точек) ──
+        const idx = i - 6000;
+        const trackIdx = idx % 8;
+        const ptIdx = Math.floor(idx / 8);
+        const t = (ptIdx / 499.0) * 2.0 - 1.0;
+        const u = (trackIdx / 7.0) * 2.0 - 1.0;
 
-      // Гармоники человеческой речи: когерентные по дорожкам для идеальной читаемости формы
-      const f0 = Math.sin(t0 * 18.0 + u0 * 0.15);         // Базовый тон речи
-      const f1 = Math.sin(t0 * 38.0 - u0 * 0.10) * 0.45;  // 1-я форманта
-      const f2 = Math.sin(t0 * 76.0 + u0 * 0.12) * 0.20;  // 2-я форманта
-      const f3 = Math.cos(t0 * 120.0) * 0.08;             // Обертоны
-      const waveSignal = (f0 + f1 + f2 + f3) * vocalEnv;
+        const x0 = t * 33.0;
+        const z0 = -5.0 + u * 2.0 + Math.cos(t * 2.2) * 1.2;
 
-      // Профиль толщины ленты
-      const trackSwell = Math.cos(u0 * Math.PI * 0.45);
-      const yBase = -2.4 + (trackSwell - 0.5) * 0.4;
-      const y0 = yBase + waveSignal * (0.85 + trackSwell * 0.35);
+        // Верхний волновой свод: мягкий прогиб в центре для текста, подъем по краям
+        const cradle = 1.0 - Math.exp(-t * t * 6.0) * 0.55;
+        const arch = (Math.sin((t + 0.5) * Math.PI) * 0.4 + 0.6) * cradle;
+        const harmonics = Math.sin(t * 24.0 + u * 0.2) * 1.3 + Math.cos(t * 54.0) * 0.5;
+        const y0 = 3.6 + arch * 4.2 + harmonics * 0.8;
 
-      pos0[i3]     = x0;
-      pos0[i3 + 1] = y0;
-      pos0[i3 + 2] = z0;
+        pos0[i3]     = x0;
+        pos0[i3 + 1] = y0;
+        pos0[i3 + 2] = z0;
+      } else if (i < 14000) {
+        // ── 3. ПЕРЕДНИЙ БАСОВЫЙ ГРЕБЕНЬ У КАМЕРЫ (4000 частиц: 8 дорожек x 500 точек) ──
+        const idx = i - 10000;
+        const trackIdx = idx % 8;
+        const ptIdx = Math.floor(idx / 8);
+        const t = (ptIdx / 499.0) * 2.0 - 1.0;
+        const u = (trackIdx / 7.0) * 2.0 - 1.0;
+
+        const x0 = t * 32.0;
+        // Находится на переднем плане у камеры (Z in [5.5, 10.5]), создавая огромный объем и параллакс
+        const z0 = 7.5 + u * 2.0 + Math.sin(t * 2.5) * 1.2;
+
+        const bassEnv = 0.7 + 0.3 * Math.cos(t * Math.PI * 0.8);
+        const bassWave = Math.sin(t * 10.0 + u * 0.2) * 2.4 + Math.sin(t * 22.0) * 0.9;
+        const y0 = -7.2 + bassWave * bassEnv;
+
+        pos0[i3]     = x0;
+        pos0[i3 + 1] = y0;
+        pos0[i3 + 2] = z0;
+      } else {
+        // ── 4. ГЛУБОКИЙ РЕВЕРБЕРАЦИОННЫЙ ГОРИЗОНТ (4000 частиц: 8 дорожек x 500 точек) ──
+        const idx = i - 14000;
+        const trackIdx = idx % 8;
+        const ptIdx = Math.floor(idx / 8);
+        const t = (ptIdx / 499.0) * 2.0 - 1.0;
+        const u = (trackIdx / 7.0) * 2.0 - 1.0;
+
+        const x0 = t * 35.0;
+        // Глубокий задний план (Z in [-13.5, -7.5])
+        const z0 = -10.5 + u * 2.2 + Math.sin(t * 3.0) * 1.4;
+
+        const reverbWave = Math.sin(t * 14.0 + u * 0.15) * 1.8 + Math.cos(t * 38.0) * 0.8;
+        const y0 = -0.8 + reverbWave * 1.2 + Math.cos(t * Math.PI * 0.5) * 2.2;
+
+        pos0[i3]     = x0;
+        pos0[i3 + 1] = y0;
+        pos0[i3 + 2] = z0;
+      }
 
       // ====================================================================
       // TIMELINE STAGE 1: СФЕРА ГОЛОСА / ИИ-МОЗГ
@@ -913,14 +962,14 @@
         float sMorph = morphFactor * morphFactor * (3.0 - 2.0 * morphFactor);
         vec3 p = mix(pTimeline, pObject, sMorph);
 
-        // Hero wave motion in Stage 0: pure, coherent travelling soundwave (silhouette 100% preserved)
+        // Hero wave motion in Stage 0: pure, coherent travelling soundwave
         float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - sMorph * 0.9);
         float heroWave = 0.0;
         if (heroWaveFactor > 0.001) {
-          float travellingSound = sin(p.x * 0.45 - uTime * 2.8) * 0.32 +
-                                  sin(p.x * 1.10 + uTime * 3.6) * 0.14 +
-                                  cos(p.x * 2.20 - uTime * 4.2) * 0.06;
-          float breath = sin(uTime * 1.6) * 0.10;
+          float travellingSound = sin(p.x * 0.40 - uTime * 2.5) * 0.38 +
+                                  sin(p.x * 0.95 + uTime * 3.4) * 0.18 +
+                                  cos(p.x * 2.10 - uTime * 4.0) * 0.08;
+          float breath = sin(uTime * 1.5 + p.z * 0.15) * 0.15;
           heroWave = (travellingSound + breath) * heroWaveFactor;
         }
         float pulse = sin(uTime * 1.8 + p.x * 0.3) * (0.05 + 0.04 * sMorph);
@@ -955,9 +1004,9 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float baseScale = mix((pVal > 2.0 ? 42.0 : 36.0), 52.0, sMorph);
+        float baseScale = mix((pVal > 2.0 ? 44.0 : 40.0), 54.0, sMorph);
         float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.85);
-        gl_PointSize = clamp(size, 2.2, 72.0);
+        gl_PointSize = clamp(size, 2.5, 78.0);
 
         // Rich high-contrast celestial blue palette - never fading to white!
         vec3 cDeepNavy  = vec3(0.012, 0.380, 0.700); // #0361B3
@@ -966,16 +1015,24 @@
         vec3 cNeonCyan  = vec3(0.000, 0.900, 1.000); // #00E5FF
         vec3 cVoice     = vec3(0.000, 0.950, 1.000); // Vibrant voice cyan
 
-        float h = clamp((p.y + 6.0) / 7.5, 0.0, 1.0);
-        if (h < 0.45) {
-          vColor = mix(cDeepNavy, cCerulean, h / 0.45);
+        float h = clamp((p.y + 11.5) / 21.0, 0.0, 1.0);
+        if (h < 0.40) {
+          vColor = mix(cDeepNavy, cCerulean, h / 0.40);
+        } else if (h < 0.75) {
+          vColor = mix(cCerulean, cBrightSky, (h - 0.40) / 0.35);
         } else {
-          vColor = mix(cCerulean, cBrightSky, (h - 0.45) / 0.55);
+          vColor = mix(cBrightSky, cNeonCyan, (h - 0.75) / 0.25);
         }
 
-        // Luminous neon cyan highlights on wave peaks
-        float peakGlow = clamp((p.y + 0.2) / 1.6, 0.0, 1.0);
-        vColor = mix(vColor, cNeonCyan, peakGlow * 0.65);
+        // Luminous neon cyan crests on high-amplitude waveform peaks
+        float peakGlow = clamp((p.y - 1.0) / 4.0, 0.0, 1.0);
+        vColor = mix(vColor, cNeonCyan, peakGlow * 0.75);
+
+        // Foreground 3D volume luminance boost: particles closer to camera in Z get extra electric glow
+        if (pVal < 0.8) {
+          float zGlow = clamp((p.z - 2.0) / 7.0, 0.0, 1.0);
+          vColor = mix(vColor, cNeonCyan, zGlow * 0.40);
+        }
 
         // Extra luminous neon cyan highlights on Stage 3 waveform peaks
         if (pVal > 2.0 && sMorph < 0.05) {
