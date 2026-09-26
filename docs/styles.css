@@ -78,13 +78,10 @@ body {
   -webkit-user-select: none;
   cursor: pointer;
   pointer-events: auto;
-  opacity: 0;
+  opacity: 1;
   transform: translate3d(0, 0, 0) rotate(-3deg);
-  will-change: transform, opacity, filter, letter-spacing;
-  transition: color 0.3s ease, text-shadow 0.3s ease,
-              opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-              letter-spacing 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
   display: inline-flex;
   align-items: center;

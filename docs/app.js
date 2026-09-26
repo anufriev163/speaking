@@ -55,7 +55,8 @@
     { x: W * 0.5 - 140, y: H * 0.5 - 80 }
   ];
   let micHintEl = null;
-  const smoothMicHint = { x: W * 0.75, y: H * 0.55 };
+  let micHintSnapped = false;
+  const smoothMicHint = { x: W * 0.5 + 46, y: 224 };
   const projVec = new THREE.Vector3();
   const tempV1 = new THREE.Vector3(4.8, 1.8, 0);
   const tempV2 = new THREE.Vector3(-4.2, 1.2, 0);
@@ -257,22 +258,26 @@
         const spineX = t * 28.5;
 
         // Коэффициент левой стороны (плавно от 0 в центре t=0 до 1.0 на краю t=-1)
-        const leftFactor = Math.max(0.0, -t);
-        const leftLift = Math.exp(-Math.pow((t + 0.60) * 2.6, 2.0)) * 2.8 * Math.pow(leftFactor, 1.1);
-        const leftFlow = Math.sin(-t * Math.PI * 1.5) * 1.4 * leftFactor;
+        const leftT = Math.max(0.0, -t);
+        // Заметный вторичный гребень волны слева (t ~ -0.45)
+        const leftCrest = Math.exp(-Math.pow((t + 0.45) * 3.0, 2.0)) * 5.2 * leftT;
+        // Мощная плавная гармоника подъема в левой половине
+        const leftWave = Math.sin(leftT * Math.PI * 1.3) * 3.4;
 
         // Вертикальное наполнение: вершина точно под стрелкой при t=0 (Y = +2.2),
-        // а левая часть обогащена мягким подъемом и увеличенным объемом
+        // а левая часть поднята и масштабирована в величественную встречную волну
         const centerCrest = Math.exp(-t * t * 9.5) * 4.6;
         const flow1 = Math.sin(t * Math.PI * 1.15) * 4.6;
         const flow2 = -Math.cos(t * Math.PI * 0.58) * 2.2;
-        const spineY = -2.5 + centerCrest + (flow1 + flow2) * edgeDamp + leftLift + leftFlow;
+        const spineY = -2.5 + centerCrest + (flow1 + flow2) * edgeDamp + leftCrest + leftWave;
 
         // Плавная глубина по Z без самопересечений и резких складок
         const spineZ = Math.sin(t * Math.PI * 0.90) * 5.4 + Math.cos(t * Math.PI * 0.45) * 2.8;
 
-        // Объемная ширина шелкового полотна: увеличена в левой части
-        const ribWidth = (7.8 + Math.exp(-t * t * 3.5) * 2.6 + Math.pow(leftFactor, 1.2) * 3.8) * edgeDamp;
+        // Объемная ширина шелкового полотна: значительно расширена в левой части
+        const leftRibbonBoost = leftT * 6.5;
+        const effectiveDamp = t < 0 ? (0.45 + 0.55 * edgeTaper) : edgeDamp;
+        const ribWidth = (8.5 + Math.exp(-t * t * 3.5) * 2.6 + leftRibbonBoost) * effectiveDamp;
         const angle = t * 0.45 + Math.sin(t * 1.5) * 0.12;
 
         const deltaX = -u * ribWidth * Math.sin(angle) * 0.22;
@@ -292,11 +297,11 @@
         const tAura = ((pIdx % 100) / 99.0) * 2.0 - 1.0;
         const angleAura = pIdx * goldenAngle;
         const leftAura = Math.max(0.0, -tAura);
-        const rAura = 1.3 + Math.sin(pIdx * 1.8) * 0.8 + ((pIdx % 8) / 7.0) * 2.4 + leftAura * 0.8;
+        const rAura = 1.3 + Math.sin(pIdx * 1.8) * 0.8 + ((pIdx % 8) / 7.0) * 2.4 + leftAura * 1.8;
 
         const depthRecedeAura = Math.pow(Math.abs(tAura), 2.0) * 7.5;
         const xAura = tAura * 29.0;
-        const envY = -2.5 + Math.exp(-tAura * tAura * 7.0) * 4.2 + Math.sin(tAura * Math.PI * 1.15) * 4.0 + leftAura * 1.5;
+        const envY = -2.5 + Math.exp(-tAura * tAura * 7.0) * 4.2 + Math.sin(tAura * Math.PI * 1.15) * 4.0 + leftAura * 3.8;
         const envZ = Math.sin(tAura * Math.PI * 1.10) * 6.5 - depthRecedeAura;
 
         pos0[i3]     = xAura + Math.cos(angleAura) * rAura * 0.7;
@@ -1305,8 +1310,14 @@
         targetY = calloutY + calloutH - 26;
       }
 
-      smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
-      smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
+      if (!micHintSnapped) {
+        smoothMicHint.x = targetX;
+        smoothMicHint.y = targetY;
+        micHintSnapped = true;
+      } else {
+        smoothMicHint.x += (targetX - smoothMicHint.x) * 0.12;
+        smoothMicHint.y += (targetY - smoothMicHint.y) * 0.12;
+      }
 
       const returnSinkY = (1.0 - timelineAlpha) * 12.0;
       const waveSinkY = baseMicExit * 26.0 + returnSinkY;
