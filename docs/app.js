@@ -149,7 +149,7 @@
     const s = pClamped / 3.0; // 0.0 to 1.0
 
     // Only forward approach - strictly decreasing Z
-    const targetZ = 36.0 - s * 25.5;
+    const targetZ = 34.5 - s * 24.0;
 
     let targetX = 0.0;
     let targetY = 0.6;
@@ -253,21 +253,21 @@
         const edgeTaper = Math.pow(Math.max(0.0, 1.0 - Math.abs(t) * 0.95), 0.55);
         const edgeDamp = 0.22 + 0.78 * edgeTaper;
 
-        // Размах по горизонтали на весь экран (X in [-28.5, +28.5])
-        const spineX = t * 28.5;
+        // Размах по горизонтали на весь экран (X in [-31.0, +31.0])
+        const spineX = t * 31.0;
 
-        // Вертикальное наполнение: величественная вершина точно под стрелкой (Y = +2.2),
-        // ниспадающие складки шелка заполняют нижнюю половину экрана (Y до -8.5)
-        const centerCrest = Math.exp(-t * t * 9.5) * 4.6;
-        const flow1 = Math.sin(t * Math.PI * 1.15) * 4.6;
-        const flow2 = -Math.cos(t * Math.PI * 0.58) * 2.2;
-        const spineY = -2.5 + centerCrest + (flow1 + flow2) * edgeDamp;
+        // Вертикальное наполнение: величественная вершина точно под стрелкой (Y = +2.4),
+        // ниспадающие складки шелка заполняют нижнюю половину экрана (Y до -9.5)
+        const centerCrest = Math.exp(-t * t * 8.5) * 5.2;
+        const flow1 = Math.sin(t * Math.PI * 1.15) * 5.4;
+        const flow2 = -Math.cos(t * Math.PI * 0.58) * 2.6;
+        const spineY = -2.8 + centerCrest + (flow1 + flow2) * edgeDamp;
 
         // Плавная глубина по Z без самопересечений и резких складок
-        const spineZ = Math.sin(t * Math.PI * 0.90) * 5.4 + Math.cos(t * Math.PI * 0.45) * 2.8;
+        const spineZ = Math.sin(t * Math.PI * 0.90) * 5.8 + Math.cos(t * Math.PI * 0.45) * 3.0;
 
         // Объемная ширина шелкового полотна в 3D-пространстве (XZ с мягким рельефом по Y)
-        const ribWidth = (7.8 + Math.exp(-t * t * 3.5) * 2.6) * edgeDamp;
+        const ribWidth = (9.8 + Math.exp(-t * t * 3.5) * 3.4) * edgeDamp;
         const angle = t * 0.45 + Math.sin(t * 1.5) * 0.12;
 
         const deltaX = -u * ribWidth * Math.sin(angle) * 0.22;
@@ -275,8 +275,8 @@
         const deltaZ =  u * ribWidth * Math.cos(angle) * 1.15;
 
         // Бархатная толщина и бегущая микро-рябь звука
-        const plush = ((wIdx % 3) - 1.0) * 0.28;
-        const ripple = Math.sin(t * 14.0 + u * 2.0) * 0.32 * Math.exp(-t * t * 2.2);
+        const plush = ((wIdx % 3) - 1.0) * 0.32;
+        const ripple = Math.sin(t * 14.0 + u * 2.0) * 0.36 * Math.exp(-t * t * 2.2);
 
         pos0[i3]     = spineX + deltaX;
         pos0[i3 + 1] = spineY + deltaY + ripple + plush;
@@ -286,12 +286,12 @@
         const pIdx = i - 16000;
         const tAura = ((pIdx % 100) / 99.0) * 2.0 - 1.0;
         const angleAura = pIdx * goldenAngle;
-        const rAura = 1.3 + Math.sin(pIdx * 1.8) * 0.8 + ((pIdx % 8) / 7.0) * 2.4;
+        const rAura = 1.6 + Math.sin(pIdx * 1.8) * 1.0 + ((pIdx % 8) / 7.0) * 3.0;
 
-        const depthRecedeAura = Math.pow(Math.abs(tAura), 2.0) * 7.5;
-        const xAura = tAura * 29.0;
-        const envY = -2.5 + Math.exp(-tAura * tAura * 7.0) * 4.2 + Math.sin(tAura * Math.PI * 1.15) * 4.0;
-        const envZ = Math.sin(tAura * Math.PI * 1.10) * 6.5 - depthRecedeAura;
+        const depthRecedeAura = Math.pow(Math.abs(tAura), 2.0) * 8.0;
+        const xAura = tAura * 31.5;
+        const envY = -2.8 + Math.exp(-tAura * tAura * 7.0) * 4.8 + Math.sin(tAura * Math.PI * 1.15) * 4.6;
+        const envZ = Math.sin(tAura * Math.PI * 1.10) * 7.2 - depthRecedeAura;
 
         pos0[i3]     = xAura + Math.cos(angleAura) * rAura * 0.7;
         pos0[i3 + 1] = envY + Math.sin(angleAura) * rAura * 0.88;
@@ -937,8 +937,8 @@
         float heroWaveFactor = max(0.0, 1.0 - pVal * 0.7) * (1.0 - sMorph * 0.9);
         float heroWave = 0.0;
         if (heroWaveFactor > 0.001) {
-          float waveRun = sin(p.x * 0.35 - uTime * 2.4 + p.z * 0.15) * 0.45;
-          float harmonics = sin(p.x * 0.90 + uTime * 3.2) * cos(p.z * 0.25 + uTime * 1.4) * 0.25;
+          float waveRun = sin(p.x * 0.35 - uTime * 2.4 + p.z * 0.15) * 0.55;
+          float harmonics = sin(p.x * 0.90 + uTime * 3.2) * cos(p.z * 0.25 + uTime * 1.4) * 0.30;
           heroWave = (waveRun + harmonics) * heroWaveFactor;
         }
         float pulse = sin(uTime * 1.8 + p.x * 0.2) * (0.06 + 0.04 * sMorph);
@@ -973,7 +973,7 @@
         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mvPosition;
 
-        float baseScale = mix((pVal < 1.0 ? 56.0 : (pVal > 2.0 ? 44.0 : 40.0)), 54.0, sMorph);
+        float baseScale = mix((pVal < 1.0 ? 62.0 : (pVal > 2.0 ? 44.0 : 40.0)), 54.0, sMorph);
         float size = (baseScale / -mvPosition.z) * uPixelRatio * (1.0 + uMicEnergy * 0.25 + uWarpSpeed * 0.85);
         gl_PointSize = clamp(size, 2.5, 80.0);
 
