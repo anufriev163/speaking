@@ -1,5 +1,5 @@
 import { ToolDefinition } from '../types';
-import { injectTextUnicode } from '../../services/win32';
+import { injectTextUnicode, sendKeyStroke } from '../../services/win32';
 import { detectActiveContext } from '../../services/contextDetector';
 import { ActiveContext } from '../../../src/types';
 import { clipboard } from 'electron';
@@ -54,6 +54,13 @@ export class ToolRegistry {
           return false;
         }
       }
+    });
+
+    // 4. Send Key Stroke tool (Enter, Ctrl+Z, Ctrl+A, etc.)
+    this.registerTool<{ key: number; modifiers?: number[] }, boolean>({
+      name: 'win32_send_keystroke',
+      description: 'Sends simulated keystroke with optional modifiers',
+      execute: (params) => sendKeyStroke(params.key, params.modifiers || [])
     });
   }
 }

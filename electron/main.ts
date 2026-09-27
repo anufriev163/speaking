@@ -421,6 +421,7 @@ function updateTrayMenu() {
 let lastHotkeyTimestamp = 0;
 
 let currentSelectionText = '';
+let isRecordingActive = false;
 
 async function captureActiveSelection(): Promise<string> {
   try {
@@ -431,8 +432,8 @@ async function captureActiveSelection(): Promise<string> {
     clipboard.clear();
     simulateCopy();
 
-    // Small delay for target app to copy selection
-    await new Promise((r) => setTimeout(r, 50));
+    // Delay for target app to process copy
+    await new Promise((r) => setTimeout(r, 85));
 
     const copied = clipboard.readText();
     if (!copied || copied.trim().length === 0) {
@@ -496,16 +497,21 @@ function registerHotkeys() {
 
           hudWindow.webContents.send('context:changed', lastActiveContext);
 
-          // Detect active selection in foreground window for AI Rewrite
-          captureActiveSelection().then((selected) => {
-            currentSelectionText = selected;
-            if (hudWindow && !hudWindow.isDestroyed()) {
-              hudWindow.webContents.send('context:selection', {
-                hasSelection: Boolean(selected && selected.length > 0),
-                snippet: selected ? selected.slice(0, 35) : ''
-              });
-            }
-          });
+          const isStarting = !isRecordingActive;
+          isRecordingActive = !isRecordingActive;
+
+          if (isStarting) {
+            // Detect active selection in foreground window for AI Rewrite ONLY on start
+            captureActiveSelection().then((selected) => {
+              currentSelectionText = selected;
+              if (hudWindow && !hudWindow.isDestroyed()) {
+                hudWindow.webContents.send('context:selection', {
+                  hasSelection: Boolean(selected && selected.length > 0),
+                  snippet: selected ? selected.slice(0, 35) : ''
+                });
+              }
+            });
+          }
 
           console.log(`[Hotkeys] Toggle Triggered: ${key}`);
           hudWindow.webContents.send('hotkey:trigger', 'toggle');
@@ -668,6 +674,7 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle('stt:transcribe', async (_event, audioArrayBuffer: ArrayBuffer, mimeType = 'audio/wav') => {
+    isRecordingActive = false;
     const audioBuffer = Buffer.from(audioArrayBuffer);
     const context = lastActiveContext || detectActiveContext();
     const selectedText = currentSelectionText;
@@ -718,7 +725,7 @@ function setupIpcHandlers() {
     }
   });
   ipcMain.on('hud:recording-stopped', () => {
-    // recording stopped
+    isRecordingActive = false;
   });
 }
 

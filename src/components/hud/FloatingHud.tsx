@@ -138,7 +138,7 @@ export const FloatingHud: React.FC = () => {
           soundEffects.playSuccess();
           setHudState('success');
           setTextSnippet(result.text);
-          setLatency(result.latencyMs);
+          setIsRewriteResult(Boolean(result.isRewrite));
           const macro = result.macroSaved || result.macroCreated;
           if (macro) {
             setSavedMacroInfo(macro);
@@ -423,13 +423,13 @@ export const FloatingHud: React.FC = () => {
             {hudState === 'processing' ? (
               <div className="flex items-center gap-2 px-2 text-white/90 text-xs font-medium">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                <span className="text-[11px] tracking-tight">{selectionInfo.hasSelection ? t.hudRewriting : t.hudProcessing}</span>
+                <span className="text-[11px] tracking-tight">{selectionInfo.hasSelection ? (t.hudRewriting || 'Редактирую...') : t.hudProcessing}</span>
               </div>
             ) : hudState === 'success' ? (
               <div className="flex items-center gap-1.5 px-2 text-white text-xs font-medium max-w-[200px] truncate">
                 <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-400 shrink-0" />
                 <span className="text-[11px] truncate text-white/90">
-                  {savedMacroInfo ? savedMacroInfo.trigger : textSnippet ? `«${textSnippet}»` : t.hudPasted}
+                  {savedMacroInfo ? savedMacroInfo.trigger : isRewriteResult ? (t.hudReplaced || 'Заменено!') : textSnippet ? `«${textSnippet}»` : t.hudPasted}
                 </span>
               </div>
             ) : hudState === 'error' ? (
@@ -439,10 +439,18 @@ export const FloatingHud: React.FC = () => {
               </div>
             ) : (
               /* Equalizer waveform */
-              <Waveform
-                volume={mockVoicing ? 0.36 : audioVolume}
-                isRecording={isRecording || hudState === 'recording'}
-              />
+              <div className="flex items-center gap-2">
+                {selectionInfo.hasSelection && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-300 text-[10px] font-semibold border border-amber-500/40 shadow-sm animate-pulse shrink-0">
+                    <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                    <span>AI Правка</span>
+                  </span>
+                )}
+                <Waveform
+                  volume={mockVoicing ? 0.36 : audioVolume}
+                  isRecording={isRecording || hudState === 'recording'}
+                />
+              </div>
             )}
           </div>
 

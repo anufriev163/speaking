@@ -7,7 +7,8 @@ import { GovernanceManager } from '../governance/GovernanceManager';
 import { HarnessPipelineInput, HarnessPipelineOutput } from '../types';
 import { transcribeAudio } from '../../services/sttService';
 import { cleanTextRules, refineTextWithLLM, rewriteTextWithLLM } from '../../services/llmProcessor';
-import { parseVoiceMacroCommand } from '../../services/macroParser';
+import { parseVoiceMacroCommand, parseVoiceActionCommand, applyVoicePunctuationAndFormatting } from '../../services/macroParser';
+import { VK } from '../../services/win32';
 import { storage } from '../../services/storage';
 import { TextSnippet } from '../../../src/types';
 
@@ -87,8 +88,73 @@ export class ExecutionManager {
 
       // 5.5 Check for voice-activated macro creation command
       const isRewrite = Boolean(input.selectedText && input.selectedText.trim().length > 0);
+      let pendingEnter = false;
+      let textToProcess = verification.sanitizedText;
+
       if (!isRewrite && settings.handsFreeCommands) {
-        const macro = parseVoiceMacroCommand(verification.sanitizedText);
+        // A. Standalone or Trailing Voice Actions
+        const actionCmd = parseVoiceActionCommand(verification.sanitizedText);
+        if (actionCmd) {
+          if (actionCmd.action === 'send' && !actionCmd.cleanText) {
+            await this.tooling.executeTool<{ key: number; modifiers?: number[] }, boolean>('win32_send_keystroke', { key: VK.RETURN });
+            const totalLatency = Math.round(sttResult.latencyMs);
+            this.lifecycle.transitionTo('COMPLETED', traceId);
+            this.observability.finishTrace(traceId, { rawText: sttResult.text, processedText: actionCmd.description, injected: true });
+            return {
+              success: true,
+              traceId,
+              text: actionCmd.description,
+              rawText: sttResult.text,
+              latencyMs: totalLatency,
+              injected: true
+            };
+          } else if (actionCmd.action === 'undo') {
+            await this.tooling.executeTool<{ key: number; modifiers?: number[] }, boolean>('win32_send_keystroke', { key: VK.Z, modifiers: [VK.CONTROL] });
+            const totalLatency = Math.round(sttResult.latencyMs);
+            this.lifecycle.transitionTo('COMPLETED', traceId);
+            this.observability.finishTrace(traceId, { rawText: sttResult.text, processedText: actionCmd.description, injected: true });
+            return {
+              success: true,
+              traceId,
+              text: actionCmd.description,
+              rawText: sttResult.text,
+              latencyMs: totalLatency,
+              injected: true
+            };
+          } else if (actionCmd.action === 'select_all') {
+            await this.tooling.executeTool<{ key: number; modifiers?: number[] }, boolean>('win32_send_keystroke', { key: VK.A, modifiers: [VK.CONTROL] });
+            const totalLatency = Math.round(sttResult.latencyMs);
+            this.lifecycle.transitionTo('COMPLETED', traceId);
+            this.observability.finishTrace(traceId, { rawText: sttResult.text, processedText: actionCmd.description, injected: true });
+            return {
+              success: true,
+              traceId,
+              text: actionCmd.description,
+              rawText: sttResult.text,
+              latencyMs: totalLatency,
+              injected: true
+            };
+          } else if (actionCmd.action === 'copy') {
+            await this.tooling.executeTool<{ key: number; modifiers?: number[] }, boolean>('win32_send_keystroke', { key: VK.C, modifiers: [VK.CONTROL] });
+            const totalLatency = Math.round(sttResult.latencyMs);
+            this.lifecycle.transitionTo('COMPLETED', traceId);
+            this.observability.finishTrace(traceId, { rawText: sttResult.text, processedText: actionCmd.description, injected: true });
+            return {
+              success: true,
+              traceId,
+              text: actionCmd.description,
+              rawText: sttResult.text,
+              latencyMs: totalLatency,
+              injected: true
+            };
+          } else if (actionCmd.action === 'send' && actionCmd.cleanText) {
+            textToProcess = actionCmd.cleanText;
+            pendingEnter = true;
+          }
+        }
+
+        // B. Snippet / Macro definition command
+        const macro = parseVoiceMacroCommand(textToProcess);
         if (macro) {
           const currentSnippets = storage.getSnippets();
           const existingIdx = currentSnippets.findIndex(s => s.trigger.toLowerCase() === macro.trigger.toLowerCase());
@@ -149,11 +215,14 @@ export class ExecutionManager {
 
       let processedText = await this.observability.recordSpan(traceId, isRewrite ? 'ai_rewrite' : 'refinement', async () => {
         if (isRewrite && input.selectedText) {
-          return await rewriteTextWithLLM(input.selectedText, verification.sanitizedText, enrichedContext.activeContext);
+          return await rewriteTextWithLLM(input.selectedText, textToProcess, enrichedContext.activeContext);
         } else {
-          return await refineTextWithLLM(verification.sanitizedText, enrichedContext.activeContext);
+          return await refineTextWithLLM(textToProcess, enrichedContext.activeContext);
         }
       });
+
+      // Apply verbal punctuation and formatting (newlines, paragraphs, emojis)
+      processedText = applyVoicePunctuationAndFormatting(processedText);
 
       // 7. Governance: PII Sanitization
       const govFilter = this.governance.filterPII(processedText);
@@ -166,6 +235,11 @@ export class ExecutionManager {
         injected = await this.observability.recordSpan(traceId, 'tool_injection', async () => {
           return await this.tooling.executeTool<string, boolean>('win32_inject_text', processedText);
         });
+
+        if (injected && pendingEnter) {
+          await new Promise((r) => setTimeout(r, 65));
+          await this.tooling.executeTool<{ key: number; modifiers?: number[] }, boolean>('win32_send_keystroke', { key: VK.RETURN });
+        }
       }
 
       // 9. Storage: Persist in dictation history

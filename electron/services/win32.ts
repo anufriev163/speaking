@@ -96,12 +96,19 @@ if (process.platform === 'win32') {
 }
 
 export const VK = {
+  RETURN: 0x0D,
+  BACK: 0x08,
+  TAB: 0x09,
   SHIFT: 0x10,
   CONTROL: 0x11,
   MENU: 0x12, // Alt
   CAPITAL: 0x14, // Caps Lock
   ESCAPE: 0x1B,
   SPACE: 0x20,
+  A: 0x41,
+  C: 0x43,
+  V: 0x56,
+  Z: 0x5A,
   LWIN: 0x5B,
   RWIN: 0x5C,
   OEM_3: 0xC0, // ` ~ ё
@@ -505,4 +512,62 @@ export function simulateCopy(): void {
       execSync(psCmd, { timeout: 800, stdio: ['ignore', 'ignore', 'ignore'] });
     } catch {}
   }
+}
+
+/**
+ * Sends a single key press with optional modifiers (e.g. Enter, Ctrl+Z, Ctrl+A).
+ */
+export function sendKeyStroke(vKey: number, modifiers: number[] = []): boolean {
+  if (process.platform === 'win32') {
+    restoreForegroundWindow();
+
+    if (SendInput && koffi) {
+      try {
+        const cbSize = koffi.sizeof('INPUT');
+        const inputs: any[] = [];
+
+        // Modifiers Down
+        for (const mod of modifiers) {
+          inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: mod, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 });
+        }
+        // Key Down & Up
+        inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: vKey, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 });
+        inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: vKey, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 });
+
+        // Modifiers Up (reverse order)
+        for (const mod of modifiers.slice().reverse()) {
+          inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: mod, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 });
+        }
+
+        const sent = SendInput(inputs.length, inputs, cbSize);
+        return sent > 0;
+      } catch (err) {
+        console.warn('[Platform] sendKeyStroke SendInput failed:', err);
+      }
+    }
+
+    if (keybd_event) {
+      try {
+        for (const mod of modifiers) keybd_event(mod, 0, 0, 0);
+        keybd_event(vKey, 0, 0, 0);
+        keybd_event(vKey, 0, KEYEVENTF_KEYUP, 0);
+        for (const mod of modifiers.slice().reverse()) keybd_event(mod, 0, KEYEVENTF_KEYUP, 0);
+        return true;
+      } catch {}
+    }
+
+    return false;
+  }
+
+  if (process.platform === 'darwin') {
+    try {
+      const isEnter = vKey === VK.RETURN;
+      if (isEnter) {
+        execSync(`osascript -e 'tell application "System Events" to key code 36'`, { timeout: 600, stdio: ['ignore', 'ignore', 'ignore'] });
+        return true;
+      }
+    } catch {}
+  }
+
+  return false;
 }
