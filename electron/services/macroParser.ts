@@ -40,8 +40,8 @@ export function parseVoiceActionCommand(rawText: string): VoiceActionCommand | n
     return { action: 'undo', description: 'Отменено (Ctrl+Z)' };
   }
 
-  // Dictation ending with "... и отправь" / "... отправь"
-  const sendSuffixRegex = /[,.]?\s*(?:и\s+)?(?:отправь|отправить|нажми\s+энтер|жми\s+энтер|send)$/i;
+  // Dictation ending with explicit send command (e.g. "... и отправь", "... нажми энтер", "..., отправь")
+  const sendSuffixRegex = /[,.]?\s*(?:(?:и|затем)\s+(?:отправь|отправить|нажми\s+энтер|жми\s+энтер)|(?:отправь|нажми\s+энтер|жми\s+энтер|and\s+send|press\s+enter))$/i;
   if (sendSuffixRegex.test(trimmed)) {
     const cleanText = trimmed.replace(sendSuffixRegex, '').trim();
     if (cleanText.length > 0) {
@@ -75,18 +75,18 @@ export function applyVoicePunctuationAndFormatting(text: string): string {
   out = out.replace(/(?:[,\s]+)?(?:с\s+нового\s+абзаца|новый\s+абзац|красная\s+строка|new\s+paragraph)[,\s]*/gi, '\n\n');
 
   // Explicit punctuation
-  out = out.replace(/(?:^|\s)(?:восклицательный\s+знак|exclamation\s+mark)(?:\s|$|[.,!?:;])/gi, '! ');
-  out = out.replace(/(?:^|\s)(?:вопросительный\s+знак|question\s+mark)(?:\s|$|[.,!?:;])/gi, '? ');
-  out = out.replace(/(?:^|\s)(?:двоеточие|colon)(?:\s|$|[.,!?:;])/gi, ': ');
-  out = out.replace(/(?:^|\s)(?:точка\s+с\s+запятой|semicolon)(?:\s|$|[.,!?:;])/gi, '; ');
-  out = out.replace(/(?:^|\s)(?:тире|dash)(?:\s|$|[.,!?:;])/gi, ' — ');
+  out = out.replace(/\s*(?:восклицательный\s+знак|exclamation\s+mark)(?=$|\s|[.,!?:;])/gi, '! ');
+  out = out.replace(/\s*(?:вопросительный\s+знак|question\s+mark)(?=$|\s|[.,!?:;])/gi, '? ');
+  out = out.replace(/\s*(?:двоеточие|colon)(?=$|\s|[.,!?:;])/gi, ': ');
+  out = out.replace(/\s*(?:точка\s+с\s+запятой|semicolon)(?=$|\s|[.,!?:;])/gi, '; ');
+  out = out.replace(/\s+(?:тире|dash)(?=\s|$|[.,!?:;])/gi, ' — ');
 
-  // Common spoken emojis
-  out = out.replace(/(?:^|\s)(?:смайлик\s+улыбка|смайлик\s+радость|смайлик|смайл)(?:\s|$|[.,!?:;])/gi, ' 😊 ');
-  out = out.replace(/(?:^|\s)(?:грустный\s+смайлик|смайлик\s+грусть)(?:\s|$|[.,!?:;])/gi, ' 😢 ');
-  out = out.replace(/(?:^|\s)(?:смайлик\s+огонь|эмодзи\s+огонь|значок\s+огонь|огонь)(?:\s|$|[.,!?:;])/gi, ' 🔥 ');
-  out = out.replace(/(?:^|\s)(?:палец\s+вверх|лайк)(?:\s|$|[.,!?:;])/gi, ' 👍 ');
-  out = out.replace(/(?:^|\s)(?:красное\s+сердце|смайлик\s+сердце|сердечко)(?:\s|$|[.,!?:;])/gi, ' ❤️ ');
+  // Common spoken emojis (compound phrases MUST be matched before generic 'смайлик')
+  out = out.replace(/(?:^|\s)(?:смайлик\s+огонь|эмодзи\s+огонь|значок\s+огонь)(?=$|\s|[.,!?:;])/gi, ' 🔥 ');
+  out = out.replace(/(?:^|\s)(?:грустный\s+смайлик|смайлик\s+грусть)(?=$|\s|[.,!?:;])/gi, ' 😢 ');
+  out = out.replace(/(?:^|\s)(?:красное\s+сердце|смайлик\s+сердце|сердечко)(?=$|\s|[.,!?:;])/gi, ' ❤️ ');
+  out = out.replace(/(?:^|\s)(?:палец\s+вверх|лайк)(?=$|\s|[.,!?:;])/gi, ' 👍 ');
+  out = out.replace(/(?:^|\s)(?:смайлик\s+улыбка|смайлик\s+радость|смайлик|смайл)(?=$|\s|[.,!?:;])/gi, ' 😊 ');
 
   // Clean trailing punctuation artifacts like " .\n" or double spaces
   out = out.replace(/[ \t]+/g, ' ');

@@ -453,7 +453,15 @@ export async function injectText(text: string): Promise<boolean> {
   restoreForegroundWindow();
   await new Promise((r) => setTimeout(r, 60));
 
-  // On Windows: First attempt direct Unicode SendInput (cleanest, zero clipboard pollution)
+  // If text contains newlines or is long, prefer clipboard injection.
+  // In chat apps (Telegram, Slack, Discord), raw Enter keystrokes send the message rather than creating a newline.
+  const hasNewlines = text.includes('\n') || text.includes('\r');
+  if (hasNewlines || text.length > 120) {
+    const success = injectClipboardWindows(text);
+    if (success) return true;
+  }
+
+  // On Windows: For short single-line text, attempt direct Unicode SendInput (zero clipboard pollution)
   const sent = sendInputUnicode(text);
   if (sent) return true;
 
