@@ -1540,11 +1540,11 @@
 
     // Section Download Cards Buttons
     const sWin = document.getElementById('sec-dl-win');
-    if (sWin) sWin.addEventListener('click', (e) => { e.preventDefault(); showToast('загрузка «говори» для windows начнется через секунду'); });
+    if (sWin) sWin.addEventListener('click', () => { showToast('загрузка «говори» для windows началась'); });
     const sMac = document.getElementById('sec-dl-mac');
-    if (sMac) sMac.addEventListener('click', (e) => { e.preventDefault(); showToast('загрузка «говори» для macos начнется через секунду'); });
+    if (sMac) sMac.addEventListener('click', () => { showToast('загрузка «говори» для macos началась'); });
     const sLinux = document.getElementById('sec-dl-linux');
-    if (sLinux) sLinux.addEventListener('click', (e) => { e.preventDefault(); showToast('загрузка «говори» для linux начнется через секунду'); });
+    if (sLinux) sLinux.addEventListener('click', () => { showToast('переход к релизам для linux'); });
 
     const micHint = document.getElementById('mic-hint');
     if (micHint) {
@@ -1561,25 +1561,22 @@
 
     const dlWin = document.getElementById('dl-win');
     if (dlWin) {
-      dlWin.addEventListener('click', (e) => {
-        e.preventDefault();
-        showToast('загрузка «говори» для windows начнется через секунду');
+      dlWin.addEventListener('click', () => {
+        showToast('загрузка «говори» для windows началась');
       });
     }
 
     const dlMac = document.getElementById('dl-mac');
     if (dlMac) {
-      dlMac.addEventListener('click', (e) => {
-        e.preventDefault();
-        showToast('загрузка «говори» для macos начнется через секунду');
+      dlMac.addEventListener('click', () => {
+        showToast('загрузка «говори» для macos началась');
       });
     }
 
     const dlLinux = document.getElementById('dl-linux');
     if (dlLinux) {
-      dlLinux.addEventListener('click', (e) => {
-        e.preventDefault();
-        showToast('загрузка «говори» для linux начнется через секунду');
+      dlLinux.addEventListener('click', () => {
+        showToast('переход к релизам для linux');
       });
     }
   }
