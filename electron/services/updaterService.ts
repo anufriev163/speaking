@@ -2,8 +2,8 @@ import { autoUpdater } from 'electron-updater';
 import { BrowserWindow, ipcMain, app } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import http from 'http';
 import https from 'https';
+import crypto from 'crypto';
 import { spawn } from 'child_process';
 import { getJson } from './httpClient';
 
@@ -33,6 +33,7 @@ let updateState: UpdateInfoState = {
 let downloadedInstallerPath: string | null = null;
 let directDownloadUrl: string | null = null;
 let directDownloadFileName: string | null = null;
+let directDownloadSha512: string | null = null;
 
 function isVersionNewer(remoteVer: string, currentVer: string): boolean {
   const r = remoteVer.replace(/^v/, '').split('.').map(x => parseInt(x, 10) || 0);
@@ -52,6 +53,7 @@ async function fetchLatestGitHubRelease(): Promise<{
   downloadUrl: string;
   fileName: string;
   fileSize: number;
+  sha512: string | null;
 } | null> {
   const res = await getJson('https://api.github.com/repos/anufriev163/speaking/releases/latest', {
     'User-Agent': 'govori-desktop',
@@ -95,18 +97,45 @@ async function fetchLatestGitHubRelease(): Promise<{
     throw new Error('Файл установщика Windows (.exe) не найден в последнем релизе');
   }
 
+  // electron-builder publishes latest*.yml with the installer's sha512 — required for verification
+  let sha512: string | null = null;
+  const ymlAssets = assets.filter((a: any) => typeof a.name === 'string' && /\.ya?ml$/i.test(a.name));
+  for (const yml of ymlAssets) {
+    try {
+      const ymlRes = await getJson(yml.browser_download_url, { 'User-Agent': 'govori-desktop' });
+      if (!ymlRes.ok) continue;
+      sha512 = findSha512InYml(await ymlRes.text(), winAsset.name);
+      if (sha512) break;
+    } catch {}
+  }
+
   return {
     latestVersion,
     releaseNotes,
     downloadUrl: winAsset.browser_download_url,
     fileName: winAsset.name,
-    fileSize: winAsset.size || 0
+    fileSize: winAsset.size || 0,
+    sha512
   };
+}
+
+function findSha512InYml(yml: string, fileName: string): string | null {
+  const lines = yml.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^\s*-?\s*(?:url|path):\s*['"]?(.+?)['"]?\s*$/);
+    if (!m || m[1] !== fileName) continue;
+    for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+      const h = lines[j].match(/^\s*sha512:\s*['"]?([A-Za-z0-9+/=]+)['"]?\s*$/);
+      if (h) return h[1];
+    }
+  }
+  return null;
 }
 
 function streamDownload(
   urlStr: string,
   fileName: string,
+  expectedSha512: string,
   onProgress: (percent: number) => void
 ): Promise<string> {
   const updateDir = path.join(process.env.LOCALAPPDATA || app.getPath('userData'), 'govori-updater');
@@ -114,33 +143,45 @@ function streamDownload(
     fs.mkdirSync(updateDir, { recursive: true });
   }
 
-  const destPath = path.join(updateDir, fileName);
+  // basename: asset name comes from the network, never let it escape updateDir
+  const destPath = path.join(updateDir, path.basename(fileName));
 
   return new Promise((resolve, reject) => {
+    const fail = (err: Error) => {
+      fs.promises.unlink(destPath).catch(() => {});
+      reject(err);
+    };
+
     function downloadStep(currentUrl: string, redirectCount = 0) {
       if (redirectCount > 6) {
-        return reject(new Error('Слишком много перенаправлений'));
+        return fail(new Error('Слишком много перенаправлений'));
       }
       try {
         const u = new URL(currentUrl);
-        const transport = u.protocol === 'http:' ? http : https;
-        const req = transport.get(
+        if (u.protocol !== 'https:') {
+          return fail(new Error('Обновление разрешено скачивать только по HTTPS'));
+        }
+        const req = https.get(
           currentUrl,
           { headers: { 'User-Agent': 'govori-desktop' } },
           (res) => {
             if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-              return downloadStep(res.headers.location, redirectCount + 1);
+              res.resume();
+              return downloadStep(new URL(res.headers.location, currentUrl).toString(), redirectCount + 1);
             }
             if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
-              return reject(new Error(`Ошибка загрузки: HTTP ${res.statusCode}`));
+              res.resume();
+              return fail(new Error(`Ошибка загрузки: HTTP ${res.statusCode}`));
             }
 
             const totalBytes = Number(res.headers['content-length']) || 88000000;
             let receivedBytes = 0;
+            const hash = crypto.createHash('sha512');
             const fileStream = fs.createWriteStream(destPath);
 
             res.on('data', (chunk: Buffer) => {
               receivedBytes += chunk.length;
+              hash.update(chunk);
               if (totalBytes > 0) {
                 const percent = Math.min(99, Math.round((receivedBytes / totalBytes) * 100));
                 onProgress(percent);
@@ -148,17 +189,21 @@ function streamDownload(
             });
 
             fileStream.on('finish', () => {
+              if (hash.digest('base64') !== expectedSha512) {
+                return fail(new Error('Контрольная сумма установщика не совпадает'));
+              }
               onProgress(100);
               resolve(destPath);
             });
-            fileStream.on('error', (err) => reject(err));
-            res.on('error', (err) => reject(err));
+            fileStream.on('error', fail);
+            res.on('error', fail);
             res.pipe(fileStream);
           }
         );
-        req.on('error', reject);
-      } catch (err) {
-        reject(err);
+        req.setTimeout(60000, () => req.destroy(new Error('Таймаут загрузки')));
+        req.on('error', fail);
+      } catch (err: any) {
+        fail(err);
       }
     }
     downloadStep(urlStr);
@@ -272,6 +317,7 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
 
       directDownloadUrl = relInfo.downloadUrl;
       directDownloadFileName = relInfo.fileName;
+      directDownloadSha512 = relInfo.sha512;
 
       if (hasUpdate) {
         updateState = {
@@ -322,18 +368,27 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
 
     // Direct stream download (works in dev mode and packaged fallback)
     try {
-      if (!directDownloadUrl || !directDownloadFileName) {
+      if (process.platform !== 'win32') {
+        throw new Error('Прямая загрузка доступна только для Windows');
+      }
+      if (!directDownloadUrl || !directDownloadFileName || !directDownloadSha512) {
         const rel = await fetchLatestGitHubRelease();
         if (!rel || !rel.downloadUrl) {
           throw new Error('Ссылка на установщик не найдена');
         }
         directDownloadUrl = rel.downloadUrl;
         directDownloadFileName = rel.fileName;
+        directDownloadSha512 = rel.sha512;
+      }
+      if (!directDownloadSha512) {
+        // Never run an installer we cannot verify
+        throw new Error('В релизе нет контрольной суммы установщика');
       }
 
       const savedPath = await streamDownload(
         directDownloadUrl,
         directDownloadFileName,
+        directDownloadSha512,
         (percent) => {
           updateState = {
             ...updateState,

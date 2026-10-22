@@ -13,7 +13,9 @@ import { storage } from '../../services/storage';
 import { TextSnippet } from '../../../src/types';
 
 export class ExecutionManager {
-  private readonly STT_TIMEOUT_MS = 10000; // 10s max for STT
+  // Safety net only: cloud STT has its own 30s HTTP timeout, and the local fallback
+  // may need minutes on first run to download/load the Whisper model.
+  private readonly STT_TIMEOUT_MS = 210000;
 
   constructor(
     private tooling: ToolRegistry,
@@ -221,8 +223,11 @@ export class ExecutionManager {
         }
       });
 
-      // Apply verbal punctuation and formatting (newlines, paragraphs, emojis)
-      processedText = applyVoicePunctuationAndFormatting(processedText);
+      // Apply verbal punctuation and formatting (newlines, paragraphs, emojis).
+      // Rewrite output is final LLM text (code, lists, translations) — keep it verbatim.
+      if (!isRewrite) {
+        processedText = applyVoicePunctuationAndFormatting(processedText);
+      }
 
       // 7. Governance: PII Sanitization
       const govFilter = this.governance.filterPII(processedText);

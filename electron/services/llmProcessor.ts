@@ -2,6 +2,10 @@ import { ActiveContext } from '../../src/types';
 import { storage } from './storage';
 import { postJson } from './httpClient';
 
+// Dictation must never hang on a stuck LLM: fall back to rule-based cleanup instead
+const LLM_REFINE_TIMEOUT_MS = 8000;
+const LLM_REWRITE_TIMEOUT_MS = 15000;
+
 export function cleanTextRules(text: string, context: ActiveContext): string {
   let cleaned = text;
 
@@ -28,7 +32,8 @@ export function cleanTextRules(text: string, context: ActiveContext): string {
     }
 
     // Verbal self-correction e.g. "в пять, ой нет, в шесть" -> "в шесть"
-    cleaned = cleaned.replace(/(?<![а-яёa-z0-9])([а-яёa-z0-9]+)[,\s]+(?:ой\s+нет|ой|не|вернее|точнее)[,\s]+([а-яёa-z0-9]+)(?![а-яёa-z0-9])/gi, '$2');
+    // NOTE: plain "не" must never be a marker — it is negation ("я не знаю").
+    cleaned = cleaned.replace(/(?<![а-яёa-z0-9])([а-яёa-z0-9]+)[,\s]+(?:ой\s+нет|ой|вернее|точнее)[,\s]+([а-яёa-z0-9]+)(?![а-яёa-z0-9])/gi, '$2');
   }
 
   // 3. User Snippets replacement
@@ -144,7 +149,8 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
           ],
           temperature: 0.1,
           max_tokens: 1024
-        }
+        },
+        LLM_REFINE_TIMEOUT_MS
       );
 
       if (res.ok) {
@@ -173,7 +179,8 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
           ],
           temperature: 0.1,
           max_tokens: 1024
-        }
+        },
+        LLM_REFINE_TIMEOUT_MS
       );
 
       if (res.ok) {
@@ -238,7 +245,8 @@ ${userInstruction}`;
           ],
           temperature: 0.2,
           max_tokens: 2048
-        }
+        },
+        LLM_REWRITE_TIMEOUT_MS
       );
 
       if (res.ok) {
@@ -267,7 +275,8 @@ ${userInstruction}`;
           ],
           temperature: 0.2,
           max_tokens: 2048
-        }
+        },
+        LLM_REWRITE_TIMEOUT_MS
       );
 
       if (res.ok) {

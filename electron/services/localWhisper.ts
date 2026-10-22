@@ -8,11 +8,18 @@ import { TranscriptionResult } from './sttService';
 
 let workerProcess: ChildProcess | null = null;
 let workerRl: readline.Interface | null = null;
-let pendingResolvers: Array<{
+// Responses are matched by request id: a timed-out request must never
+// swallow the answer meant for the next one.
+let nextRequestId = 1;
+const pendingRequests = new Map<number, {
   resolve: (val: any) => void;
   reject: (err: any) => void;
   timer: NodeJS.Timeout;
-}> = [];
+}>();
+// First transcription loads (and on first run downloads) the model — allow much longer
+let modelReady = false;
+const MODEL_LOAD_TIMEOUT_MS = 180000;
+const TRANSCRIBE_TIMEOUT_MS = 30000;
 
 function getScriptPath(): string {
   const isDev = !app.isPackaged;
@@ -72,11 +79,11 @@ function getWorker(): ChildProcess {
       if (!trimmed) return;
       try {
         const data = JSON.parse(trimmed);
-        const next = pendingResolvers.shift();
-        if (next) {
-          clearTimeout(next.timer);
-          next.resolve(data);
-        }
+        const pending = pendingRequests.get(data.id);
+        if (!pending) return; // late answer to a request that already timed out
+        pendingRequests.delete(data.id);
+        clearTimeout(pending.timer);
+        pending.resolve(data);
       } catch (err) {
         console.error('[LocalWhisper] Failed to parse worker output:', trimmed, err);
       }
@@ -91,14 +98,13 @@ function getWorker(): ChildProcess {
     console.warn(`[LocalWhisper] Worker exited with code ${code}, signal ${signal}`);
     workerProcess = null;
     workerRl = null;
+    modelReady = false;
     // Reject any waiting callers
-    while (pendingResolvers.length > 0) {
-      const req = pendingResolvers.shift();
-      if (req) {
-        clearTimeout(req.timer);
-        req.reject(new Error('Локальный процесс Whisper внезапно завершился'));
-      }
+    for (const req of pendingRequests.values()) {
+      clearTimeout(req.timer);
+      req.reject(new Error('Локальный процесс Whisper внезапно завершился'));
     }
+    pendingRequests.clear();
   });
 
   return workerProcess;
@@ -115,16 +121,14 @@ function sendWorkerCommand(cmd: Record<string, any>, timeoutMs = 25000): Promise
         return reject(new Error('Локальный процесс распознавания не готов'));
       }
 
+      const id = nextRequestId++;
       const timer = setTimeout(() => {
-        const idx = pendingResolvers.findIndex(p => p.timer === timer);
-        if (idx !== -1) {
-          pendingResolvers.splice(idx, 1);
-        }
+        pendingRequests.delete(id);
         reject(new Error('Таймаут локального распознавания'));
       }, timeoutMs);
 
-      pendingResolvers.push({ resolve, reject, timer });
-      worker.stdin.write(JSON.stringify(cmd) + '\n');
+      pendingRequests.set(id, { resolve, reject, timer });
+      worker.stdin.write(JSON.stringify({ ...cmd, id }) + '\n');
     } catch (err) {
       reject(err);
     }
@@ -150,11 +154,12 @@ export async function transcribeAudioLocal(
       action: 'transcribe',
       path: tempPath,
       language
-    }, 30000);
+    }, modelReady ? TRANSCRIBE_TIMEOUT_MS : MODEL_LOAD_TIMEOUT_MS);
 
     if (res.status !== 'ok') {
       throw new Error(res.message || 'Ошибка локального распознавания');
     }
+    modelReady = true;
 
     const latencyMs = Date.now() - startTime;
     return {

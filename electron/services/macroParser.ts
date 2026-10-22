@@ -77,20 +77,22 @@ export function applyVoicePunctuationAndFormatting(text: string): string {
   // Explicit punctuation
   out = out.replace(/\s*(?:восклицательный\s+знак|exclamation\s+mark)(?=$|\s|[.,!?:;])/gi, '! ');
   out = out.replace(/\s*(?:вопросительный\s+знак|question\s+mark)(?=$|\s|[.,!?:;])/gi, '? ');
-  out = out.replace(/\s*(?:двоеточие|colon)(?=$|\s|[.,!?:;])/gi, ': ');
+  // Bare English "colon"/"dash" are ordinary words ("a dash of salt") — Russian commands only
+  out = out.replace(/\s*двоеточие(?=$|\s|[.,!?:;])/gi, ': ');
   out = out.replace(/\s*(?:точка\s+с\s+запятой|semicolon)(?=$|\s|[.,!?:;])/gi, '; ');
-  out = out.replace(/\s+(?:тире|dash)(?=\s|$|[.,!?:;])/gi, ' — ');
+  out = out.replace(/\s+тире(?=\s|$|[.,!?:;])/gi, ' — ');
 
   // Common spoken emojis (compound phrases MUST be matched before generic 'смайлик')
   out = out.replace(/(?:^|\s)(?:смайлик\s+огонь|эмодзи\s+огонь|значок\s+огонь)(?=$|\s|[.,!?:;])/gi, ' 🔥 ');
   out = out.replace(/(?:^|\s)(?:грустный\s+смайлик|смайлик\s+грусть)(?=$|\s|[.,!?:;])/gi, ' 😢 ');
   out = out.replace(/(?:^|\s)(?:красное\s+сердце|смайлик\s+сердце|сердечко)(?=$|\s|[.,!?:;])/gi, ' ❤️ ');
-  out = out.replace(/(?:^|\s)(?:палец\s+вверх|лайк)(?=$|\s|[.,!?:;])/gi, ' 👍 ');
+  out = out.replace(/(?:^|\s)палец\s+вверх(?=$|\s|[.,!?:;])/gi, ' 👍 ');
   out = out.replace(/(?:^|\s)(?:смайлик\s+улыбка|смайлик\s+радость|смайлик|смайл)(?=$|\s|[.,!?:;])/gi, ' 😊 ');
 
   // Clean trailing punctuation artifacts like " .\n" or double spaces
+  // Keep paragraph breaks (\n\n) intact; only trim spaces around them
   out = out.replace(/[ \t]+/g, ' ');
-  out = out.replace(/\s*\n\s*/g, '\n');
+  out = out.replace(/ *(\n+) */g, '$1');
   out = out.trim();
 
   return out;

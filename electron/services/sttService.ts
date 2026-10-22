@@ -3,6 +3,9 @@ import { storage } from './storage';
 import { transcribeAudioLocal, checkLocalWhisperAvailable } from './localWhisper';
 import { postBuffer } from './httpClient';
 
+// Long dictations mean multi-MB uploads; on timeout we fall back to local Whisper
+const STT_HTTP_TIMEOUT_MS = 30000;
+
 // Polyfill global Blob for any secondary libraries if missing in Node
 if (typeof (globalThis as any).Blob === 'undefined') {
   try {
@@ -138,7 +141,8 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
         'Content-Type': contentType,
         'Content-Length': String(body.length)
       },
-      body
+      body,
+      STT_HTTP_TIMEOUT_MS
     );
 
     if (!res.ok) {

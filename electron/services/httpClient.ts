@@ -8,10 +8,19 @@ export interface HttpResponse {
   json: () => Promise<any>;
 }
 
+export const DEFAULT_TIMEOUT_MS = 20000;
+
+function applyTimeout(req: http.ClientRequest, timeoutMs: number) {
+  req.setTimeout(timeoutMs, () => {
+    req.destroy(new Error(`Request timed out after ${timeoutMs}ms`));
+  });
+}
+
 export function postBuffer(
   urlStr: string,
   headers: Record<string, string>,
-  body: Buffer
+  body: Buffer,
+  timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     try {
@@ -32,6 +41,7 @@ export function postBuffer(
         (res) => {
           const chunks: Buffer[] = [];
           res.on('data', (c) => chunks.push(c));
+            res.on('error', reject);
           res.on('end', () => {
             const text = Buffer.concat(chunks).toString('utf-8');
             const status = res.statusCode || 500;
@@ -52,6 +62,7 @@ export function postBuffer(
       );
 
       req.on('error', reject);
+      applyTimeout(req, timeoutMs);
       req.write(body);
       req.end();
     } catch (err) {
@@ -63,7 +74,8 @@ export function postBuffer(
 export function postJson(
   urlStr: string,
   headers: Record<string, string>,
-  payload: any
+  payload: any,
+  timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<HttpResponse> {
   const jsonBody = Buffer.from(JSON.stringify(payload), 'utf-8');
   return postBuffer(
@@ -73,13 +85,15 @@ export function postJson(
       'Content-Type': 'application/json',
       'Content-Length': String(jsonBody.length)
     },
-    jsonBody
+    jsonBody,
+    timeoutMs
   );
 }
 
 export function getJson(
   urlStr: string,
-  headers: Record<string, string> = {}
+  headers: Record<string, string> = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     function makeReq(currentUrl: string, redirectCount = 0) {
@@ -103,10 +117,16 @@ export function getJson(
           },
           (res) => {
             if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-              return makeReq(res.headers.location, redirectCount + 1);
+              res.resume();
+              const next = new URL(res.headers.location, currentUrl);
+              if (url.protocol === 'https:' && next.protocol !== 'https:') {
+                return reject(new Error('Refusing HTTPS -> HTTP redirect'));
+              }
+              return makeReq(next.toString(), redirectCount + 1);
             }
             const chunks: Buffer[] = [];
             res.on('data', (c) => chunks.push(c));
+            res.on('error', reject);
             res.on('end', () => {
               const text = Buffer.concat(chunks).toString('utf-8');
               const status = res.statusCode || 500;
@@ -127,6 +147,7 @@ export function getJson(
         );
 
         req.on('error', reject);
+        applyTimeout(req, timeoutMs);
         req.end();
       } catch (err) {
         reject(err);

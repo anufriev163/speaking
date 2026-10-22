@@ -21,9 +21,16 @@ def log(msg):
     sys.stderr.write(f"[WhisperWorker] {msg}\n")
     sys.stderr.flush()
 
+def reply(req_id, payload):
+    # Echo request id so the host can match answers to requests
+    payload["id"] = req_id
+    sys.stdout.write(json.dumps(payload) + "\n")
+    sys.stdout.flush()
+
 log("Worker initialized")
 
 while True:
+    req_id = None
     try:
         line = sys.stdin.readline()
         if not line:
@@ -33,24 +40,22 @@ while True:
             continue
 
         req = json.loads(line)
+        req_id = req.get("id")
         action = req.get("action")
 
         if action == "ping":
-            sys.stdout.write(json.dumps({"status": "ok", "pong": True}) + "\n")
-            sys.stdout.flush()
+            reply(req_id, {"status": "ok", "pong": True})
             continue
 
         if action == "warmup":
             get_model()
-            sys.stdout.write(json.dumps({"status": "ok", "warmed": True}) + "\n")
-            sys.stdout.flush()
+            reply(req_id, {"status": "ok", "warmed": True})
             continue
 
         if action == "transcribe":
             audio_path = req.get("path")
             if not audio_path or not os.path.exists(audio_path):
-                sys.stdout.write(json.dumps({"status": "error", "message": f"File not found: {audio_path}"}) + "\n")
-                sys.stdout.flush()
+                reply(req_id, {"status": "error", "message": f"File not found: {audio_path}"})
                 continue
 
             m = get_model()
@@ -69,21 +74,18 @@ while True:
             text_parts = [seg.text.strip() for seg in segments if seg.text.strip()]
             full_text = " ".join(text_parts).strip()
 
-            sys.stdout.write(json.dumps({
+            reply(req_id, {
                 "status": "ok",
                 "text": full_text,
                 "duration": getattr(info, "duration", 0)
-            }) + "\n")
-            sys.stdout.flush()
+            })
             continue
 
-        sys.stdout.write(json.dumps({"status": "error", "message": f"Unknown action: {action}"}) + "\n")
-        sys.stdout.flush()
+        reply(req_id, {"status": "error", "message": f"Unknown action: {action}"})
 
     except Exception as e:
         log(f"Error handling request: {e}")
         try:
-            sys.stdout.write(json.dumps({"status": "error", "message": str(e)}) + "\n")
-            sys.stdout.flush()
+            reply(req_id, {"status": "error", "message": str(e)})
         except Exception:
             pass

@@ -423,12 +423,18 @@ let lastHotkeyTimestamp = 0;
 let currentSelectionText = '';
 let isRecordingActive = false;
 
-async function captureActiveSelection(): Promise<string> {
-  try {
-    const oldText = clipboard.readText();
-    const oldImage = clipboard.readImage();
-    const hadImage = !oldImage.isEmpty();
+async function captureActiveSelection(context: ActiveContext | null): Promise<string> {
+  // Ctrl+C in a terminal is SIGINT (kills running processes) — never simulate it there.
+  if (context?.category === 'terminal') return '';
 
+  const snapshot = {
+    text: clipboard.readText(),
+    html: clipboard.readHTML(),
+    rtf: clipboard.readRTF(),
+    image: clipboard.readImage(),
+  };
+
+  try {
     clipboard.clear();
     simulateCopy();
 
@@ -436,18 +442,30 @@ async function captureActiveSelection(): Promise<string> {
     await new Promise((r) => setTimeout(r, 85));
 
     const copied = clipboard.readText();
-    if (!copied || copied.trim().length === 0) {
-      if (hadImage) {
-        clipboard.writeImage(oldImage);
-      } else if (oldText) {
-        clipboard.writeText(oldText);
-      }
-      return '';
-    }
+    if (!copied || copied.trim().length === 0) return '';
+
+    // IDEs (VS Code, JetBrains) copy the whole current line when nothing is selected.
+    if (context?.category === 'code' && /^[^\n]*\r?\n$/.test(copied)) return '';
+
     return copied.trim();
   } catch (err) {
     console.warn('[Selection] Could not capture text selection:', err);
     return '';
+  } finally {
+    // Always give the user their clipboard back
+    try {
+      const hasData = snapshot.text || snapshot.html || snapshot.rtf || !snapshot.image.isEmpty();
+      if (hasData) {
+        clipboard.write({
+          text: snapshot.text || undefined,
+          html: snapshot.html || undefined,
+          rtf: snapshot.rtf || undefined,
+          image: snapshot.image.isEmpty() ? undefined : snapshot.image,
+        });
+      } else {
+        clipboard.clear();
+      }
+    } catch {}
   }
 }
 
@@ -502,7 +520,7 @@ function registerHotkeys() {
 
           if (isStarting) {
             // Detect active selection in foreground window for AI Rewrite ONLY on start
-            captureActiveSelection().then((selected) => {
+            captureActiveSelection(lastActiveContext).then((selected) => {
               currentSelectionText = selected;
               if (hudWindow && !hudWindow.isDestroyed()) {
                 hudWindow.webContents.send('context:selection', {
