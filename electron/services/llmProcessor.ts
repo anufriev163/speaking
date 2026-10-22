@@ -1,6 +1,7 @@
 import { ActiveContext } from '../../src/types';
 import { storage } from './storage';
 import { postJson } from './httpClient';
+import { isProviderDown, markProviderDown } from './providerHealth';
 
 // Dictation must never hang on a stuck LLM: fall back to rule-based cleanup instead
 const LLM_REFINE_TIMEOUT_MS = 8000;
@@ -136,7 +137,7 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
 4. СТРОГО: верни ТОЛЬКО готовый очищенный текст! Запрещены любые комментарии, пояснения или кавычки вокруг ответа.`;
 
   // 1. Try Groq Llama-3.3-70b-versatile (~200ms)
-  if (settings.groqApiKey) {
+  if (settings.groqApiKey && !isProviderDown('groq')) {
     try {
       const res = await postJson(
         'https://api.groq.com/openai/v1/chat/completions',
@@ -161,12 +162,13 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
         }
       }
     } catch (err) {
+      markProviderDown('groq'); // postJson rejects only on network errors/timeouts
       console.warn('[LLM] Groq refinement failed, checking OpenAI fallback:', err);
     }
   }
 
   // 2. Fallback to OpenAI gpt-4o-mini (~250ms)
-  if (settings.openaiApiKey) {
+  if (settings.openaiApiKey && !isProviderDown('openai')) {
     try {
       const res = await postJson(
         'https://api.openai.com/v1/chat/completions',
@@ -191,6 +193,7 @@ export async function refineTextWithLLM(text: string, context: ActiveContext): P
         }
       }
     } catch (err) {
+      markProviderDown('openai');
       console.warn('[LLM] OpenAI refinement failed:', err);
     }
   }
@@ -232,7 +235,7 @@ ${originalText}
 ${userInstruction}`;
 
   // 1. Try Groq Llama-3.3-70b-versatile
-  if (settings.groqApiKey) {
+  if (settings.groqApiKey && !isProviderDown('groq')) {
     try {
       const res = await postJson(
         'https://api.groq.com/openai/v1/chat/completions',
@@ -257,12 +260,13 @@ ${userInstruction}`;
         }
       }
     } catch (err) {
+      markProviderDown('groq');
       console.warn('[LLM] Groq rewrite failed, checking OpenAI fallback:', err);
     }
   }
 
   // 2. Fallback to OpenAI gpt-4o-mini
-  if (settings.openaiApiKey) {
+  if (settings.openaiApiKey && !isProviderDown('openai')) {
     try {
       const res = await postJson(
         'https://api.openai.com/v1/chat/completions',
@@ -287,6 +291,7 @@ ${userInstruction}`;
         }
       }
     } catch (err) {
+      markProviderDown('openai');
       console.error('[LLM] OpenAI rewrite error:', err);
     }
   }

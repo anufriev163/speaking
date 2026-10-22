@@ -159,6 +159,15 @@ const distHtml = path.join(__dirname, '../dist/index.html');
 const isDev = process.env.NODE_ENV === 'development';
 const VITE_DEV_URL = 'http://localhost:5173';
 
+// `forward` (mouse moves still reach the renderer) is supported only on Windows/macOS;
+// elsewhere keep the window fully interactive rather than unclickable.
+const supportsClickThrough = process.platform === 'win32' || process.platform === 'darwin';
+
+function setHudClickThrough(ignore: boolean) {
+  if (!supportsClickThrough || !hudWindow || hudWindow.isDestroyed()) return;
+  hudWindow.setIgnoreMouseEvents(ignore, { forward: true });
+}
+
 function createHudWindow() {
   if (hudWindow && !hudWindow.isDestroyed()) {
     hudWindow.show();
@@ -217,6 +226,9 @@ function createHudWindow() {
 
   hudWindow.setAlwaysOnTop(true, 'screen-saver');
   hudWindow.setVisibleOnAllWorkspaces(true);
+  // Transparent area around the capsule must not block clicks to apps underneath.
+  // Renderer re-enables mouse events while the cursor is over the capsule itself.
+  setHudClickThrough(true);
 
   hudWindow.webContents.on('console-message', (_e, _level, message) => {
     console.log(`[HUD Console] ${message}`);
@@ -705,8 +717,12 @@ function setupIpcHandlers() {
       selectedText
     });
 
-    if (result.macroCreated && settingsWindow && !settingsWindow.isDestroyed()) {
-      settingsWindow.webContents.send('storage:snippets-changed', storage.getSnippets());
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      // Settings window is hidden, not reloaded — push fresh history so it stays live
+      settingsWindow.webContents.send('storage:history-changed', storage.getHistory());
+      if (result.macroCreated) {
+        settingsWindow.webContents.send('storage:snippets-changed', storage.getSnippets());
+      }
     }
 
     return result;
@@ -740,7 +756,12 @@ function setupIpcHandlers() {
   ipcMain.on('window:hide-hud', () => {
     if (hudWindow && !hudWindow.isDestroyed()) {
       hudWindow.hide();
+      // mouseleave never fires for a hidden window — reset so it reappears click-through
+      setHudClickThrough(true);
     }
+  });
+  ipcMain.on('hud:set-interactive', (_event, interactive: boolean) => {
+    setHudClickThrough(!interactive);
   });
   ipcMain.on('hud:recording-stopped', () => {
     isRecordingActive = false;

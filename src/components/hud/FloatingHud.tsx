@@ -341,11 +341,14 @@ export const FloatingHud: React.FC = () => {
       window.govoriAPI?.moveHud?.(deltaX, deltaY);
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (upEvent: MouseEvent) => {
       isDragging.current = false;
       dragStartPos.current = null;
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      // Drag may end with the cursor outside the capsule: restore click-through
+      const overCapsule = document.elementFromPoint(upEvent.clientX, upEvent.clientY)?.closest('.wispr-capsule');
+      if (!overCapsule) window.govoriAPI?.setHudInteractive?.(false);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -400,6 +403,10 @@ export const FloatingHud: React.FC = () => {
         <div
           onMouseDown={handleDragStart}
           onClick={handleCapsuleClick}
+          onMouseEnter={() => window.govoriAPI?.setHudInteractive?.(true)}
+          onMouseLeave={() => {
+            if (!isDragging.current) window.govoriAPI?.setHudInteractive?.(false);
+          }}
           className={`wispr-capsule cursor-grab active:cursor-grabbing select-none ${
             (isRecording || hudState === 'recording') ? 'wispr-capsule-recording' : ''
           }`}

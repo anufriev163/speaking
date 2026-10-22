@@ -1,7 +1,8 @@
 import { net } from 'electron';
 import { storage } from './storage';
-import { transcribeAudioLocal, checkLocalWhisperAvailable } from './localWhisper';
+import { transcribeAudioLocal, checkLocalWhisperAvailable, warmupLocalWhisper } from './localWhisper';
 import { postBuffer } from './httpClient';
+import { CloudProvider, isProviderDown, markProviderDown, markProviderUp } from './providerHealth';
 
 // Long dictations mean multi-MB uploads; on timeout we fall back to local Whisper
 const STT_HTTP_TIMEOUT_MS = 30000;
@@ -100,6 +101,16 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
     };
   }
 
+  // Provider recently unreachable: go straight to local instead of waiting on timeouts again
+  const cloud: CloudProvider = provider === 'groq' ? 'groq' : 'openai';
+  if (isProviderDown(cloud)) {
+    try {
+      return await attemptLocalFallback(audioBuffer, mimeType, startTime, speechLang);
+    } catch (err) {
+      console.warn('[STT] Local fallback unavailable, retrying cloud anyway:', err);
+    }
+  }
+
   const endpoint = provider === 'groq'
     ? 'https://api.groq.com/openai/v1/audio/transcriptions'
     : 'https://api.openai.com/v1/audio/transcriptions';
@@ -134,16 +145,25 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
   });
 
   try {
-    const res = await postBuffer(
-      endpoint,
-      {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': contentType,
-        'Content-Length': String(body.length)
-      },
-      body,
-      STT_HTTP_TIMEOUT_MS
-    );
+    let res;
+    try {
+      res = await postBuffer(
+        endpoint,
+        {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': contentType,
+          'Content-Length': String(body.length)
+        },
+        body,
+        STT_HTTP_TIMEOUT_MS
+      );
+      markProviderUp(cloud);
+    } catch (netErr) {
+      // Network-level failure (reset/timeout/DNS), not an HTTP error status
+      markProviderDown(cloud);
+      warmupLocalWhisper();
+      throw netErr;
+    }
 
     if (!res.ok) {
       const errorText = await res.text();

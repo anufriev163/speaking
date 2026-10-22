@@ -73,6 +73,7 @@ export interface GovoriAPI {
   clearHistory: () => Promise<void>;
   exportHistory: (format?: 'md' | 'txt') => Promise<{ success: boolean; filePath?: string; reason?: string }>;
   onSnippetsChanged: (callback: (snippets: TextSnippet[]) => void) => () => void;
+  onHistoryChanged: (callback: (history: DictationHistoryItem[]) => void) => () => void;
   openSettings: () => void;
   closeSettings: () => void;
   minimizeSettings: () => void;
@@ -80,6 +81,7 @@ export interface GovoriAPI {
   hideHud: () => void;
   saveHudPosition: (pos: { x: number; y: number }) => void;
   notifyRecordingStopped: () => void;
+  setHudInteractive: (interactive: boolean) => void;
   getActiveContext: () => Promise<ActiveContext>;
   injectText: (text: string) => Promise<boolean>;
   transcribeAudio: (audioData: ArrayBuffer, mimeType?: string) => Promise<any>;

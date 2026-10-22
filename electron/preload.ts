@@ -18,6 +18,11 @@ const api = {
     ipcRenderer.on('storage:snippets-changed', handler);
     return () => ipcRenderer.removeListener('storage:snippets-changed', handler);
   },
+  onHistoryChanged: (callback: (history: DictationHistoryItem[]) => void) => {
+    const handler = (_event: any, h: DictationHistoryItem[]) => callback(h);
+    ipcRenderer.on('storage:history-changed', handler);
+    return () => ipcRenderer.removeListener('storage:history-changed', handler);
+  },
 
   // Window Controls
   openSettings: (): void => ipcRenderer.send('window:open-settings'),
@@ -27,6 +32,7 @@ const api = {
   hideHud: (): void => ipcRenderer.send('window:hide-hud'),
   saveHudPosition: (pos: { x: number; y: number }): void => ipcRenderer.send('window:save-hud-position', pos),
   notifyRecordingStopped: (): void => ipcRenderer.send('hud:recording-stopped'),
+  setHudInteractive: (interactive: boolean): void => ipcRenderer.send('hud:set-interactive', interactive),
 
   // Context & Win32
   getActiveContext: (): Promise<ActiveContext> => ipcRenderer.invoke('win32:get-context'),

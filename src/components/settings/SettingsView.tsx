@@ -45,7 +45,14 @@ export const SettingsView: React.FC = () => {
       if (sn) setSnippets(sn);
     });
 
-    return () => unsubSnippets?.();
+    const unsubHistory = window.govoriAPI.onHistoryChanged?.((h: DictationHistoryItem[]) => {
+      if (h) setHistory(h);
+    });
+
+    return () => {
+      unsubSnippets?.();
+      unsubHistory?.();
+    };
   }, []);
 
   const handleUpdateSettings = async (updates: Partial<AppSettings>) => {

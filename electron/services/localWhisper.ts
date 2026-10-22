@@ -20,6 +20,8 @@ const pendingRequests = new Map<number, {
 let modelReady = false;
 const MODEL_LOAD_TIMEOUT_MS = 180000;
 const TRANSCRIBE_TIMEOUT_MS = 30000;
+let localAvailable = false;
+let warmupInFlight = false;
 
 function getScriptPath(): string {
   const isDev = !app.isPackaged;
@@ -33,6 +35,8 @@ function getScriptPath(): string {
  * Checks if Python with faster-whisper is available in the system environment
  */
 export async function checkLocalWhisperAvailable(): Promise<{ available: boolean; error?: string }> {
+  // Spawning python + importing faster_whisper costs 1-2s; a positive answer won't change
+  if (localAvailable) return { available: true };
   return new Promise((resolve) => {
     const proc = spawn('python', ['-c', 'import faster_whisper; print("OK")'], {
       windowsHide: true,
@@ -44,6 +48,7 @@ export async function checkLocalWhisperAvailable(): Promise<{ available: boolean
 
     proc.on('close', (code) => {
       if (code === 0 && output.includes('OK')) {
+        localAvailable = true;
         resolve({ available: true });
       } else {
         resolve({ available: false, error: 'faster-whisper не найден в Python' });
@@ -89,6 +94,11 @@ function getWorker(): ChildProcess {
       }
     });
   }
+
+  workerProcess.on('error', (err) => {
+    // e.g. python missing — without a listener this would be an uncaught exception
+    console.warn('[LocalWhisper] Worker spawn error:', err.message);
+  });
 
   workerProcess.stderr?.on('data', (data) => {
     console.log(`[LocalWhisper:stderr] ${data.toString().trim()}`);
@@ -171,6 +181,24 @@ export async function transcribeAudioLocal(
     // Clean up temporary audio file asynchronously
     fs.promises.unlink(tempPath).catch(() => {});
   }
+}
+
+/**
+ * Loads the model in the background (e.g. once the cloud provider looks unreachable),
+ * so the next local transcription doesn't pay the ~45s model load.
+ */
+export function warmupLocalWhisper(): void {
+  if (modelReady || warmupInFlight) return;
+  warmupInFlight = true;
+  checkLocalWhisperAvailable()
+    .then(({ available }) => (available ? sendWorkerCommand({ action: 'warmup' }, MODEL_LOAD_TIMEOUT_MS) : null))
+    .then((res) => {
+      if (res?.status === 'ok') modelReady = true;
+    })
+    .catch((err) => console.warn('[LocalWhisper] Warmup failed:', err?.message))
+    .finally(() => {
+      warmupInFlight = false;
+    });
 }
 
 /**
