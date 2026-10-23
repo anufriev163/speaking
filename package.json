@@ -52,7 +52,7 @@
       "provider": "github",
       "owner": "anufriev163",
       "repo": "speaking",
-      "releaseType": "release"
+      "releaseType": "draft"
     },
     "files": [
       "dist/**/*",

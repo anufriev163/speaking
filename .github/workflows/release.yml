@@ -4,13 +4,29 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 permissions:
   contents: write
 
+# One release per tag: it is created once as a draft up front, every build uploads into
+# that draft (publish.releaseType = draft), and it is published only when all builds
+# succeeded. Letting electron-builder create the release itself raced: v1.0.7 ended up
+# as two releases with the installers split between them.
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 50 --json tagName --jq ".[] | select(.tagName == \"$GITHUB_REF_NAME\") | .tagName")
+          if [ -z "$existing" ]; then
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --title "$GITHUB_REF_NAME" --notes ""
+          fi
+
   release-mac:
+    needs: create-release
     runs-on: macos-latest
     steps:
       - name: Check out Git repository
@@ -19,7 +35,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -34,8 +50,7 @@ jobs:
           npx electron-builder --mac -p always
 
   release-win:
-    needs: release-mac
-    if: always()
+    needs: create-release
     runs-on: windows-latest
     steps:
       - name: Check out Git repository
@@ -44,7 +59,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -57,8 +72,18 @@ jobs:
           npm run build
           npx electron-builder --win --x64 -p always
 
+      # Publishes legacy.yml (channel "legacy"), so it never overwrites the x64 latest.yml
       - name: Build and Publish (Windows Legacy Win7/8/32-bit)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npx electron-builder --win --ia32 --config electron-builder.legacy.json -p always
+
+  publish-release:
+    needs: [release-mac, release-win]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest

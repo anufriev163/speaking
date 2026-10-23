@@ -214,6 +214,13 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
   updateState.version = app.getVersion();
 
   autoUpdater.logger = console;
+  // The 32-bit Win7/8 build publishes its own update file (legacy.yml) so it never
+  // picks up the x64 installer from latest.yml. The channel setter enables downgrades;
+  // turn that back off.
+  if (process.arch === 'ia32') {
+    autoUpdater.channel = 'legacy';
+    autoUpdater.allowDowngrade = false;
+  }
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
