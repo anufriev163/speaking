@@ -109,7 +109,11 @@
       "artifactName": "govori-${version}.${ext}",
       "identity": null,
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "говори записывает голос, чтобы превратить его в текст.",
+        "NSAppleEventsUsageDescription": "говори вставляет надиктованный текст в активное приложение."
+      }
     },
     "dmg": {
       "sign": false

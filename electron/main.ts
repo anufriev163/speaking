@@ -33,13 +33,12 @@ import os from 'os';
 // Hardware and legacy compatibility switches for older PCs/GPUs
 app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
 
-// Catch GPU crash gracefully on older laptops/graphics cards
+// Chromium restarts a crashed GPU process itself (and falls back to software after
+// repeated crashes thanks to the switch above); disableHardwareAcceleration() would be
+// a no-op here because it only works before "ready". Just record it.
 app.on('child-process-gone', (_event, details) => {
-  if (details.type === 'GPU') {
-    console.warn('[Platform:GPU] GPU process crashed on this hardware, falling back to software rendering:', details.reason);
-    try {
-      app.disableHardwareAcceleration();
-    } catch {}
+  if (details.type === 'GPU' && !isQuitting && details.reason !== 'clean-exit') {
+    logError('GPU process gone', details.reason);
   }
 });
 
@@ -187,7 +186,7 @@ function settingsForRenderer(sender: Electron.WebContents, settings: AppSettings
   if (settingsWindow && !settingsWindow.isDestroyed() && sender === settingsWindow.webContents) {
     return settings;
   }
-  return { ...settings, groqApiKey: '', openaiApiKey: '', deepgramApiKey: '' };
+  return { ...settings, groqApiKey: '', openaiApiKey: '' };
 }
 
 // Electron 35+ passes console details as an object; the legacy Win7 build (Electron 22)
@@ -839,6 +838,13 @@ if (gotTheLock) {
         }
       } catch (err) {
         console.warn('[Platform] macOS Accessibility check error:', err);
+      }
+      // Ask for the microphone up front: otherwise the first getUserMedia in the hidden HUD
+      // can fail silently on a fresh Mac and recording just never starts
+      if (systemPreferences.getMediaAccessStatus('microphone') !== 'granted') {
+        systemPreferences.askForMediaAccess('microphone')
+          .then((granted) => console.log('[Platform] macOS microphone access:', granted))
+          .catch((err) => logError('macOS microphone access', err));
       }
     }
 

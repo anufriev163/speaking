@@ -242,11 +242,8 @@ async function runTestSuite() {
       provider: 'groq',
       groqApiKey: '', // пустой ключ
       openaiApiKey: '',
-      deepgramApiKey: '',
       selectedMicId: 'default',
-      autoPunctuation: true,
       removeFillerWords: true,
-      contextAwareMode: true,
       soundFeedback: true,
       autoStart: false,
       handsFreeCommands: true

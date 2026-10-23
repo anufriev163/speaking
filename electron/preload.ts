@@ -64,11 +64,6 @@ const api = {
     return () => ipcRenderer.removeListener('context:selection', handler);
   },
 
-  // Notify Main Process from HUD
-  updateHudState: (state: HudState, message?: string, latencyMs?: number): void => {
-    ipcRenderer.send('hud:state-change', { state, message, latencyMs });
-  },
-
   // Settings Event
   onSettingsChanged: (callback: (settings: AppSettings) => void) => {
     const handler = (_event: any, s: AppSettings) => callback(s);

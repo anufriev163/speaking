@@ -56,11 +56,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   uiLanguage: 'auto',
   groqApiKey: '',
   openaiApiKey: '',
-  deepgramApiKey: '',
   selectedMicId: 'default',
-  autoPunctuation: true,
   removeFillerWords: true,
-  contextAwareMode: true,
   soundFeedback: true,
   autoStart: false,
   handsFreeCommands: true,
@@ -88,6 +85,8 @@ const DEFAULT_SNIPPETS: TextSnippet[] = [
 class StorageService {
   private filePath: string;
   private data: AppData;
+  // Encrypted history read from disk but not decrypted yet (safeStorage needs app "ready")
+  private pendingHistoryEnc: string | null = null;
 
   constructor() {
     this.filePath = this.resolveFilePath();
@@ -142,13 +141,12 @@ class StorageService {
         // We will decrypt lazily in getSettings().
         if (settings.groqApiKey) settings.groqApiKey = decryptSecret(settings.groqApiKey);
         if (settings.openaiApiKey) settings.openaiApiKey = decryptSecret(settings.openaiApiKey);
-        if (settings.deepgramApiKey) settings.deepgramApiKey = decryptSecret(settings.deepgramApiKey);
 
         return {
           settings,
           dictionary: parsed.dictionary || DEFAULT_DICTIONARY,
           snippets: parsed.snippets || DEFAULT_SNIPPETS,
-          history: parsed.history || []
+          history: this.readHistory(parsed)
         };
       }
     } catch (err) {
@@ -163,17 +161,58 @@ class StorageService {
     };
   }
 
+  private readHistory(parsed: any): DictationHistoryItem[] {
+    if (typeof parsed.historyEnc === 'string') {
+      this.pendingHistoryEnc = parsed.historyEnc;
+      return [];
+    }
+    // Older files kept history as plain JSON; it is encrypted on the next save
+    return Array.isArray(parsed.history) ? parsed.history : [];
+  }
+
+  /** Decrypts history loaded before safeStorage was ready. Returns false if it still can't. */
+  private ensureHistory(): boolean {
+    if (this.pendingHistoryEnc === null) return true;
+    try {
+      if (safeStorage.isEncryptionAvailable()) {
+        const json = safeStorage.decryptString(Buffer.from(this.pendingHistoryEnc.slice(4), 'base64'));
+        this.data.history = JSON.parse(json);
+        this.pendingHistoryEnc = null;
+        return true;
+      }
+    } catch (err) {
+      console.error('[Storage] Could not decrypt history, keeping it untouched:', err);
+    }
+    return false;
+  }
+
+  // Dictation history is as private as the API keys: encrypt it with the OS keystore
+  // (DPAPI / Keychain). Without a keystore it stays plain JSON, as before.
+  private serializeHistory(): { history?: DictationHistoryItem[]; historyEnc?: string } {
+    if (this.pendingHistoryEnc !== null) return { historyEnc: this.pendingHistoryEnc };
+    try {
+      if (safeStorage.isEncryptionAvailable()) {
+        const enc = safeStorage.encryptString(JSON.stringify(this.data.history));
+        return { historyEnc: 'enc:' + enc.toString('base64') };
+      }
+    } catch (err) {
+      console.warn('[Storage] History encryption unavailable, saving as plain JSON:', err);
+    }
+    return { history: this.data.history };
+  }
+
   private save(): void {
     try {
       // Clone settings and encrypt sensitive keys before disk write
       const clonedSettings = { ...this.data.settings };
       if (clonedSettings.groqApiKey) clonedSettings.groqApiKey = encryptSecret(clonedSettings.groqApiKey);
       if (clonedSettings.openaiApiKey) clonedSettings.openaiApiKey = encryptSecret(clonedSettings.openaiApiKey);
-      if (clonedSettings.deepgramApiKey) clonedSettings.deepgramApiKey = encryptSecret(clonedSettings.deepgramApiKey);
 
+      const { history: _history, ...rest } = this.data;
       const toSave = {
-        ...this.data,
-        settings: clonedSettings
+        ...rest,
+        settings: clonedSettings,
+        ...this.serializeHistory()
       };
 
       const tempPath = `${this.filePath}.tmp`;
@@ -204,12 +243,6 @@ class StorageService {
         s.openaiApiKey = dec;
       }
     }
-    if (s.deepgramApiKey && (s.deepgramApiKey.startsWith('enc:') || s.deepgramApiKey.startsWith('b64:'))) {
-      const dec = decryptSecret(s.deepgramApiKey);
-      if (dec && !dec.startsWith('enc:') && !dec.startsWith('b64:')) {
-        s.deepgramApiKey = dec;
-      }
-    }
     return { ...this.data.settings };
   }
 
@@ -238,10 +271,12 @@ class StorageService {
   }
 
   getHistory(): DictationHistoryItem[] {
+    this.ensureHistory();
     return this.data.history;
   }
 
   addHistoryItem(item: DictationHistoryItem): void {
+    if (!this.ensureHistory()) return; // never overwrite history we could not decrypt
     this.data.history.unshift(item);
     if (this.data.history.length > 200) {
       this.data.history = this.data.history.slice(0, 200);
@@ -250,6 +285,7 @@ class StorageService {
   }
 
   clearHistory(): void {
+    this.pendingHistoryEnc = null;
     this.data.history = [];
     this.save();
   }

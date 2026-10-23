@@ -1,4 +1,3 @@
-import { net } from 'electron';
 import { storage } from './storage';
 import { transcribeAudioLocal, checkLocalWhisperAvailable, warmupLocalWhisper } from './localWhisper';
 import { postBuffer } from './httpClient';
@@ -7,13 +6,6 @@ import { CloudProvider, isProviderDown, markProviderDown, markProviderUp } from 
 // Long dictations mean multi-MB uploads; on timeout we fall back to local Whisper
 const STT_HTTP_TIMEOUT_MS = 30000;
 
-// Polyfill global Blob for any secondary libraries if missing in Node
-if (typeof (globalThis as any).Blob === 'undefined') {
-  try {
-    const { Blob } = require('buffer');
-    if (Blob) (globalThis as any).Blob = Blob;
-  } catch {}
-}
 
 function buildMultipart(
   fields: Record<string, string | undefined>,

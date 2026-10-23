@@ -17,7 +17,6 @@ export const FloatingHud: React.FC = () => {
     category: 'general',
     categoryLabel: 'Готов'
   });
-  const [latency, setLatency] = useState<number | null>(null);
   const [textSnippet, setTextSnippet] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [recordDuration, setRecordDuration] = useState<number>(0);
@@ -27,7 +26,6 @@ export const FloatingHud: React.FC = () => {
   const [isRewriteResult, setIsRewriteResult] = useState<boolean>(false);
   const [currentLanguage, setCurrentLanguage] = useState<'ru' | 'en' | 'auto'>('ru');
   const [uiLanguage, setUiLanguage] = useState<UILanguage>('auto');
-  const [appMode, setAppMode] = useState<'toggle' | 'ptt'>('toggle');
   const [savedMacroInfo, setSavedMacroInfo] = useState<{ trigger: string; replacement: string } | null>(null);
 
   const t = getTranslations(uiLanguage);
@@ -73,7 +71,6 @@ export const FloatingHud: React.FC = () => {
         setHudState('idle');
         setTextSnippet('');
         setErrorMessage('');
-        setLatency(null);
         setSelectionInfo({ hasSelection: false, snippet: '' });
         setIsRewriteResult(false);
         setSavedMacroInfo(null);
@@ -213,7 +210,6 @@ export const FloatingHud: React.FC = () => {
         setHudState('idle');
         setTextSnippet('');
         setErrorMessage('');
-        setLatency(null);
       }, 180);
     } else if (hudState === 'idle') {
       startRecordingAction();
@@ -230,7 +226,6 @@ export const FloatingHud: React.FC = () => {
         setHudState('idle');
         setTextSnippet('');
         setErrorMessage('');
-        setLatency(null);
       }, 180);
     }
   };
@@ -260,7 +255,6 @@ export const FloatingHud: React.FC = () => {
       if (s) {
         if (s.language) setCurrentLanguage(s.language);
         if (s.uiLanguage) setUiLanguage(s.uiLanguage);
-        if (s.mode) setAppMode(s.mode);
       }
     });
 
@@ -268,7 +262,6 @@ export const FloatingHud: React.FC = () => {
       if (s) {
         if (s.language) setCurrentLanguage(s.language);
         if (s.uiLanguage) setUiLanguage(s.uiLanguage);
-        if (s.mode) setAppMode(s.mode);
       }
     });
 
@@ -524,7 +517,6 @@ export const FloatingHud: React.FC = () => {
             onClick={() => {
               setHudState('success');
               setTextSnippet('Привет! Всё отлично работает.');
-              setLatency(190);
               setIsVisible(true);
             }}
             className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${

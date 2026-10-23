@@ -1,6 +1,6 @@
-export type AppMode = 'toggle' | 'ptt';
+export type AppMode = 'toggle';
 
-export type STTProvider = 'groq' | 'openai' | 'deepgram' | 'local';
+export type STTProvider = 'groq' | 'openai' | 'local';
 
 export type AppCategory = 'code' | 'chat' | 'document' | 'browser' | 'terminal' | 'general';
 
@@ -23,11 +23,8 @@ export interface AppSettings {
   uiLanguage?: UILanguage;
   groqApiKey: string;
   openaiApiKey: string;
-  deepgramApiKey: string;
   selectedMicId: string;
-  autoPunctuation: boolean;
   removeFillerWords: boolean;
-  contextAwareMode: boolean;
   soundFeedback: boolean;
   autoStart: boolean;
   handsFreeCommands: boolean;
@@ -90,7 +87,6 @@ export interface GovoriAPI {
   onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop' | 'show' | 'cancel') => void) => () => void;
   onContextChanged: (callback: (context: ActiveContext) => void) => () => void;
   onSelectionChanged: (callback: (data: { hasSelection: boolean; snippet: string }) => void) => () => void;
-  updateHudState: (state: HudState, message?: string, latencyMs?: number) => void;
   onSettingsChanged: (callback: (settings: AppSettings) => void) => () => void;
   getUpdateStatus: () => Promise<any>;
   checkForUpdates: () => Promise<any>;

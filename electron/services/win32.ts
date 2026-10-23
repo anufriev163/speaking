@@ -21,7 +21,6 @@ let OpenProcess: any = null;
 let CloseHandle: any = null;
 let QueryFullProcessImageNameW: any = null;
 let SendInput: any = null;
-let GetAsyncKeyState: any = null;
 let SetForegroundWindow: any = null;
 let keybd_event: any = null;
 
@@ -92,7 +91,6 @@ if (process.platform === 'win32') {
     });
 
     SendInput = user32.func('uint32_t SendInput(uint32_t cInputs, INPUT *pInputs, int cbSize)');
-    GetAsyncKeyState = user32.func('short GetAsyncKeyState(int vKey)');
     keybd_event = user32.func('void keybd_event(uint8_t bVk, uint8_t bScan, uint32_t dwFlags, uintptr_t dwExtraInfo)');
     console.log('[Platform] Native Win32 FFI successfully initialized via koffi');
   } catch (err) {
@@ -118,44 +116,6 @@ export const VK = {
   RWIN: 0x5C,
   OEM_3: 0xC0, // ` ~ ё
 };
-
-export function isKeyHeld(vKey: number): boolean {
-  if (!GetAsyncKeyState) return false;
-  try {
-    return (GetAsyncKeyState(vKey) & 0x8000) !== 0;
-  } catch {
-    return false;
-  }
-}
-
-export function isHotkeyTriggerHeld(hotkey = 'Ctrl+~'): boolean {
-  if (process.platform !== 'win32' || !GetAsyncKeyState) {
-    return false;
-  }
-  const lower = hotkey.toLowerCase();
-
-  if (lower.includes('ctrl') || lower.includes('control')) {
-    if (!isKeyHeld(VK.CONTROL)) return false;
-  }
-  if (lower.includes('alt')) {
-    if (!isKeyHeld(VK.MENU)) return false;
-  }
-  if (lower.includes('shift')) {
-    if (!isKeyHeld(VK.SHIFT)) return false;
-  }
-
-  if (lower.includes('~') || lower.includes('`') || lower.includes('ё')) {
-    return isKeyHeld(VK.OEM_3);
-  }
-  if (lower.includes('space') || lower.includes('пробел')) {
-    return isKeyHeld(VK.SPACE);
-  }
-  if (lower.includes('caps') || lower.includes('капс')) {
-    return isKeyHeld(VK.CAPITAL);
-  }
-
-  return isKeyHeld(VK.OEM_3);
-}
 
 /**
  * Gets active foreground window details across Windows and macOS.
