@@ -6,6 +6,11 @@ import readline from 'readline';
 import { app } from 'electron';
 import { TranscriptionResult } from './sttService';
 
+// On Windows run pythonw.exe: python.exe is a console program, so Windows creates a console for it,
+// and windowsHide does not reliably hide it (Windows Terminal as the default console shows it for a moment).
+// pythonw.exe gets no console at all; stdin/stdout pipes work the same. Falls back to python if missing.
+let pythonCmd = process.platform === 'win32' ? 'pythonw' : 'python';
+
 let workerProcess: ChildProcess | null = null;
 let workerRl: readline.Interface | null = null;
 // Responses are matched by request id: a timed-out request must never
@@ -38,7 +43,7 @@ export async function checkLocalWhisperAvailable(): Promise<{ available: boolean
   // Spawning python + importing faster_whisper costs 1-2s; a positive answer won't change
   if (localAvailable) return { available: true };
   return new Promise((resolve) => {
-    const proc = spawn('python', ['-c', 'import faster_whisper; print("OK")'], {
+    const proc = spawn(pythonCmd, ['-c', 'import faster_whisper; print("OK")'], {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -56,6 +61,11 @@ export async function checkLocalWhisperAvailable(): Promise<{ available: boolean
     });
 
     proc.on('error', (err) => {
+      if (pythonCmd === 'pythonw') {
+        pythonCmd = 'python'; // no pythonw.exe on this machine
+        resolve(checkLocalWhisperAvailable());
+        return;
+      }
       resolve({ available: false, error: err.message });
     });
   });
@@ -72,7 +82,7 @@ function getWorker(): ChildProcess {
   const scriptPath = getScriptPath();
   console.log('[LocalWhisper] Spawning worker from:', scriptPath);
 
-  workerProcess = spawn('python', [scriptPath], {
+  workerProcess = spawn(pythonCmd, [scriptPath], {
     windowsHide: true,
     stdio: ['pipe', 'pipe', 'pipe']
   });

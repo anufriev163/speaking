@@ -312,7 +312,7 @@ function createSettingsWindow() {
     title: 'говори',
     autoHideMenuBar: true,
     backgroundColor: '#ffffff',
-    show: true,
+    show: false, // shown on ready-to-show
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -351,14 +351,11 @@ function createSettingsWindow() {
     settingsWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: 'settings' });
   }
 
-  settingsWindow.setAlwaysOnTop(true);
-  settingsWindow.show();
-  settingsWindow.focus();
-  setTimeout(() => {
-    if (settingsWindow && !settingsWindow.isDestroyed()) {
-      settingsWindow.setAlwaysOnTop(false);
-    }
-  }, 1200);
+  // Show only once the page has painted: no empty white frame, no always-on-top jump on launch
+  settingsWindow.once('ready-to-show', () => {
+    settingsWindow?.show();
+    settingsWindow?.focus();
+  });
 
   settingsWindow.on('close', (e) => {
     if (!isQuitting) {
@@ -402,6 +399,8 @@ function createTray() {
 
     tray = new Tray(icon);
     updateTrayMenu();
+    // Windows tray convention: a single left click opens the app (right click shows the menu)
+    tray.on('click', () => createSettingsWindow());
     tray.on('double-click', () => createSettingsWindow());
   } catch (err) {
     console.warn('[Tray] Could not initialize tray icon:', err);
@@ -626,13 +625,13 @@ function applyAutoStart(enabled: boolean) {
 
       if (enabled) {
         const psCommand = `$val = '"${exePath}" "${appPath}" --autostart'; Set-ItemProperty -Path "${runKey}" -Name "Govori" -Value $val`;
-        exec(`powershell -NoProfile -NonInteractive -Command "${psCommand.replace(/"/g, '\\"')}"`, (err: any) => {
+        exec(`powershell -NoProfile -NonInteractive -Command "${psCommand.replace(/"/g, '\\"')}"`, { windowsHide: true }, (err: any) => {
           if (err) console.error('[AutoStart] Error setting registry:', err);
           else console.log('[AutoStart] Successfully registered in HKCU Run registry');
         });
       } else {
         const psCommand = `Remove-ItemProperty -Path "${runKey}" -Name "Govori" -ErrorAction SilentlyContinue`;
-        exec(`powershell -NoProfile -NonInteractive -Command "${psCommand.replace(/"/g, '\\"')}"`, (err: any) => {
+        exec(`powershell -NoProfile -NonInteractive -Command "${psCommand.replace(/"/g, '\\"')}"`, { windowsHide: true }, (err: any) => {
           if (err) console.error('[AutoStart] Error removing from registry:', err);
           else console.log('[AutoStart] Removed from HKCU Run registry');
         });

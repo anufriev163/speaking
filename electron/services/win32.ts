@@ -312,7 +312,7 @@ async function injectClipboardWindows(text: string): Promise<boolean> {
     if (!sent) {
       // Fallback via PowerShell SendKeys on older or restricted Windows setups
       const psCmd = `powershell.exe -NoProfile -WindowStyle Hidden -Command "$ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^v')"`;
-      execSync(psCmd, { timeout: 1000, stdio: ['ignore', 'ignore', 'ignore'] });
+      execSync(psCmd, { timeout: 1000, stdio: ['ignore', 'ignore', 'ignore'], windowsHide: true });
     }
 
     restoreClipboardAfterPaste(snap, text);
@@ -455,7 +455,7 @@ export function simulateCopy(): void {
   } else {
     try {
       const psCmd = `powershell.exe -NoProfile -WindowStyle Hidden -Command "$ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^c')"`;
-      execSync(psCmd, { timeout: 800, stdio: ['ignore', 'ignore', 'ignore'] });
+      execSync(psCmd, { timeout: 800, stdio: ['ignore', 'ignore', 'ignore'], windowsHide: true });
     } catch {}
   }
 }
