@@ -18,7 +18,9 @@
     "dist-electron/**/*",
     "assets/**/*",
     "resources/**/*",
-    "package.json"
+    "package.json",
+    "!node_modules/koffi/build/koffi/**",
+    "node_modules/koffi/build/koffi/${platform}_${arch}/**"
   ],
   "asar": true,
   "asarUnpack": [

@@ -196,6 +196,18 @@ function consoleMessageText(args: any[]): string {
   return args[1]?.message ?? args[0]?.message ?? String(args[2] ?? '');
 }
 
+// Reload a crashed renderer, but not while the app is shutting down (renderers die first,
+// which is not a crash) and not in a tight loop if it keeps crashing right after load.
+const lastRendererReload = new Map<string, number>();
+function recoverRenderer(name: string, win: BrowserWindow | null, reason: string) {
+  if (isQuitting || reason === 'clean-exit' || !win || win.isDestroyed()) return;
+  logError(`${name} renderer gone`, reason);
+  const now = Date.now();
+  if (now - (lastRendererReload.get(name) ?? 0) < 10000) return;
+  lastRendererReload.set(name, now);
+  win.webContents.reload();
+}
+
 function createHudWindow() {
   if (hudWindow && !hudWindow.isDestroyed()) {
     hudWindow.show();
@@ -264,8 +276,7 @@ function createHudWindow() {
   });
   hudWindow.webContents.on('render-process-gone', (_e, details) => {
     // A crashed HUD renderer would leave the hotkey dead until restart — reload it
-    logError('HUD renderer gone', details.reason);
-    if (details.reason !== 'clean-exit') hudWindow?.webContents.reload();
+    recoverRenderer('HUD', hudWindow, details.reason);
   });
   hudWindow.webContents.on('did-finish-load', () => {
     console.log('[HUD] Page loaded. Bounds:', JSON.stringify(hudWindow?.getBounds()));
@@ -329,8 +340,7 @@ function createSettingsWindow() {
     console.error(`[Settings Load Failed] ${code} ${desc}`);
   });
   settingsWindow.webContents.on('render-process-gone', (_e, details) => {
-    logError('Settings renderer gone', details.reason);
-    if (details.reason !== 'clean-exit') settingsWindow?.webContents.reload();
+    recoverRenderer('Settings', settingsWindow, details.reason);
   });
   settingsWindow.webContents.on('did-finish-load', () => {
     console.log('[Settings] Page loaded. Bounds:', JSON.stringify(settingsWindow?.getBounds()), 'Visible:', settingsWindow?.isVisible());
