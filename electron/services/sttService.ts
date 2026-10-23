@@ -94,11 +94,8 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType = 'audio/wav
       };
     }
 
-    return {
-      text: 'Говори работает! Пожалуйста, укажите API-ключ Groq или OpenAI в настройках приложения.',
-      durationSeconds: 1,
-      latencyMs: Date.now() - startTime
-    };
+    // Throw instead of returning text: a "result" here would be typed into the user's app
+    throw new Error('Укажите API-ключ Groq или OpenAI в настройках либо установите локальный Whisper');
   }
 
   // Provider recently unreachable: go straight to local instead of waiting on timeouts again

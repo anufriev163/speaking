@@ -530,7 +530,8 @@ function registerHotkeys() {
           const isStarting = !isRecordingActive;
           isRecordingActive = !isRecordingActive;
 
-          if (isStarting) {
+          // AI Rewrite needs a cloud LLM — in offline mode don't even touch the selection
+          if (isStarting && currentSettings.provider !== 'local') {
             // Detect active selection in foreground window for AI Rewrite ONLY on start
             captureActiveSelection(lastActiveContext).then((selected) => {
               currentSelectionText = selected;

@@ -1,4 +1,3 @@
-import { GovernanceCheckResult } from '../types';
 import { AppSettings } from '../../../src/types';
 
 export class GovernanceManager {
@@ -6,35 +5,16 @@ export class GovernanceManager {
   private currentDay = new Date().toDateString();
   private readonly GROQ_DAILY_LIMIT = 14400;
 
-  // Patterns for potential PII or secrets
-  private readonly PII_PATTERNS = [
-    { name: 'Credit Card', regex: /\b(?:\d{4}[ -]?){3}\d{4}\b/g, mask: '[CARD-REDACTED]' },
-    { name: 'API Key', regex: /\b(gsk_[a-zA-Z0-9]{20,}|sk-[a-zA-Z0-9]{20,})\b/g, mask: '[API-KEY-REDACTED]' },
-    { name: 'Email', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g, mask: (match: string) => match } // Leave emails untouched by default
-  ];
-
   public checkRequestPolicy(settings: AppSettings): { allowed: boolean; reason?: string } {
     this.rotateDailyCounterIfNeeded();
 
-    // 1. Quota check for free Groq tier
+    // Quota check for free Groq tier.
+    // A missing API key is NOT blocked here: sttService falls back to local Whisper
+    // or reports a clear error itself.
     if (settings.provider === 'groq' && this.dailyRequestCount >= this.GROQ_DAILY_LIMIT) {
       return {
         allowed: false,
         reason: `Дневной лимит Groq исчерпан (${this.dailyRequestCount}/${this.GROQ_DAILY_LIMIT}). Переключитесь на локальный Whisper или OpenAI.`
-      };
-    }
-
-    // 2. Validate API key for cloud providers
-    if (settings.provider === 'groq' && !settings.groqApiKey) {
-      return {
-        allowed: false,
-        reason: 'Groq API key is missing'
-      };
-    }
-    if (settings.provider === 'openai' && !settings.openaiApiKey) {
-      return {
-        allowed: false,
-        reason: 'OpenAI API key is missing'
       };
     }
 
@@ -52,29 +32,6 @@ export class GovernanceManager {
       used: this.dailyRequestCount,
       limit: this.GROQ_DAILY_LIMIT,
       remaining: Math.max(0, this.GROQ_DAILY_LIMIT - this.dailyRequestCount)
-    };
-  }
-
-  public filterPII(text: string): GovernanceCheckResult {
-    let redacted = text;
-    const violations: string[] = [];
-
-    for (const item of this.PII_PATTERNS) {
-      if (typeof item.mask === 'string') {
-        item.regex.lastIndex = 0;
-        if (item.regex.test(redacted)) {
-          violations.push(item.name);
-          item.regex.lastIndex = 0;
-          redacted = redacted.replace(item.regex, item.mask);
-        }
-        item.regex.lastIndex = 0;
-      }
-    }
-
-    return {
-      allowed: true,
-      redactedText: redacted,
-      violations
     };
   }
 

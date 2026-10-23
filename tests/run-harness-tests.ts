@@ -98,24 +98,8 @@ async function runTestSuite() {
   // ----------------------------------------------------
   // 2. ТЕСТ СЛОЯ: GOVERNANCE
   // ----------------------------------------------------
-  console.log('\n[2/7] Тестирование Governance Layer (PII маскирование & Квоты)...');
+  console.log('\n[2/7] Тестирование Governance Layer (Квоты)...');
   const governance = new GovernanceManager();
-
-  await test('Governance', 'Маскирование номеров банковских карт', () => {
-    const input = 'Мой номер карты 4276 1234 5678 9012 оплати счет';
-    const res = governance.filterPII(input);
-    assert(res.allowed, 'Запрос должен быть разрешен');
-    assert(res.redactedText.includes('[CARD-REDACTED]'), 'Номер карты должен быть замаскирован');
-    assert(!res.redactedText.includes('4276 1234 5678 9012'), 'Оригинальный номер не должен присутствовать');
-    assert(res.violations.includes('Credit Card'), 'Должно быть зафиксировано нарушение Credit Card');
-  });
-
-  await test('Governance', 'Маскирование API ключей в речи', () => {
-    const input = 'Ключ равен gsk_1234567890abcdef1234567890abcdef сохраняй';
-    const res = governance.filterPII(input);
-    assert(res.redactedText.includes('[API-KEY-REDACTED]'), 'API ключ должен быть замаскирован');
-    assert(res.violations.includes('API Key'), 'Должно быть зафиксировано нарушение API Key');
-  });
 
   await test('Governance', 'Подсчет квоты запросов Groq (14 400)', () => {
     const quotaBefore = governance.getDailyQuotaStatus();
@@ -248,7 +232,7 @@ async function runTestSuite() {
     assert(harness.execution !== undefined, 'execution слой инициализирован');
   });
 
-  await test('Execution', 'Проверка блокировки выполнения при отсутствии API ключа (Governance)', async () => {
+  await test('Execution', 'Отсутствие API ключа не блокирует запрос (локальный fallback)', async () => {
     const dummyAudio = Buffer.from([0, 1, 2, 3]);
     
     // Временно проверяем Governance напрямую через policy
@@ -268,8 +252,7 @@ async function runTestSuite() {
       handsFreeCommands: true
     });
 
-    assert(!policy.allowed, 'Политика должна заблокировать запрос с пустым ключом');
-    assert(policy.reason?.includes('missing'), 'Причина блокировки должна указывать на отсутствие ключа');
+    assert(policy.allowed, 'Пустой ключ не должен блокировать запрос: sttService сам уходит в локальный Whisper');
   });
 
   // ----------------------------------------------------

@@ -44,12 +44,6 @@ export interface VerificationResult {
   hallucinationDetected?: boolean;
 }
 
-export interface GovernanceCheckResult {
-  allowed: boolean;
-  redactedText: string;
-  violations: string[];
-}
-
 export interface HarnessPipelineInput {
   audioBuffer: Buffer;
   mimeType: string;

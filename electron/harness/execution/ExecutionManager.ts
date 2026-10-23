@@ -89,7 +89,8 @@ export class ExecutionManager {
       }
 
       // 5.5 Check for voice-activated macro creation command
-      const isRewrite = Boolean(input.selectedText && input.selectedText.trim().length > 0);
+      // Offline mode never rewrites (would need a cloud LLM) — dictation just types over the selection
+      const isRewrite = settings.provider !== 'local' && Boolean(input.selectedText && input.selectedText.trim().length > 0);
       let pendingEnter = false;
       let textToProcess = verification.sanitizedText;
 
@@ -229,11 +230,7 @@ export class ExecutionManager {
         processedText = applyVoicePunctuationAndFormatting(processedText);
       }
 
-      // 7. Governance: PII Sanitization
-      const govFilter = this.governance.filterPII(processedText);
-      processedText = govFilter.redactedText;
-
-      // 8. Lifecycle: Injecting via Tooling layer
+      // 7. Lifecycle: Injecting via Tooling layer
       let injected = false;
       if (this.verification.verifyPreInjection(processedText)) {
         this.lifecycle.transitionTo('INJECTING', traceId);
@@ -247,7 +244,7 @@ export class ExecutionManager {
         }
       }
 
-      // 9. Storage: Persist in dictation history
+      // 8. Storage: Persist in dictation history
       const totalLatency = Math.round(sttResult.latencyMs);
       storage.addHistoryItem({
         id: traceId,
@@ -260,13 +257,12 @@ export class ExecutionManager {
         category: enrichedContext.activeContext.category
       });
 
-      // 10. Finish
+      // 9. Finish
       this.lifecycle.transitionTo('COMPLETED', traceId);
       this.observability.finishTrace(traceId, {
         rawText: sttResult.text,
         processedText,
-        injected,
-        violations: govFilter.violations
+        injected
       });
 
       return {
