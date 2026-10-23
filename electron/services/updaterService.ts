@@ -27,7 +27,7 @@ export interface UpdateInfoState {
 
 let updateState: UpdateInfoState = {
   status: 'idle',
-  version: '1.0.6'
+  version: app.getVersion()
 };
 
 let downloadedInstallerPath: string | null = null;
@@ -211,10 +211,7 @@ function streamDownload(
 }
 
 export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
-  // In dev / unpackaged mode, display '1.0.5' so user can test live updates.
-  // In production packaged mode, use official app.getVersion().
-  const currentVer = app.isPackaged ? (app.getVersion() || '1.0.6') : '1.0.5';
-  updateState.version = currentVer;
+  updateState.version = app.getVersion();
 
   autoUpdater.logger = console;
   autoUpdater.autoDownload = false;
@@ -312,7 +309,7 @@ export function initAutoUpdater(getSettingsWin: () => BrowserWindow | null) {
         throw new Error('Не удалось получить данные релиза');
       }
 
-      const activeVer = app.isPackaged ? (app.getVersion() || '1.0.6') : '1.0.5';
+      const activeVer = app.getVersion();
       const hasUpdate = isVersionNewer(relInfo.latestVersion, activeVer);
 
       directDownloadUrl = relInfo.downloadUrl;
