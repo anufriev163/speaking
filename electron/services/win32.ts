@@ -1,6 +1,7 @@
 import path from 'path';
 import { execSync } from 'child_process';
 import { clipboard } from 'electron';
+import { snapshotClipboard, restoreClipboardAfterPaste } from './clipboardSnapshot';
 
 export interface Win32ActiveWindow {
   processName: string;
@@ -312,13 +313,12 @@ function sendInputUnicode(text: string): boolean {
  * Fallback injection for Windows using Clipboard + simulated Ctrl+V.
  * Works on older Windows versions, when koffi is unavailable, or when UIPI blocks direct input.
  */
-function injectClipboardWindows(text: string): boolean {
+async function injectClipboardWindows(text: string): Promise<boolean> {
   try {
-    const prevText = clipboard.readText();
-    const prevImage = clipboard.readImage();
-    const hadImage = !prevImage.isEmpty();
+    const snap = await snapshotClipboard();
 
-    clipboard.writeText(text);
+    // Must be committed before Ctrl+V is sent
+    await clipboard.writeText(text);
 
     let sent = false;
     if (SendInput && koffi) {
@@ -351,15 +351,7 @@ function injectClipboardWindows(text: string): boolean {
       execSync(psCmd, { timeout: 1000, stdio: ['ignore', 'ignore', 'ignore'] });
     }
 
-    setTimeout(() => {
-      try {
-        if (hadImage) {
-          clipboard.writeImage(prevImage);
-        } else if (prevText) {
-          clipboard.writeText(prevText);
-        }
-      } catch {}
-    }, 280);
+    restoreClipboardAfterPaste(snap, text);
 
     return true;
   } catch (err) {
@@ -371,28 +363,19 @@ function injectClipboardWindows(text: string): boolean {
 /**
  * macOS text injection using Clipboard + AppleScript Cmd+V.
  */
-function injectTextMac(text: string): boolean {
+async function injectTextMac(text: string): Promise<boolean> {
   try {
-    const prevText = clipboard.readText();
-    const prevImage = clipboard.readImage();
-    const hadImage = !prevImage.isEmpty();
+    const snap = await snapshotClipboard();
 
-    clipboard.writeText(text);
+    // Must be committed before Ctrl+V is sent
+    await clipboard.writeText(text);
 
     execSync(`osascript -e 'tell application "System Events" to keystroke "v" using command down'`, {
       timeout: 1000,
       stdio: ['ignore', 'ignore', 'ignore']
     });
 
-    setTimeout(() => {
-      try {
-        if (hadImage) {
-          clipboard.writeImage(prevImage);
-        } else if (prevText) {
-          clipboard.writeText(prevText);
-        }
-      } catch {}
-    }, 300);
+    restoreClipboardAfterPaste(snap, text);
 
     return true;
   } catch (err) {
@@ -404,28 +387,19 @@ function injectTextMac(text: string): boolean {
 /**
  * Linux text injection using Clipboard + xdotool.
  */
-function injectTextLinux(text: string): boolean {
+async function injectTextLinux(text: string): Promise<boolean> {
   try {
-    const prevText = clipboard.readText();
-    const prevImage = clipboard.readImage();
-    const hadImage = !prevImage.isEmpty();
+    const snap = await snapshotClipboard();
 
-    clipboard.writeText(text);
+    // Must be committed before Ctrl+V is sent
+    await clipboard.writeText(text);
 
     execSync(`xdotool key --clearmodifiers ctrl+v`, {
       timeout: 1000,
       stdio: ['ignore', 'ignore', 'ignore']
     });
 
-    setTimeout(() => {
-      try {
-        if (hadImage) {
-          clipboard.writeImage(prevImage);
-        } else if (prevText) {
-          clipboard.writeText(prevText);
-        }
-      } catch {}
-    }, 300);
+    restoreClipboardAfterPaste(snap, text);
 
     return true;
   } catch (err) {
@@ -442,11 +416,11 @@ export async function injectText(text: string): Promise<boolean> {
   if (!text || typeof text !== 'string') return false;
 
   if (process.platform === 'darwin') {
-    return injectTextMac(text);
+    return await injectTextMac(text);
   }
 
   if (process.platform === 'linux') {
-    return injectTextLinux(text);
+    return await injectTextLinux(text);
   }
 
   // On Windows: Restore focus to original active window in case HUD or click stole focus
@@ -457,7 +431,7 @@ export async function injectText(text: string): Promise<boolean> {
   // In chat apps (Telegram, Slack, Discord), raw Enter keystrokes send the message rather than creating a newline.
   const hasNewlines = text.includes('\n') || text.includes('\r');
   if (hasNewlines || text.length > 120) {
-    const success = injectClipboardWindows(text);
+    const success = await injectClipboardWindows(text);
     if (success) return true;
   }
 
@@ -466,7 +440,7 @@ export async function injectText(text: string): Promise<boolean> {
   if (sent) return true;
 
   // Fallback to Clipboard injection for older Windows PCs or restricted windows
-  const success = injectClipboardWindows(text);
+  const success = await injectClipboardWindows(text);
   if (!success) {
     console.warn('[Platform] Text injection failed. If target application is running as Administrator, run govorilka as Administrator to satisfy Windows UIPI.');
   }

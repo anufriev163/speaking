@@ -46,9 +46,9 @@ export class ToolRegistry {
     this.registerTool<string, boolean>({
       name: 'clipboard_copy',
       description: 'Copies text to clipboard as a fallback or user utility',
-      execute: (text: string) => {
+      execute: async (text: string) => {
         try {
-          clipboard.writeText(text);
+          await clipboard.writeText(text);
           return true;
         } catch {
           return false;

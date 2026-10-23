@@ -24,6 +24,8 @@ import { cleanTextRules, refineTextWithLLM } from './services/llmProcessor';
 import { harness } from './harness';
 import { ActiveContext } from '../src/types';
 import { initAutoUpdater } from './services/updaterService';
+import { snapshotClipboard, restoreClipboard } from './services/clipboardSnapshot';
+import { logError } from './services/errorLog';
 
 import net from 'net';
 import os from 'os';
@@ -41,13 +43,10 @@ app.on('child-process-gone', (_event, details) => {
   }
 });
 
-// Guard against uncaught runtime exceptions causing modal crashes
-process.on('uncaughtException', (err) => {
-  console.warn('[Platform:Safe] Handled uncaught exception:', err);
-});
-process.on('unhandledRejection', (reason) => {
-  console.warn('[Platform:Safe] Handled unhandled rejection:', reason);
-});
+// Keep the tray app alive instead of Electron's modal crash dialog, but never silently:
+// every failure goes to <logs>/errors.log with a stack trace
+process.on('uncaughtException', (err) => logError('uncaughtException', err));
+process.on('unhandledRejection', (reason) => logError('unhandledRejection', reason));
 
 let hudWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
@@ -168,6 +167,12 @@ function setHudClickThrough(ignore: boolean) {
   hudWindow.setIgnoreMouseEvents(ignore, { forward: true });
 }
 
+// Electron 35+ passes console details as an object; the legacy Win7 build (Electron 22)
+// still uses positional (event, level, message) arguments.
+function consoleMessageText(args: any[]): string {
+  return args[1]?.message ?? args[0]?.message ?? String(args[2] ?? '');
+}
+
 function createHudWindow() {
   if (hudWindow && !hudWindow.isDestroyed()) {
     hudWindow.show();
@@ -230,11 +235,16 @@ function createHudWindow() {
   // Renderer re-enables mouse events while the cursor is over the capsule itself.
   setHudClickThrough(true);
 
-  hudWindow.webContents.on('console-message', (_e, _level, message) => {
-    console.log(`[HUD Console] ${message}`);
+  hudWindow.webContents.on('console-message', (...args: any[]) => {
+    console.log(`[HUD Console] ${consoleMessageText(args)}`);
   });
   hudWindow.webContents.on('did-fail-load', (_e, code, desc) => {
     console.error(`[HUD Load Failed] ${code} ${desc}`);
+  });
+  hudWindow.webContents.on('render-process-gone', (_e, details) => {
+    // A crashed HUD renderer would leave the hotkey dead until restart — reload it
+    logError('HUD renderer gone', details.reason);
+    if (details.reason !== 'clean-exit') hudWindow?.webContents.reload();
   });
   hudWindow.webContents.on('did-finish-load', () => {
     console.log('[HUD] Page loaded. Bounds:', JSON.stringify(hudWindow?.getBounds()));
@@ -293,11 +303,15 @@ function createSettingsWindow() {
     }
   });
 
-  settingsWindow.webContents.on('console-message', (_e, _level, message) => {
-    console.log(`[Settings Console] ${message}`);
+  settingsWindow.webContents.on('console-message', (...args: any[]) => {
+    console.log(`[Settings Console] ${consoleMessageText(args)}`);
   });
   settingsWindow.webContents.on('did-fail-load', (_e, code, desc) => {
     console.error(`[Settings Load Failed] ${code} ${desc}`);
+  });
+  settingsWindow.webContents.on('render-process-gone', (_e, details) => {
+    logError('Settings renderer gone', details.reason);
+    if (details.reason !== 'clean-exit') settingsWindow?.webContents.reload();
   });
   settingsWindow.webContents.on('did-finish-load', () => {
     console.log('[Settings] Page loaded. Bounds:', JSON.stringify(settingsWindow?.getBounds()), 'Visible:', settingsWindow?.isVisible());
@@ -439,12 +453,7 @@ async function captureActiveSelection(context: ActiveContext | null): Promise<st
   // Ctrl+C in a terminal is SIGINT (kills running processes) — never simulate it there.
   if (context?.category === 'terminal') return '';
 
-  const snapshot = {
-    text: clipboard.readText(),
-    html: clipboard.readHTML(),
-    rtf: clipboard.readRTF(),
-    image: clipboard.readImage(),
-  };
+  const snapshot = await snapshotClipboard();
 
   try {
     clipboard.clear();
@@ -453,7 +462,7 @@ async function captureActiveSelection(context: ActiveContext | null): Promise<st
     // Delay for target app to process copy
     await new Promise((r) => setTimeout(r, 85));
 
-    const copied = clipboard.readText();
+    const copied = await clipboard.readText();
     if (!copied || copied.trim().length === 0) return '';
 
     // IDEs (VS Code, JetBrains) copy the whole current line when nothing is selected.
@@ -465,19 +474,7 @@ async function captureActiveSelection(context: ActiveContext | null): Promise<st
     return '';
   } finally {
     // Always give the user their clipboard back
-    try {
-      const hasData = snapshot.text || snapshot.html || snapshot.rtf || !snapshot.image.isEmpty();
-      if (hasData) {
-        clipboard.write({
-          text: snapshot.text || undefined,
-          html: snapshot.html || undefined,
-          rtf: snapshot.rtf || undefined,
-          image: snapshot.image.isEmpty() ? undefined : snapshot.image,
-        });
-      } else {
-        clipboard.clear();
-      }
-    } catch {}
+    await restoreClipboard(snapshot);
   }
 }
 
@@ -657,7 +654,8 @@ function setupIpcHandlers() {
     const dateStr = new Date().toISOString().slice(0, 10);
     const defaultFilename = `govori_history_${dateStr}.${ext}`;
 
-    const saveRes = await dialog.showSaveDialog(settingsWindow || BrowserWindow.getFocusedWindow() || undefined, {
+    const parentWindow = settingsWindow || BrowserWindow.getFocusedWindow();
+    const dialogOptions: Electron.SaveDialogOptions = {
       title: 'Экспорт истории записей',
       defaultPath: path.join(app.getPath('documents'), defaultFilename),
       filters: [
@@ -666,7 +664,10 @@ function setupIpcHandlers() {
           : { name: 'Markdown документ (*.md)', extensions: ['md'] },
         { name: 'Все файлы (*.*)', extensions: ['*'] }
       ]
-    });
+    };
+    const saveRes = parentWindow
+      ? await dialog.showSaveDialog(parentWindow, dialogOptions)
+      : await dialog.showSaveDialog(dialogOptions);
 
     if (saveRes.canceled || !saveRes.filePath) {
       return { success: false, reason: 'canceled' };
@@ -829,8 +830,6 @@ if (gotTheLock) {
     globalShortcut.unregisterAll();
   });
 
-  app.on('window-all-closed', (e: any) => {
-    // Don't quit app on Windows when windows close; keep in tray
-    e?.preventDefault?.();
-  });
+  // Having any listener disables Electron's default quit-on-last-window: keep living in the tray
+  app.on('window-all-closed', () => {});
 }

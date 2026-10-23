@@ -7,14 +7,15 @@
     "dev": "concurrently -k \"vite\" \"npm run dev:electron\"",
     "dev:electron": "node wait-dev.js",
     "build:electron": "esbuild electron/main.ts electron/preload.ts --bundle --platform=node --target=node16,chrome108 --format=cjs --outdir=dist-electron --external:electron --external:koffi",
-    "build": "tsc && vite build && npm run build:electron",
+    "build": "npm run typecheck && vite build && npm run build:electron",
     "dist": "npm run dist:win",
     "dist:win": "npm run build && electron-builder --win --x64",
     "dist:legacy": "npm run build && electron-builder --win --ia32 --config electron-builder.legacy.json",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:dir": "npm run build && electron-builder --dir",
     "start": "electron .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
@@ -31,7 +32,7 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
-    "electron": "^34.2.0",
+    "electron": "^44.9.3",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
     "postcss": "^8.5.2",
