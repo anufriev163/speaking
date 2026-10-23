@@ -8,6 +8,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // "Clean notebook" settings palette: white sheet, graphite text, ruling lines,
+        // ballpoint-blue ink as the only accent, red pen for errors/destructive actions
+        paper: '#FFFFFF',
+        graphite: '#2B2B2B',
+        muted: '#8C8C8C',
+        rule: '#EAEAEA',
+        ink: '#2F5BEA',
+        redpen: '#C8382B',
         carbon: {
           900: '#0c0d0e',
           800: '#141618',

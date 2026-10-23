@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Cpu, BookmarkCheck, History } from 'lucide-react';
 import { GovoriLogo } from '../common/GovoriLogo';
 import { GeneralTab } from './GeneralTab';
 import { ProvidersTab } from './ProvidersTab';
@@ -82,67 +81,46 @@ export const SettingsView: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'providers', label: t.tabProviders, icon: Cpu },
-    { id: 'general', label: t.tabGeneral, icon: Sliders },
-    { id: 'snippets', label: t.tabSnippets, icon: BookmarkCheck },
-    { id: 'history', label: t.tabHistory, icon: History },
-  ];
+    { id: 'providers', label: t.tabProviders },
+    { id: 'general', label: t.tabGeneral },
+    { id: 'snippets', label: t.tabSnippets },
+    { id: 'history', label: t.tabHistory },
+  ] as const;
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-white text-neutral-900 overflow-hidden font-sans select-none">
-      {/* Titlebar Header */}
-      <div className="h-12 bg-white border-b border-neutral-200/80 flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <GovoriLogo className="w-5 h-5" />
-          <span className="text-xs font-semibold tracking-tight text-black">
-            говори
-          </span>
-          {savedBadge && (
-            <span className="text-[10px] text-neutral-700 font-medium bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-full">
-              {t.saved}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Main Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar Navigation */}
-        <div className="w-52 bg-neutral-50 border-r border-neutral-200/80 p-3 flex flex-col justify-between shrink-0">
-          <div className="space-y-1">
+    <div className="w-screen h-screen flex flex-col bg-paper text-graphite overflow-hidden select-none">
+      <header className="shrink-0 px-10 pt-6 border-b border-rule">
+        <div className="max-w-[640px] flex items-end justify-between">
+          <nav className="flex items-end gap-7" aria-label="говори">
+            <GovoriLogo className="w-5 h-5 mb-3 shrink-0" />
             {tabs.map((tab) => {
-              const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`w-full px-3 py-2 rounded-xl flex items-center gap-2.5 text-xs font-medium transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-black text-white shadow-sm'
-                      : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`pb-3 -mb-px text-[14px] leading-5 border-b-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                    isActive ? 'border-graphite text-graphite' : 'border-transparent text-muted hover:text-graphite'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-neutral-500'}`} />
-                  <span>{tab.label}</span>
+                  {tab.label}
                 </button>
               );
             })}
-          </div>
-
-          <a
-            href="https://github.com/anufriev163/speaking"
-            target="_blank"
-            rel="noreferrer"
-            className="w-full px-3 py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-neutral-800 hover:text-black bg-white hover:bg-neutral-100 border border-neutral-200/90 shadow-xs transition-all cursor-pointer group"
+          </nav>
+          <span
+            aria-live="polite"
+            className={`pb-3 text-[13px] text-muted transition-opacity duration-300 ${savedBadge ? 'opacity-100' : 'opacity-0'}`}
           >
-            <span className="text-amber-500 group-hover:scale-110 transition-transform">⭐</span>
-            <span>Star on GitHub</span>
-          </a>
+            {t.saved}
+          </span>
         </div>
+      </header>
 
-        {/* Content Area */}
-        <div className="flex-1 p-8 overflow-y-auto bg-white">
+      <main className="flex-1 overflow-y-auto px-10 py-8">
+        <div className="max-w-[640px]">
           {activeTab === 'general' && (
             <GeneralTab settings={settings} onChange={handleUpdateSettings} />
           )}
@@ -156,7 +134,7 @@ export const SettingsView: React.FC = () => {
             <HistoryTab history={history} onClear={handleClearHistory} uiLanguage={settings.uiLanguage} />
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { AppSettings } from '../../types';
-import { Keyboard, Mic, Sparkles, Volume2, Power, RefreshCw, CheckCircle2, ArrowDownToLine, AlertCircle, Languages, Globe } from 'lucide-react';
+import { AppSettings, UILanguage } from '../../types';
 import packageJson from '../../../package.json';
 import { getTranslations } from '../../utils/i18n';
+import { PageTitle, Row, Toggle, Choice, TextButton } from './ui';
 
 interface GeneralTabProps {
   settings: AppSettings;
@@ -52,255 +52,101 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onChange }) =>
     (window as any).govoriAPI?.installUpdate?.();
   };
 
-  return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h3 className="text-xl font-semibold text-black tracking-tight mb-1">{t.generalTitle}</h3>
-        <p className="text-xs text-neutral-500">{t.generalSubtitle}</p>
-      </div>
+  const updateHint =
+    updateState.status === 'checking' ? t.checkingUpdates
+    : updateState.status === 'not-available' ? t.updateLatest
+    : updateState.status === 'available' ? `${t.updateAvailable} v${updateState.latestVersion}`
+    : updateState.status === 'downloading' ? `${t.downloadingUpdate} ${updateState.progressPercent || 0}%`
+    : updateState.status === 'downloaded' ? `${t.updateAvailable} v${updateState.latestVersion}`
+    : updateState.status === 'error' ? (updateState.error || t.updateError)
+    : t.updatesTitle;
 
-      <div className="space-y-3">
-        {/* Interface Language (Auto / RU / EN / ES / DE / FR / ZH) */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Globe className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">{t.uiLangTitle}</div>
-              <div className="text-[11px] text-neutral-500">{t.uiLangDesc}</div>
-            </div>
-          </div>
+  return (
+    <div>
+      <PageTitle title={t.generalTitle} subtitle={t.generalSubtitle} />
+
+      <div className="border-t border-rule">
+        <Row label={t.uiLangTitle} hint={t.uiLangDesc}>
           <select
             value={settings.uiLanguage || 'auto'}
-            onChange={(e) => onChange({ uiLanguage: e.target.value as any })}
-            className="px-3 py-1.5 rounded-xl bg-neutral-100 border border-neutral-200/80 text-xs font-semibold text-black focus:outline-none focus:border-black transition-all cursor-pointer shadow-2xs"
+            onChange={(e) => onChange({ uiLanguage: e.target.value as UILanguage })}
+            className="bg-transparent border-0 border-b border-rule py-1 pr-1 text-[14px] text-graphite focus:outline-none focus:border-ink cursor-pointer"
           >
-            <option value="auto">🌐 {t.uiLangAuto}</option>
-            <option value="ru">🇷🇺 Русский</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="es">🇪🇸 Español</option>
-            <option value="de">🇩🇪 Deutsch</option>
-            <option value="fr">🇫🇷 Français</option>
-            <option value="zh">🇨🇳 中文</option>
+            <option value="auto">{t.uiLangAuto}</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="zh">中文</option>
           </select>
-        </div>
+        </Row>
 
-        {/* Speech Recognition Language (RU / EN / Auto) */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Languages className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">{t.speechLangTitle}</div>
-              <div className="text-[11px] text-neutral-500">
-                {settings.language === 'en'
-                  ? t.speechLangDescEn
-                  : settings.language === 'auto'
-                  ? t.speechLangDescAuto
-                  : t.speechLangDescRu}
-              </div>
-            </div>
-          </div>
-          <div className="flex bg-neutral-100 p-1 rounded-xl border border-neutral-200/70 shrink-0">
-            <button
-              onClick={() => onChange({ language: 'ru' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                (settings.language || 'ru') === 'ru'
-                  ? 'bg-white text-black shadow-xs font-semibold'
-                  : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              RU
-            </button>
-            <button
-              onClick={() => onChange({ language: 'en' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                settings.language === 'en'
-                  ? 'bg-white text-black shadow-xs font-semibold'
-                  : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => onChange({ language: 'auto' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                settings.language === 'auto'
-                  ? 'bg-white text-black shadow-xs font-semibold'
-                  : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              {t.uiLangAuto.split(' ')[0]}
-            </button>
-          </div>
-        </div>
-        {/* Hotkey configuration */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Keyboard className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">{t.hotkeyTitle}</div>
-              <div className="text-[11px] text-neutral-500">
-                {t.hotkeyDesc}
-              </div>
-            </div>
-          </div>
-          <input
-            type="text"
-            value={settings.hotkey}
-            onChange={(e) => onChange({ hotkey: e.target.value })}
-            className="w-32 px-3 py-1.5 rounded-xl bg-neutral-50 border border-neutral-200 text-center font-mono text-xs font-bold text-black focus:outline-none focus:border-black transition-colors"
-            placeholder="Ctrl+~"
+        <Row
+          label={t.speechLangTitle}
+          hint={settings.language === 'en' ? t.speechLangDescEn : settings.language === 'auto' ? t.speechLangDescAuto : t.speechLangDescRu}
+        >
+          <Choice
+            value={(settings.language || 'ru') as 'ru' | 'en' | 'auto'}
+            onChange={(v) => onChange({ language: v })}
+            options={[
+              { value: 'ru', label: 'RU' },
+              { value: 'en', label: 'EN' },
+              { value: 'auto', label: t.uiLangAuto.split(' ')[0] },
+            ]}
           />
-        </div>
+        </Row>
 
-        {/* Unified AI Speech Cleaner */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-black">{t.aiCorrectionTitle}</span>
-                <span className="px-1.5 py-0.5 rounded bg-neutral-100 text-[10px] font-mono font-medium text-neutral-600">
-                  Llama 3.3 70B
-                </span>
-              </div>
-              <div className="text-[11px] text-neutral-500">
-                {t.aiCorrectionDesc}
-              </div>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.aiCorrection !== false}
-              onChange={(e) => onChange({ aiCorrection: e.target.checked, removeFillerWords: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-          </label>
-        </div>
+        {/* The hotkey is fixed (Ctrl+~); show it as text rather than a fake editable field */}
+        <Row label={t.hotkeyTitle} hint={t.hotkeyDesc}>
+          <kbd className="font-sans text-[14px] text-graphite">Ctrl + ~</kbd>
+        </Row>
 
-        {/* Sound Feedback */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Volume2 className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">{t.soundTitle}</div>
-              <div className="text-[11px] text-neutral-500">{t.soundDesc}</div>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.soundFeedback}
-              onChange={(e) => onChange({ soundFeedback: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-          </label>
-        </div>
+        <Row label={t.aiCorrectionTitle} hint={t.aiCorrectionDesc}>
+          <Toggle
+            label={t.aiCorrectionTitle}
+            checked={settings.aiCorrection !== false}
+            onChange={(v) => onChange({ aiCorrection: v, removeFillerWords: v })}
+          />
+        </Row>
 
-        {/* Auto start with Windows */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs flex items-center justify-between hover:border-neutral-300 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-              <Power className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-black">{t.autoStartTitle}</div>
-              <div className="text-[11px] text-neutral-500">{t.autoStartDesc}</div>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.autoStart}
-              onChange={(e) => onChange({ autoStart: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="w-10 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-          </label>
-        </div>
+        <Row label={t.soundTitle} hint={t.soundDesc}>
+          <Toggle label={t.soundTitle} checked={settings.soundFeedback} onChange={(v) => onChange({ soundFeedback: v })} />
+        </Row>
 
-        {/* App Version & Auto-Update Card */}
-        <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-xs space-y-3 hover:border-neutral-300 transition-all">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center text-black">
-                <RefreshCw className={`w-4 h-4 ${updateState.status === 'checking' ? 'animate-spin' : ''}`} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-black">{t.versionLabel}</span>
-                  <span className="px-2 py-0.5 rounded-md bg-neutral-100 font-mono text-[10px] font-semibold text-neutral-600">
-                    v{updateState.version}
-                  </span>
-                </div>
-                <div className="text-[11px] text-neutral-500 mt-0.5">
-                  {updateState.status === 'checking' && t.checkingUpdates}
-                  {updateState.status === 'not-available' && t.updateLatest}
-                  {updateState.status === 'available' && `${t.updateAvailable} v${updateState.latestVersion}`}
-                  {updateState.status === 'downloading' && `${t.downloadingUpdate} ${updateState.progressPercent || 0}%`}
-                  {updateState.status === 'downloaded' && `${t.updateAvailable} v${updateState.latestVersion} — готово к установке`}
-                  {updateState.status === 'error' && (
-                    <span className="text-amber-600 font-medium">{updateState.error || t.updateError}</span>
-                  )}
-                  {updateState.status === 'idle' && `${t.updatesTitle} • GitHub Releases`}
-                </div>
-              </div>
-            </div>
+        <Row label={t.autoStartTitle} hint={t.autoStartDesc}>
+          <Toggle label={t.autoStartTitle} checked={settings.autoStart} onChange={(v) => onChange({ autoStart: v })} />
+        </Row>
 
-            <div>
-              {updateState.status === 'available' ? (
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="px-3 py-1.5 rounded-xl bg-black text-white text-xs font-semibold hover:bg-neutral-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <ArrowDownToLine className="w-3.5 h-3.5" />
-                  <span>{t.downloadUpdate}</span>
-                </button>
-              ) : updateState.status === 'downloaded' ? (
-                <button
-                  type="button"
-                  onClick={handleInstall}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{t.installRestart}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleCheckUpdates}
-                  disabled={updateState.status === 'checking' || updateState.status === 'downloading'}
-                  className="px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200/80 text-black text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {updateState.status === 'checking' ? t.checkingUpdates : t.checkUpdates}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {updateState.status === 'downloading' && (
-            <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="bg-black h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${updateState.progressPercent || 0}%` }}
-              />
-            </div>
+        <Row
+          label={`${t.versionLabel} ${updateState.version}`}
+          hint={<span className={updateState.status === 'error' ? 'text-redpen' : undefined}>{updateHint}</span>}
+        >
+          {updateState.status === 'available' ? (
+            <TextButton onClick={handleDownload}>{t.downloadUpdate}</TextButton>
+          ) : updateState.status === 'downloaded' ? (
+            <TextButton onClick={handleInstall}>{t.installRestart}</TextButton>
+          ) : (
+            <TextButton
+              onClick={handleCheckUpdates}
+              disabled={updateState.status === 'checking' || updateState.status === 'downloading'}
+            >
+              {t.checkUpdates}
+            </TextButton>
           )}
-        </div>
+        </Row>
+        {updateState.status === 'downloading' && (
+          <div className="h-px bg-rule -mt-px">
+            <div className="h-px bg-ink transition-all duration-300" style={{ width: `${updateState.progressPercent || 0}%` }} />
+          </div>
+        )}
       </div>
+
+      <p className="mt-8 text-[13px] text-muted">
+        <a href="https://github.com/anufriev163/speaking" target="_blank" rel="noreferrer" className="text-ink hover:underline">
+          GitHub
+        </a>
+      </p>
     </div>
   );
 };

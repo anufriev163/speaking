@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { TextSnippet, UILanguage } from '../../types';
-import { Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { getTranslations } from '../../utils/i18n';
+import { PageTitle, LineInput, LineTextarea, TextButton } from './ui';
 
 interface SnippetsTabProps {
   snippets: TextSnippet[];
@@ -40,90 +41,54 @@ export const SnippetsTab: React.FC<SnippetsTabProps> = ({ snippets, onSave, uiLa
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h3 className="text-xl font-semibold text-black tracking-tight mb-1">{t.snippetsTitle}</h3>
-        <p className="text-xs text-neutral-500">
-          {t.snippetsSubtitle}
-        </p>
-      </div>
+    <div>
+      <PageTitle title={t.snippetsTitle} subtitle={t.snippetsSubtitle} />
 
-      {/* Add snippet form */}
-      <form onSubmit={handleAdd} className="p-5 rounded-2xl border border-neutral-200/80 bg-white shadow-xs space-y-3.5">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">{t.triggerLabel}</label>
-            <input
-              type="text"
-              value={trigger}
-              onChange={(e) => setTrigger(e.target.value)}
-              placeholder={t.triggerPlaceholder}
-              className="w-full px-3 py-1.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-black placeholder-neutral-400 focus:outline-none focus:border-black transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">{t.descLabel}</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t.descPlaceholder}
-              className="w-full px-3 py-1.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-black placeholder-neutral-400 focus:outline-none focus:border-black transition-colors"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-neutral-600 mb-1">{t.replacementLabel}</label>
-          <textarea
+      <form onSubmit={handleAdd} className="grid grid-cols-2 gap-x-8 gap-y-5">
+        <label className="block">
+          <span className="text-[13px] text-muted">{t.triggerLabel}</span>
+          <LineInput value={trigger} onChange={(e) => setTrigger(e.target.value)} placeholder={t.triggerPlaceholder} />
+        </label>
+        <label className="block">
+          <span className="text-[13px] text-muted">{t.descLabel}</span>
+          <LineInput value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t.descPlaceholder} />
+        </label>
+        <label className="block col-span-2">
+          <span className="text-[13px] text-muted">{t.replacementLabel}</span>
+          <LineTextarea
             value={replacement}
             onChange={(e) => setReplacement(e.target.value)}
             placeholder={t.replacementPlaceholder}
             rows={2}
-            className="w-full px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-black placeholder-neutral-400 focus:outline-none focus:border-black transition-colors font-mono"
           />
+        </label>
+        <div className="col-span-2">
+          <TextButton type="submit" disabled={!trigger.trim() || !replacement.trim()}>
+            {t.addSnippet}
+          </TextButton>
         </div>
-
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-xl bg-black hover:bg-neutral-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" /> {t.addSnippet}
-        </button>
       </form>
 
-      {/* Snippets list */}
-      <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+      <div className="mt-10 border-t border-rule">
         {snippets.length === 0 ? (
-          <div className="p-8 rounded-2xl border border-neutral-200/80 bg-neutral-50 text-center text-xs text-neutral-500">
-            {t.snippetsEmptyDesc}
-          </div>
+          <p className="py-6 text-[14px] text-muted">{t.snippetsEmptyDesc}</p>
         ) : (
           snippets.map((s) => (
-            <div
-              key={s.id}
-              className="p-4 rounded-2xl border border-neutral-200/80 bg-white shadow-xs flex items-start justify-between group hover:border-neutral-300 transition-all"
-            >
-              <div className="space-y-1.5 flex-1 mr-3">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-md bg-neutral-100 border border-neutral-200 font-mono text-xs text-black font-semibold">
-                    «{s.trigger}»
-                  </span>
-                  <span className="text-xs text-neutral-400">→</span>
-                  {s.description && (
-                    <span className="text-xs text-neutral-500">{s.description}</span>
-                  )}
+            <div key={s.id} className="group flex items-start justify-between gap-6 py-4 border-b border-rule">
+              <div className="min-w-0">
+                <div className="text-[14px] leading-5 text-graphite">
+                  «{s.trigger}»
+                  {s.description && <span className="text-muted"> — {s.description}</span>}
                 </div>
-                <div className="text-xs text-neutral-800 font-mono pl-3 border-l-2 border-black bg-neutral-50 p-2.5 rounded-r-xl">
-                  {s.replacement}
-                </div>
+                <div className="mt-1 text-[13px] leading-5 text-muted whitespace-pre-line select-text">{s.replacement}</div>
               </div>
               <button
+                type="button"
                 onClick={() => handleDelete(s.id)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-neutral-400 hover:text-black hover:bg-neutral-100 transition-all cursor-pointer"
-                title="Delete"
+                aria-label="Delete"
+                className="shrink-0 p-1 text-muted hover:text-redpen opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))
