@@ -36,3 +36,7 @@ Thumbs.db
 .parcel-cache/
 .temp/
 *.tmp
+
+# Promo video projects (HyperFrames), kept out of the repo
+video/
+video-vertical/

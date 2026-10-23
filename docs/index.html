@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=83">
+  <link rel="stylesheet" href="styles.css?v=86">
 </head>
 <body>
   <main class="page">
@@ -24,24 +24,32 @@
     </header>
 
     <section class="hero">
-      <h1>Говорите — текст появится там, где стоит курсор.</h1>
-      <p class="lead">Голосовой ввод для Windows и macOS. Нажмите <span class="keys"><kbd>Ctrl</kbd> + <kbd>~</kbd></span>, скажите фразу и нажмите ещё раз.</p>
-      <div class="downloads">
-        <a class="button" href="https://github.com/anufriev163/speaking/releases/download/v1.0.9/govori-setup-1.0.9.exe">Скачать для Windows</a>
-        <a href="https://github.com/anufriev163/speaking/releases/download/v1.0.9/govori-1.0.9.dmg">macOS (Apple Silicon)</a>
-        <a href="https://github.com/anufriev163/speaking/releases/download/v1.0.9/govori-legacy-setup-1.0.9.exe">Windows 7 и 8, 32 бита</a>
+      <div class="hero-text">
+        <h1>Говорите — текст появится там, где стоит курсор.</h1>
+        <p class="lead">Голосовой ввод для Windows и macOS. Нажмите <span class="keys"><kbd>Ctrl</kbd> + <kbd>~</kbd></span>, скажите фразу и нажмите ещё раз.</p>
+        <div class="downloads">
+          <a class="button" href="https://github.com/anufriev163/speaking/releases/download/v1.0.9/govori-setup-1.0.9.exe">Скачать для Windows</a>
+          <a href="https://github.com/anufriev163/speaking/releases/download/v1.0.9/govori-1.0.9.dmg">macOS (Apple Silicon)</a>
+          <a href="https://github.com/anufriev163/speaking/releases/download/v1.0.9/govori-legacy-setup-1.0.9.exe">Windows 7 и 8, 32 бита</a>
+        </div>
       </div>
-    </section>
 
-    <!-- The notebook check: raw speech with fillers crossed out in red pen, clean result in ink -->
-    <figure class="sheet" aria-label="Пример: что вы сказали и что вставилось">
-      <p class="sheet-label">Вы сказали</p>
-      <p class="spoken">
-        ну <del>короче</del> завтра в <del>пять ой нет в</del> шесть созвон <del>новая строка</del> не забудь презентацию
-      </p>
-      <p class="sheet-label">Вставилось</p>
-      <p class="written">Завтра в шесть созвон.<br>Не забудь презентацию.</p>
-    </figure>
+      <!-- The notebook check: raw speech with fillers crossed out in red pen, the app's own capsule
+           in between, and the clean result in ink -->
+      <figure class="sheet" aria-label="Пример: что вы сказали и что вставилось">
+        <p class="sheet-label">Вы сказали</p>
+        <p class="spoken">
+          ну <del>короче</del> завтра в <del>пять ой нет в</del> шесть созвон <del>новая строка</del> не забудь презентацию
+        </p>
+        <div class="capsule" aria-hidden="true">
+          <span class="capsule-btn">✕</span>
+          <span class="capsule-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="capsule-btn">✓</span>
+        </div>
+        <p class="sheet-label">Вставилось</p>
+        <p class="written">Завтра в шесть созвон.<br>Не забудь презентацию.</p>
+      </figure>
+    </section>
 
     <section>
       <h2>Как это работает</h2>
