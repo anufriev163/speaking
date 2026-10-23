@@ -4,8 +4,8 @@
 > Интеллектуальный голосовой ввод в любое приложение на базе **Whisper Large-v3-turbo** и **Llama 3.3 70B** — 100% бесплатно и без подписок.
 
 [![Релиз](https://img.shields.io/github/v/release/anufriev163/speaking?color=blue&label=Версия)](https://github.com/anufriev163/speaking/releases/latest)
-[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/download/v1.0.7/govori-setup-1.0.7.exe)
-[![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/download/v1.0.7/govori-1.0.7.dmg)
+[![Скачать для Windows](https://img.shields.io/badge/Скачать-Windows%20(exe)-success?logo=windows)](https://github.com/anufriev163/speaking/releases/download/v1.0.8/govori-setup-1.0.8.exe)
+[![Скачать для macOS](https://img.shields.io/badge/Скачать-macOS%20(dmg)-black?logo=apple)](https://github.com/anufriev163/speaking/releases/download/v1.0.8/govori-1.0.8.dmg)
 [![GitHub Stars](https://img.shields.io/github/stars/anufriev163/speaking?style=social)](https://github.com/anufriev163/speaking)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-orange)](#)
 
@@ -15,9 +15,9 @@
 
 | Платформа | Файл загрузки | Инструкция |
 | :--- | :--- | :--- |
-| **Windows 10 / 11 (64-бит)** | [**Скачать Говори (govori-setup-1.0.7.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.7/govori-setup-1.0.7.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
-| **Windows 7 / 8 / 32-бит (Legacy)** | [**Скачать для старых ПК (govori-legacy-setup-1.0.7.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.7/govori-legacy-setup-1.0.7.exe) | Облегчённая сборка для 32-битных и устаревших систем. |
-| **macOS (Apple Silicon & Intel)** | [**Скачать DMG (govori-1.0.7.dmg)**](https://github.com/anufriev163/speaking/releases/download/v1.0.7/govori-1.0.7.dmg) | Откройте DMG и перетащите «говори» в папку Applications. |
+| **Windows 10 / 11 (64-бит)** | [**Скачать Говори (govori-setup-1.0.8.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.8/govori-setup-1.0.8.exe) | Запустите инсталлятор и следуйте подсказкам мастера установки. |
+| **Windows 7 / 8 / 32-бит (Legacy)** | [**Скачать для старых ПК (govori-legacy-setup-1.0.8.exe)**](https://github.com/anufriev163/speaking/releases/download/v1.0.8/govori-legacy-setup-1.0.8.exe) | Облегчённая сборка для 32-битных и устаревших систем. |
+| **macOS (Apple Silicon)** | [**Скачать DMG (govori-1.0.8.dmg)**](https://github.com/anufriev163/speaking/releases/download/v1.0.8/govori-1.0.8.dmg) | Откройте DMG и перетащите «говори» в папку Applications. |
 
 > [!TIP]
 > **При первом запуске на Windows (SmartScreen):**
