@@ -81,12 +81,13 @@ export interface GovoriAPI {
   hideHud: () => void;
   saveHudPosition: (pos: { x: number; y: number }) => void;
   notifyRecordingStopped: () => void;
+  notifyRecordingStarted: () => void;
   setHudInteractive: (interactive: boolean) => void;
   getActiveContext: () => Promise<ActiveContext>;
   injectText: (text: string) => Promise<boolean>;
   transcribeAudio: (audioData: ArrayBuffer, mimeType?: string) => Promise<any>;
   checkLocalWhisper: () => Promise<{ available: boolean; error?: string }>;
-  onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop' | 'show') => void) => () => void;
+  onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop' | 'show' | 'cancel') => void) => () => void;
   onContextChanged: (callback: (context: ActiveContext) => void) => () => void;
   onSelectionChanged: (callback: (data: { hasSelection: boolean; snippet: string }) => void) => () => void;
   updateHudState: (state: HudState, message?: string, latencyMs?: number) => void;

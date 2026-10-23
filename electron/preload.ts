@@ -32,6 +32,7 @@ const api = {
   hideHud: (): void => ipcRenderer.send('window:hide-hud'),
   saveHudPosition: (pos: { x: number; y: number }): void => ipcRenderer.send('window:save-hud-position', pos),
   notifyRecordingStopped: (): void => ipcRenderer.send('hud:recording-stopped'),
+  notifyRecordingStarted: (): void => ipcRenderer.send('hud:recording-started'),
   setHudInteractive: (interactive: boolean): void => ipcRenderer.send('hud:set-interactive', interactive),
 
   // Context & Win32
@@ -45,8 +46,8 @@ const api = {
     ipcRenderer.invoke('stt:check-local'),
 
   // Events from Main Process
-  onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop' | 'show') => void) => {
-    const handler = (_event: any, action: 'toggle' | 'start' | 'stop' | 'show') => callback(action);
+  onTriggerRecording: (callback: (action: 'toggle' | 'start' | 'stop' | 'show' | 'cancel') => void) => {
+    const handler = (_event: any, action: 'toggle' | 'start' | 'stop' | 'show' | 'cancel') => callback(action);
     ipcRenderer.on('hotkey:trigger', handler);
     return () => ipcRenderer.removeListener('hotkey:trigger', handler);
   },

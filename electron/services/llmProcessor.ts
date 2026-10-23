@@ -16,25 +16,31 @@ export function cleanTextRules(text: string, context: ActiveContext): string {
     .replace(/(?:новый\s+абзац|с\s+нового\s+абзаца)/gi, '\n\n')
     .replace(/(?:(?<![а-яёa-z0-9])точка\s+с\s+запятой(?![а-яёa-z0-9]))/gi, ';')
     .replace(/(?:(?<![а-яёa-z0-9])двоеточие(?![а-яёa-z0-9]))/gi, ':')
-    .replace(/(?:(?<![а-яёa-z0-9])знак\s+вопроса|вопросительный\s+знак(?![а-яёa-z0-9]))/gi, '?')
+    .replace(/(?<![а-яёa-z0-9])(?:знак\s+вопроса|вопросительный\s+знак)(?![а-яёa-z0-9])/gi, '?')
     .replace(/(?:(?<![а-яёa-z0-9])восклицательный\s+знак(?![а-яёa-z0-9]))/gi, '!')
     .replace(/(?:(?<![а-яёa-z0-9])тире(?![а-яёa-z0-9]))/gi, ' — ');
 
   // 2. Remove verbal filler words if enabled
   const settings = storage.getSettings();
   if (settings.removeFillerWords) {
-    const fillerPatterns = [
-      /(?<![а-яёa-z0-9])(?:ээ+|мм+|нуу+|аа+)(?![а-яёa-z0-9])/gi,
-      /(?<![а-яёa-z0-9])(?:как\s+бы|типа|короче|в\s+общем-то|так\s+сказать)(?![а-яёa-z0-9])/gi
-    ];
+    // Pure hesitation sounds are always noise
+    cleaned = cleaned.replace(/(?<![а-яёa-z0-9])(?:ээ+|мм+|нуу+|аа+)(?![а-яёa-z0-9])/gi, '');
+    // These are real words too ("тип данных", "сделай короче") — drop them only when
+    // set off as an interjection: at sentence start/after a comma AND followed by a comma/end
+    cleaned = cleaned.replace(
+      /(^|[,.!?]\s*)(?:как\s+бы|типа|короче|в\s+общем-то|так\s+сказать)\s*(?:,\s*|(?=[.!?]|$))/gi,
+      '$1'
+    );
 
-    for (const pattern of fillerPatterns) {
-      cleaned = cleaned.replace(pattern, '');
-    }
-
-    // Verbal self-correction e.g. "в пять, ой нет, в шесть" -> "в шесть"
-    // NOTE: plain "не" must never be a marker — it is negation ("я не знаю").
-    cleaned = cleaned.replace(/(?<![а-яёa-z0-9])([а-яёa-z0-9]+)[,\s]+(?:ой\s+нет|ой|вернее|точнее)[,\s]+([а-яёa-z0-9]+)(?![а-яёa-z0-9])/gi, '$2');
+    // Verbal self-correction: drop the word being corrected plus the marker.
+    // "в пять, ой нет, в шесть" -> "в шесть" (repeated preposition is dropped too),
+    // "приду завтра, вернее послезавтра" -> "приду послезавтра".
+    // NOTE: plain "не" (negation) and bare "ой" (interjection) must never be markers.
+    cleaned = cleaned.replace(
+      /(?<![а-яёa-z0-9])(?:([а-яёa-z0-9]+)\s+)?[а-яёa-z0-9]+[,\s]+(?:ой\s+нет|вернее|точнее)[,\s]+(?=([а-яёa-z0-9]+))/gi,
+      (_m, before: string | undefined, next: string) =>
+        before && before.toLowerCase() !== next.toLowerCase() ? `${before} ` : ''
+    );
   }
 
   // 3. User Snippets replacement
@@ -43,7 +49,8 @@ export function cleanTextRules(text: string, context: ActiveContext): string {
     if (snippet.trigger && snippet.replacement) {
       const escapedTrigger = snippet.trigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(?<![а-яёa-z0-9])${escapedTrigger}(?![а-яёa-z0-9])`, 'gi');
-      cleaned = cleaned.replace(regex, snippet.replacement);
+      // Function replacer: "$&"/"$1" in user text must stay literal (e.g. prices "$100")
+      cleaned = cleaned.replace(regex, () => snippet.replacement);
     }
   }
 
@@ -53,7 +60,7 @@ export function cleanTextRules(text: string, context: ActiveContext): string {
     if (item.word) {
       const escapedWord = item.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(?<![а-яёa-z0-9])${escapedWord}(?![а-яёa-z0-9])`, 'gi');
-      cleaned = cleaned.replace(regex, item.word);
+      cleaned = cleaned.replace(regex, () => item.word);
     }
   }
 

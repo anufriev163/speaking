@@ -53,6 +53,7 @@ export function restoreForegroundWindow(): boolean {
 }
 
 const INPUT_KEYBOARD = 1;
+const NO_PADDING = [0, 0];
 const KEYEVENTF_UNICODE = 0x0004;
 const KEYEVENTF_KEYUP = 0x0002;
 const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
@@ -84,7 +85,10 @@ if (process.platform === 'win32') {
     const INPUT = koffi.struct('INPUT', {
       type: 'uint32_t',
       ki: KEYBDINPUT,
-      padding: 'uint64_t',
+      // Pads KEYBDINPUT up to the union size (MOUSEINPUT is 8 bytes larger on both x86 and x64).
+      // uint32[2], not uint64: MSVC aligns uint64 to 8 on x86, which made INPUT 32 bytes instead
+      // of 28 and SendInput rejected every call on the legacy ia32 build.
+      padding: koffi.array('uint32_t', 2),
     });
 
     SendInput = user32.func('uint32_t SendInput(uint32_t cInputs, INPUT *pInputs, int cbSize)');
@@ -265,12 +269,12 @@ function sendInputUnicode(text: string): boolean {
         inputs.push({
           type: INPUT_KEYBOARD,
           ki: { wVk: 0x0D, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 },
-          padding: 0
+          padding: NO_PADDING
         });
         inputs.push({
           type: INPUT_KEYBOARD,
           ki: { wVk: 0x0D, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 },
-          padding: 0
+          padding: NO_PADDING
         });
         continue;
       }
@@ -279,12 +283,12 @@ function sendInputUnicode(text: string): boolean {
         inputs.push({
           type: INPUT_KEYBOARD,
           ki: { wVk: 0x0D, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 },
-          padding: 0
+          padding: NO_PADDING
         });
         inputs.push({
           type: INPUT_KEYBOARD,
           ki: { wVk: 0x0D, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 },
-          padding: 0
+          padding: NO_PADDING
         });
         continue;
       }
@@ -292,12 +296,12 @@ function sendInputUnicode(text: string): boolean {
       inputs.push({
         type: INPUT_KEYBOARD,
         ki: { wVk: 0, wScan: code, dwFlags: KEYEVENTF_UNICODE, time: 0, dwExtraInfo: 0 },
-        padding: 0
+        padding: NO_PADDING
       });
       inputs.push({
         type: INPUT_KEYBOARD,
         ki: { wVk: 0, wScan: code, dwFlags: KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 },
-        padding: 0
+        padding: NO_PADDING
       });
     }
 
@@ -325,10 +329,10 @@ async function injectClipboardWindows(text: string): Promise<boolean> {
       try {
         const cbSize = koffi.sizeof('INPUT');
         const inputs = [
-          { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
-          { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
-          { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
-          { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
+          { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
+          { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
+          { type: INPUT_KEYBOARD, ki: { wVk: 0x56, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
+          { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
         ];
         const res = SendInput(inputs.length, inputs, cbSize);
         sent = res > 0;
@@ -479,10 +483,10 @@ export function simulateCopy(): void {
     try {
       const cbSize = koffi.sizeof('INPUT');
       const inputs = [
-        { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
-        { type: INPUT_KEYBOARD, ki: { wVk: 0x43, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 },
-        { type: INPUT_KEYBOARD, ki: { wVk: 0x43, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
-        { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 },
+        { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
+        { type: INPUT_KEYBOARD, ki: { wVk: 0x43, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
+        { type: INPUT_KEYBOARD, ki: { wVk: 0x43, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
+        { type: INPUT_KEYBOARD, ki: { wVk: VK.CONTROL, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING },
       ];
       SendInput(inputs.length, inputs, cbSize);
     } catch (err) {
@@ -510,15 +514,15 @@ export function sendKeyStroke(vKey: number, modifiers: number[] = []): boolean {
 
         // Modifiers Down
         for (const mod of modifiers) {
-          inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: mod, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 });
+          inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: mod, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING });
         }
         // Key Down & Up
-        inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: vKey, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: 0 });
-        inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: vKey, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 });
+        inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: vKey, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING });
+        inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: vKey, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING });
 
         // Modifiers Up (reverse order)
         for (const mod of modifiers.slice().reverse()) {
-          inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: mod, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: 0 });
+          inputs.push({ type: INPUT_KEYBOARD, ki: { wVk: mod, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 }, padding: NO_PADDING });
         }
 
         const sent = SendInput(inputs.length, inputs, cbSize);

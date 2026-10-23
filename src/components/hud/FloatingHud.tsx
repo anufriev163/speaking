@@ -43,6 +43,7 @@ export const FloatingHud: React.FC = () => {
   const recordStartTimeRef = useRef<number>(0);
 
   const handleToggleRecordingRef = useRef<() => void>(() => {});
+  const handleCancelRecordingRef = useRef<() => void>(() => {});
 
   const cancelDismiss = () => {
     if (dismissTimerRef.current) {
@@ -95,6 +96,8 @@ export const FloatingHud: React.FC = () => {
       soundEffects.playStart();
       await startRecording();
       isRecordingRef.current = true;
+      // HUD is shown inactive (never focused), so Esc must be a global shortcut while recording
+      window.govoriAPI?.notifyRecordingStarted?.();
     } catch (err: any) {
       console.error('[HUD] Error starting recording:', err);
       isRecordingRef.current = false;
@@ -147,6 +150,10 @@ export const FloatingHud: React.FC = () => {
           }
 
           scheduleDismiss(1600);
+        } else if (result.success) {
+          // Silence / filtered noise: nothing to insert, but not an error either
+          setHudState('idle');
+          scheduleDismiss(600);
         } else {
           soundEffects.playError();
           setHudState('error');
@@ -240,6 +247,7 @@ export const FloatingHud: React.FC = () => {
   };
 
   handleToggleRecordingRef.current = handleToggleRecording;
+  handleCancelRecordingRef.current = () => handleCancelRecording();
 
   useEffect(() => {
     if (!window.govoriAPI) return;
@@ -281,6 +289,8 @@ export const FloatingHud: React.FC = () => {
         startRecordingAction();
       } else if (action === 'stop') {
         stopRecordingAction();
+      } else if (action === 'cancel') {
+        handleCancelRecordingRef.current();
       } else if (action === 'show') {
         cancelDismiss();
         setIsVisible(true);

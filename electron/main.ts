@@ -22,7 +22,7 @@ import { transcribeAudio } from './services/sttService';
 import { checkLocalWhisperAvailable, shutdownLocalWhisper } from './services/localWhisper';
 import { cleanTextRules, refineTextWithLLM } from './services/llmProcessor';
 import { harness } from './harness';
-import { ActiveContext } from '../src/types';
+import { ActiveContext, AppSettings } from '../src/types';
 import { initAutoUpdater } from './services/updaterService';
 import { snapshotClipboard, restoreClipboard } from './services/clipboardSnapshot';
 import { logError } from './services/errorLog';
@@ -167,6 +167,29 @@ function setHudClickThrough(ignore: boolean) {
   hudWindow.setIgnoreMouseEvents(ignore, { forward: true });
 }
 
+// Only our own bundle (file://) or the Vite dev server may load inside app windows
+function isInternalUrl(url: string): boolean {
+  if (url.startsWith('file:')) return true;
+  try {
+    return isDev && new URL(url).origin === new URL(VITE_DEV_URL).origin;
+  } catch {
+    return false;
+  }
+}
+
+// Never hand arbitrary schemes (file:, custom protocol handlers) to the OS
+function openExternalSafe(url: string) {
+  if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+}
+
+// API keys are only needed by the settings window; the HUD never gets them
+function settingsForRenderer(sender: Electron.WebContents, settings: AppSettings): AppSettings {
+  if (settingsWindow && !settingsWindow.isDestroyed() && sender === settingsWindow.webContents) {
+    return settings;
+  }
+  return { ...settings, groqApiKey: '', openaiApiKey: '', deepgramApiKey: '' };
+}
+
 // Electron 35+ passes console details as an object; the legacy Win7 build (Electron 22)
 // still uses positional (event, level, message) arguments.
 function consoleMessageText(args: any[]): string {
@@ -217,15 +240,13 @@ function createHudWindow() {
   });
 
   hudWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https:') || url.startsWith('http:')) {
-      shell.openExternal(url);
-    }
+    openExternalSafe(url);
     return { action: 'deny' };
   });
   hudWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith('file:') && !url.includes('localhost')) {
+    if (!isInternalUrl(url)) {
       event.preventDefault();
-      shell.openExternal(url);
+      openExternalSafe(url);
     }
   });
 
@@ -291,15 +312,13 @@ function createSettingsWindow() {
   });
 
   settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https:') || url.startsWith('http:')) {
-      shell.openExternal(url);
-    }
+    openExternalSafe(url);
     return { action: 'deny' };
   });
   settingsWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith('file:') && !url.includes('localhost')) {
+    if (!isInternalUrl(url)) {
       event.preventDefault();
-      shell.openExternal(url);
+      openExternalSafe(url);
     }
   });
 
@@ -478,6 +497,22 @@ async function captureActiveSelection(context: ActiveContext | null): Promise<st
   }
 }
 
+// Esc cancels an active recording. Registered only while recording so Esc keeps
+// working normally in other apps the rest of the time.
+function setEscapeCancel(enabled: boolean) {
+  if (!enabled) {
+    if (globalShortcut.isRegistered('Escape')) globalShortcut.unregister('Escape');
+    return;
+  }
+  if (globalShortcut.isRegistered('Escape')) return;
+  const ok = globalShortcut.register('Escape', () => {
+    setEscapeCancel(false);
+    isRecordingActive = false;
+    if (hudWindow && !hudWindow.isDestroyed()) hudWindow.webContents.send('hotkey:trigger', 'cancel');
+  });
+  if (!ok) console.warn('[Hotkeys] Escape is busy, cancel-by-Esc unavailable');
+}
+
 function registerHotkeys() {
   globalShortcut.unregisterAll();
 
@@ -615,7 +650,7 @@ function applyAutoStart(enabled: boolean) {
 
 // IPC Handlers
 function setupIpcHandlers() {
-  ipcMain.handle('storage:get-settings', () => storage.getSettings());
+  ipcMain.handle('storage:get-settings', (event) => settingsForRenderer(event.sender, storage.getSettings()));
   ipcMain.handle('storage:update-settings', (_event, newSettings) => {
     const updated = storage.updateSettings(newSettings);
     if (newSettings.hotkey || newSettings.mode) {
@@ -628,9 +663,9 @@ function setupIpcHandlers() {
       updateTrayMenu();
     }
     if (hudWindow && !hudWindow.isDestroyed()) {
-      hudWindow.webContents.send('settings:changed', updated);
+      hudWindow.webContents.send('settings:changed', settingsForRenderer(hudWindow.webContents, updated));
     }
-    return updated;
+    return settingsForRenderer(_event.sender, updated);
   });
 
   initAutoUpdater(() => settingsWindow);
@@ -707,6 +742,7 @@ function setupIpcHandlers() {
 
   ipcMain.handle('stt:transcribe', async (_event, audioArrayBuffer: ArrayBuffer, mimeType = 'audio/wav') => {
     isRecordingActive = false;
+    setEscapeCancel(false); // recording is over; Esc must not "cancel" processing
     const audioBuffer = Buffer.from(audioArrayBuffer);
     const context = lastActiveContext || detectActiveContext();
     const selectedText = currentSelectionText;
@@ -765,7 +801,9 @@ function setupIpcHandlers() {
   ipcMain.on('hud:set-interactive', (_event, interactive: boolean) => {
     setHudClickThrough(!interactive);
   });
+  ipcMain.on('hud:recording-started', () => setEscapeCancel(true));
   ipcMain.on('hud:recording-stopped', () => {
+    setEscapeCancel(false);
     isRecordingActive = false;
   });
 }
